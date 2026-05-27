@@ -211,24 +211,23 @@
         #screen-word-chain.turn-p2 #typing-status { color: var(--p2); }
 
         /* --- Combo system [2026-05-27]: track berapa kali pemain saling berbalas, fire emoji escalation --- */
+        /* CHANGED [2026-05-27]: bg + border + padding dihapus (arahan Pradipta). Posisi: absolute di bawah
+           chain-title (parent wrapper jadi position:relative) supaya ngga ngambil layout space → nama
+           pemain ngga geser ke bawah. Visual escalation murni dari color + text-shadow. */
         .chain-word-big { position: relative; }  /* supaya .combo-float absolute bisa anchor */
         .chain-combo {
-            font-weight: 900; font-size: 0.85rem;
+            position: absolute; top: 100%; left: 0; margin-top: 3px;
+            font-weight: 900; font-size: 0.72rem;
             color: var(--text-secondary);
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 4px 12px; border-radius: 14px;
             letter-spacing: 1px; white-space: nowrap;
-            display: inline-block;
-            transition: color 0.3s, background 0.3s, border-color 0.3s, text-shadow 0.3s;
+            transition: color 0.3s, text-shadow 0.3s;
+            pointer-events: none;
         }
-        .chain-combo.active { color: #ff9500; background: rgba(255,149,0,0.12); border-color: rgba(255,149,0,0.4); text-shadow: 0 0 8px rgba(255,149,0,0.4); }
-        .chain-combo.hot { color: #ff5500; background: rgba(255,85,0,0.14); border-color: rgba(255,85,0,0.5); text-shadow: 0 0 10px rgba(255,85,0,0.6); }
+        .chain-combo.active { color: #ff9500; text-shadow: 0 0 8px rgba(255,149,0,0.5); }
+        .chain-combo.hot { color: #ff5500; text-shadow: 0 0 10px rgba(255,85,0,0.7); }
         .chain-combo.inferno {
             color: #ffe000;
-            background: linear-gradient(135deg, rgba(255,61,0,0.28), rgba(255,224,0,0.14));
-            border-color: rgba(255,224,0,0.65);
-            text-shadow: 0 0 14px rgba(255,224,0,0.8), 0 0 24px rgba(255,140,0,0.5);
+            text-shadow: 0 0 14px rgba(255,224,0,0.9), 0 0 24px rgba(255,140,0,0.6);
         }
         .chain-combo.bump { animation: combo-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes combo-bump {
@@ -658,6 +657,8 @@
                 <div style="max-width: 300px; margin: 0 auto; display: flex; flex-direction: column; gap: 5px;">
                     <button onclick="enterArena()">MASUK ARENA</button>
                     <button class="btn-ghost" onclick="openMoreModes()">MODE LAINNYA</button>
+                    <!-- NEW [2026-05-27]: settings — akses 1 opsi: AKHIRI PERTANDINGAN (trigger ceremony) -->
+                    <button class="btn-ghost" onclick="openSettings()" style="font-size: 0.7rem; padding: 10px;">⚙️ PENGATURAN</button>
                 </div>
             </div>
         </div>
@@ -728,9 +729,14 @@
         <!-- [BLOCK: SCREEN SAMBUNG KATA 1V1] -->
         <div id="screen-word-chain" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 8px;">
-                <span id="chain-title" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG KATA 1V1</span>
-                <!-- NEW [2026-05-27]: combo counter, escalate dengan fire emoji 🔥 → 🔥🔥 → 🔥🔥🔥 (inferno) -->
-                <span id="chain-combo" class="chain-combo">🔥 0</span>
+                <!-- CHANGED [2026-05-27]: chain-title di-wrap dalam container position:relative supaya
+                     combo counter (position:absolute) anchor ke title, render di bawah teks MODE: 1V1 tanpa
+                     ngegeser nama pemain. -->
+                <div style="position: relative;">
+                    <span id="chain-title" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG KATA 1V1</span>
+                    <!-- combo counter, escalate dengan fire emoji 🔥 → 🔥🔥 → 🔥🔥🔥 (inferno) -->
+                    <span id="chain-combo" class="chain-combo">🔥 0</span>
+                </div>
                 <span id="chain-timer-display" style="color:var(--danger); font-weight:bold; font-family:monospace; font-size:1.3rem; text-shadow: 0 0 10px rgba(255,77,77,0.3);">30s</span>
             </div>
             <div id="chain-players" style="margin-bottom: 10px; display: flex; justify-content: center; gap: 10px;"></div>
@@ -795,10 +801,11 @@
 
                 <div id="leaderboard-arena"></div>
 
-                <!-- FIXED: MAIN LAGI + AKHIRI PERTANDINGAN (di akhir, sesuai logic baru) -->
+                <!-- CHANGED [2026-05-27]: AKHIRI PERTANDINGAN dipindah ke modal-settings (welcome screen).
+                     Di leaderboard sekarang KEMBALI KE MENU — navigasi non-destruktif balik ke welcome. -->
                 <div class="lb-actions">
                     <button onclick="playAgain()" style="background: var(--accent-color); color: black; font-weight: 900; box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4); margin: 0;">MAIN LAGI</button>
-                    <button class="btn-end-match" onclick="endMatchFinal()">AKHIRI PERTANDINGAN</button>
+                    <button class="btn-ghost" onclick="backToMenuAfterCeremony()" style="margin: 0;">KEMBALI KE MENU</button>
                 </div>
             </div>
         </div>
@@ -817,6 +824,18 @@
                 <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
                 <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
                 <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- [BLOCK: MODAL SETTINGS] - NEW [2026-05-27]: dipindah dari leaderboard, 1 opsi only -->
+    <div id="modal-settings" class="modal-overlay" onclick="this.style.display='none'">
+        <div class="mode-selection-container" onclick="event.stopPropagation()">
+            <h2 style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">⚙️ PENGATURAN</h2>
+            <div class="mode-card" onclick="settingsEndMatch()">
+                <div class="mode-badge" style="color:var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.1);">🏆 PODIUM</div>
+                <h3 style="color: var(--gold); font-size: 1rem; font-weight: 900;">AKHIRI PERTANDINGAN</h3>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Tampilkan ceremony juara 1, 2, & 3 dari leaderboard global.</p>
             </div>
         </div>
     </div>
@@ -1617,7 +1636,9 @@
             showFinalResult();
         }
 
-        // NEW: MAIN LAGI — reset sessionScore, kembali deal kartu, restart timer 2-menit
+        // MAIN LAGI — reset sessionScore + route balik ke mode terakhir.
+        // FIX [2026-05-27]: was always initRound() (Guess Rush). Sekarang cek lastGameMode:
+        // 'chain' → balik ke chain-register (mode + nama pemain di-prefill), 'guess' → initRound.
         function playAgain() {
             sessionScore = 0;
             stopMatchTimer();
@@ -1626,13 +1647,26 @@
             document.getElementById('leaderboard-section').style.display = 'none';
             document.getElementById('leaderboard-section').classList.remove('fixed-layout');
             document.getElementById('player-name').value = '';
-            initRound();
+            if (lastGameMode === 'chain') {
+                const p1 = (chain.players && chain.players[0]) || '';
+                const p2 = (chain.players && chain.players[1]) || '';
+                openChainRegister(chain.mode || 'casual');
+                document.getElementById('chain-p1-name').value = p1;
+                document.getElementById('chain-p2-name').value = p2;
+            } else {
+                initRound();
+            }
         }
 
-        // CHANGED [2026-05-27]: AKHIRI PERTANDINGAN bukan lagi confirm + quit langsung.
-        // Sekarang trigger CHAMPION CEREMONY (3→2→1 reveal Quizizz-style).
-        // Reset & balik ke welcome screen dilakukan oleh closeCeremony() setelah ceremony selesai.
-        function endMatchFinal() {
+        // CHANGED [2026-05-27]: AKHIRI PERTANDINGAN dipindah dari leaderboard ke modal-settings.
+        // openSettings() — buka modal pengaturan dari welcome screen.
+        // settingsEndMatch() — close modal lalu trigger CHAMPION CEREMONY (3→2→1 reveal).
+        function openSettings() {
+            sfx.flip();
+            document.getElementById('modal-settings').style.display = 'flex';
+        }
+        function settingsEndMatch() {
+            document.getElementById('modal-settings').style.display = 'none';
             startCeremony();
         }
 
