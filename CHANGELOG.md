@@ -1,5 +1,35 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - Sambung Kata: Register 2-Player + Turn Color (P1 Merah / P2 Biru) + Auto-LB [AI / arahan Pradipta]
+### Added
+- **Screen `#screen-chain-register`**: register Pemain 1 + Pemain 2 dengan label color-coded (P1 merah, P2 biru), VS divider di tengah, autosuggest dropdown dari leaderboard (`handleChainNameInput` mirip `handleNameInput` di flow Guess Rush). Trigger via klik mode card di modal MODE LAINNYA (was: langsung initWordChain).
+- **`openChainRegister(mode)`** + **`handleChainNameInput(val, playerNum)`** + **`selectChainName(name, playerNum)`** + **`startChainGame()`** + **`cancelChainRegister()`** — JS Block 7A.
+- **Validasi register**: kedua nama wajib diisi, nama P1 & P2 ngga boleh sama (case-insensitive).
+- **Turn-based color theme** (CSS Section 10B): saat giliran P1 → `#game-container.turn-p1` & `#screen-word-chain.turn-p1` (border + box-shadow + chain-word-big color + suffix-highlight color + chain-input border + p-tag.player-1.active + typing-status semuanya merah). Saat ganti ke P2 → swap ke biru. Semua pakai `transition: 0.6s` → smooth color mix saat turn change.
+- **`applyChainTurnTheme()`** (JS Block 7B): dipanggil di `initWordChain` (set initial P1) dan setiap akhir `submitChain` (set ke giliran berikutnya).
+- **`endChainGame(loserIdx)`** (JS Block 7C): winner = `1 - loserIdx`, accumulate ke LB (winner +200, loser +50). Kalau nama belum ada di LB → tambah entry baru; kalau sudah ada → tambah point ke existing. Simpan winner ke `chain.lastWinner` lalu show `#screen-chain-result`.
+- **Screen `#screen-chain-result`**: card winner (gradient gold + glow) + card loser (subtle), tampilin nama + "+200 POIN" / "+50 POIN". Tombol LIHAT LEADERBOARD + KELUAR KE MENU.
+- **`chainViewLeaderboard()`** + **`backToWelcomeFromChain()`**: leaderboard view pakai existing `startThroneBattle` dengan start==end (skip count-up animation), winner di-focus via player-focus class + auto-scroll.
+
+### Changed
+- **`initWordChain(mode, p1Name, p2Name)`**: tambah parameter nama. Set `chain.players = [p1Name, p2Name]`. Default fallback "Player 1"/"Player 2" kalau dipanggil tanpa nama (backward compat).
+- **`chain` state**: tambah `players: ['Player 1','Player 2']` + `mode: 'casual'` + `lastWinner` (set saat endChainGame).
+- **`renderChainPlayers`**: tag pakai nama dari `chain.players` + class `.player-1` / `.player-2` untuk color theming.
+- **`updateChainUI`**: placeholder + status pakai nama actual (was hardcode "PLAYER N").
+- **`submitChain`**: history pakai nama actual (was hardcode "P1"/"P2"), call `applyChainTurnTheme()` setelah switch turn.
+- **`startChainTimer` time-out**: was `alert + location.reload`, sekarang panggil `endChainGame(chain.turn)` — current turn = loser karena ngga submit dalam waktu.
+- **`terminateMatch`** (tombol AKHIRI PERTANDINGAN di chain screen): was `showFinalResult` (flow Guess Rush, ngga relevan), sekarang panggil `endChainGame(chain.turn)` — current turn dianggap menyerah → other wins.
+- **Modal MODE LAINNYA card onclick**: was `initWordChain('casual'/'chaos')`, sekarang `openChainRegister('casual'/'chaos')`.
+
+### Files
+- `index.html`:
+  - CSS Section 10B baru (register screen + turn-based color theme P1 merah/P2 biru + chain-result).
+  - HTML: `#screen-chain-register` + `#screen-chain-result` baru, modal-modes onclick diubah.
+  - JS Block 7 di-restruktur: 7 base, 7A (register flow), 7B (game with turn theme), 7C (end-game + LB update + result view).
+  - JS Block 8: `terminateMatch` redirect ke `endChainGame`.
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - Ceremony Podium: Flex Layout (Cluster di Center) [AI / arahan Pradipta]
 ### Fixed
 - **JUARA 2 & 3 menjauh dari JUARA 1 di wide screen**: Root cause: slot pakai positioning absolute `left: 3vw / right: 3vw / left: 50% margin-left: -15vw` → anchored ke edge viewport. Di layar lebar (laptop landscape), gap antar slot bisa ratusan px → terlihat tidak konsisten / "JUARA 3 jauh amat".

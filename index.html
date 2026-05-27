@@ -164,6 +164,63 @@
         @keyframes screen-pulse { 0% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 80px rgba(255,77,77,0.3); } 100% { box-shadow: inset 0 0 0px var(--danger); } }
 
         /* ============================================================
+           10B. SAMBUNG KATA: REGISTER 2-PLAYER + TURN-BASED COLOR THEME (P1 = MERAH, P2 = BIRU)
+           Auto-suggest dari leaderboard, transisi mix color saat ganti giliran.
+           ============================================================ */
+        :root { --p1: #ff4d6d; --p2: #4dabff; }
+
+        /* --- Register screen --- */
+        .register-row { margin: 14px 0; text-align: left; }
+        .register-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 8px; }
+        .register-p1 .register-label { color: var(--p1); text-shadow: 0 0 10px rgba(255,77,109,0.3); }
+        .register-p2 .register-label { color: var(--p2); text-shadow: 0 0 10px rgba(77,171,255,0.3); }
+        .register-row input { width: 100%; padding: 14px 16px; border-radius: 14px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
+        .register-p1 input { border: 2px solid rgba(255,77,109,0.3); }
+        .register-p1 input:focus { border-color: var(--p1); box-shadow: 0 0 15px rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
+        .register-p2 input { border: 2px solid rgba(77,171,255,0.3); }
+        .register-p2 input:focus { border-color: var(--p2); box-shadow: 0 0 15px rgba(77,171,255,0.3); background: rgba(77,171,255,0.05); }
+        .vs-divider { text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--accent-color); margin: 6px 0; letter-spacing: 6px; text-shadow: 0 0 12px rgba(0,242,255,0.4); }
+        .register-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: rgba(28,33,40,0.98); border-radius: 12px; padding: 8px; border: 1px solid #333; z-index: 100; margin-top: 6px; text-align: left; max-height: 180px; overflow-y: auto; }
+
+        /* --- In-game turn-based color theme (smooth transition saat ganti giliran) --- */
+        #game-container { transition: box-shadow 0.6s ease, border-color 0.6s ease; }
+        #game-container.turn-p1 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,77,109,0.18); border-color: rgba(255,77,109,0.3); }
+        #game-container.turn-p2 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(77,171,255,0.18); border-color: rgba(77,171,255,0.3); }
+
+        .chain-word-big { transition: color 0.6s, text-shadow 0.6s; }
+        #screen-word-chain.turn-p1 .chain-word-big { color: var(--p1); text-shadow: 0 0 14px rgba(255,77,109,0.4); }
+        #screen-word-chain.turn-p2 .chain-word-big { color: var(--p2); text-shadow: 0 0 14px rgba(77,171,255,0.4); }
+
+        .suffix-highlight { transition: color 0.6s, text-decoration-color 0.6s; }
+        #screen-word-chain.turn-p1 .suffix-highlight { color: var(--p1) !important; }
+        #screen-word-chain.turn-p2 .suffix-highlight { color: var(--p2) !important; }
+
+        #screen-word-chain.turn-p1 #chain-input { border-color: rgba(255,77,109,0.5) !important; }
+        #screen-word-chain.turn-p2 #chain-input { border-color: rgba(77,171,255,0.5) !important; }
+        #screen-word-chain.turn-p1 #chain-input:focus { border-color: var(--p1) !important; box-shadow: 0 0 15px rgba(255,77,109,0.3); }
+        #screen-word-chain.turn-p2 #chain-input:focus { border-color: var(--p2) !important; box-shadow: 0 0 15px rgba(77,171,255,0.3); }
+
+        /* p-tag color override untuk player-1/player-2 (lebih spesifik dari .p-tag.active default) */
+        .p-tag.player-1 { color: rgba(255,77,109,0.55); border: 2px solid rgba(255,77,109,0.25); }
+        .p-tag.player-2 { color: rgba(77,171,255,0.55); border: 2px solid rgba(77,171,255,0.25); }
+        .p-tag.player-1.active { color: var(--p1) !important; background: rgba(255,77,109,0.15) !important; border-color: var(--p1) !important; box-shadow: 0 0 18px rgba(255,77,109,0.45) !important; transform: scale(1.12); }
+        .p-tag.player-2.active { color: var(--p2) !important; background: rgba(77,171,255,0.15) !important; border-color: var(--p2) !important; box-shadow: 0 0 18px rgba(77,171,255,0.45) !important; transform: scale(1.12); }
+
+        #typing-status { transition: color 0.6s; }
+        #screen-word-chain.turn-p1 #typing-status { color: var(--p1); }
+        #screen-word-chain.turn-p2 #typing-status { color: var(--p2); }
+
+        /* --- Chain result screen --- */
+        .chain-result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
+        .chain-result-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
+        .chain-result-loser { background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.12); }
+        .chain-result-badge { font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+        .chain-result-winner .chain-result-badge { color: var(--gold); }
+        .chain-result-name { font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: 1px; margin: 4px 0; }
+        .chain-result-winner .chain-result-name { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.5); font-size: 1.7rem; }
+        .chain-result-pts { font-size: 0.85rem; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; }
+
+        /* ============================================================
            11. MODALS & NOTIFICATIONS
            ============================================================ */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(15px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
@@ -596,6 +653,33 @@
             <div class="btn-surrender" onclick="surrender()" style="margin-top:12px; cursor:pointer; color: var(--text-secondary); font-size: 0.75rem; letter-spacing: 1px; text-align:center; font-weight: 700;">MENYERAH (PASRAH)</div>
         </div>
 
+        <!-- [BLOCK: SCREEN SAMBUNG KATA REGISTER] - NEW [2026-05-27]: register Pemain 1 + Pemain 2 dengan autosuggest dari leaderboard -->
+        <div id="screen-chain-register" class="screen">
+            <h2 style="margin-bottom: 6px; font-size: 1.4rem; letter-spacing: 2px; font-weight: 900;">DAFTAR PEMAIN</h2>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 18px;">Mode: <span id="chain-mode-display" style="color: var(--accent-color); font-weight: 900;">CASUAL</span></p>
+
+            <div class="register-row register-p1">
+                <div class="register-label">🟥 PEMAIN 1</div>
+                <div style="position: relative;">
+                    <input type="text" id="chain-p1-name" placeholder="Nama Pemain 1..." oninput="handleChainNameInput(this.value, 1)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p1" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+
+            <div class="vs-divider">VS</div>
+
+            <div class="register-row register-p2">
+                <div class="register-label">🟦 PEMAIN 2</div>
+                <div style="position: relative;">
+                    <input type="text" id="chain-p2-name" placeholder="Nama Pemain 2..." oninput="handleChainNameInput(this.value, 2)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p2" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+
+            <button onclick="startChainGame()" style="margin-top: 18px;">MULAI DUEL</button>
+            <button class="btn-ghost" onclick="cancelChainRegister()">BATAL</button>
+        </div>
+
         <!-- [BLOCK: SCREEN SAMBUNG KATA 1V1] -->
         <div id="screen-word-chain" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -613,6 +697,27 @@
                 <button class="btn-danger" style="margin:0;" onclick="terminateMatch()">AKHIRI PERTANDINGAN</button>
                 <button class="btn-ghost" style="flex:1; margin:0;" onclick="location.reload()">KELUAR KE MENU</button>
             </div>
+        </div>
+
+        <!-- [BLOCK: SCREEN SAMBUNG KATA RESULT] - NEW [2026-05-27]: announce winner/loser dengan badge gold + point distribution -->
+        <div id="screen-chain-result" class="screen">
+            <h2 style="font-size: 1.4rem; letter-spacing: 2px; font-weight: 900; margin-bottom: 6px;">HASIL DUEL!</h2>
+            <p style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 20px; letter-spacing: 1.5px;">MODE <span id="chain-result-mode">CASUAL</span></p>
+
+            <div class="chain-result-row chain-result-winner">
+                <div class="chain-result-badge">🏆 PEMENANG</div>
+                <div id="chain-winner-name" class="chain-result-name"></div>
+                <div class="chain-result-pts">+200 POIN</div>
+            </div>
+
+            <div class="chain-result-row chain-result-loser">
+                <div class="chain-result-badge">PERINGKAT 2</div>
+                <div id="chain-loser-name" class="chain-result-name"></div>
+                <div class="chain-result-pts">+50 POIN</div>
+            </div>
+
+            <button onclick="chainViewLeaderboard()" style="margin-top: 18px;">LIHAT LEADERBOARD</button>
+            <button class="btn-ghost" onclick="backToWelcomeFromChain()">KELUAR KE MENU</button>
         </div>
 
         <!-- [BLOCK: SCREEN RESULTS & LEADERBOARD] - NEW: FIXED LAYOUT, hanya leaderboard yg scroll, MAIN LAGI + AKHIRI PERTANDINGAN -->
@@ -651,12 +756,12 @@
     <div id="modal-modes" class="modal-overlay" onclick="this.style.display='none'">
         <div class="mode-selection-container" onclick="event.stopPropagation()">
             <h2 style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">MODE LAINNYA</h2>
-            <div class="mode-card" onclick="initWordChain('casual')">
+            <div class="mode-card" onclick="openChainRegister('casual')">
                 <div class="mode-badge">30 DETIK</div>
                 <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
                 <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
             </div>
-            <div class="mode-card" onclick="initWordChain('chaos')">
+            <div class="mode-card" onclick="openChainRegister('chaos')">
                 <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
                 <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
                 <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
@@ -1164,18 +1269,80 @@
         }
 
         /* --- [JS BLOCK 7] SAMBUNG KATA DUEL ENGINE --- */
-        let chain = { timer: 30, curTime: 30, lastWord: "", suffix: "", used: [], turn: 0, interval: null };
+        // CHANGED [2026-05-27]: tambah `players` (nama dari register screen) + `mode` (casual/chaos) ke chain state
+        let chain = { timer: 30, curTime: 30, lastWord: "", suffix: "", used: [], turn: 0, interval: null, players: ['Player 1', 'Player 2'], mode: 'casual' };
 
-        function initWordChain(mode) {
+        /* --- [JS BLOCK 7A] CHAIN REGISTER FLOW [2026-05-27] — autosuggest dari LB, start dengan nama --- */
+        function openChainRegister(mode) {
+            sfx.flip();
+            chain.mode = mode;
+            document.getElementById('modal-modes').style.display = 'none';
+            document.getElementById('chain-mode-display').innerText = mode.toUpperCase();
+            document.getElementById('chain-p1-name').value = '';
+            document.getElementById('chain-p2-name').value = '';
+            document.getElementById('suggestions-p1').style.display = 'none';
+            document.getElementById('suggestions-p2').style.display = 'none';
+            showScreen('screen-chain-register');
+            setTimeout(() => document.getElementById('chain-p1-name').focus(), 400);
+        }
+
+        function handleChainNameInput(val, playerNum) {
+            const box = document.getElementById(`suggestions-p${playerNum}`);
+            if (!val) { box.style.display = 'none'; return; }
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6);
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(m => {
+                    const safeName = m.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div onclick="selectChainName('${safeName}', ${playerNum})" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--accent-color); font-weight:bold;">${m.name} <span style="color:var(--text-secondary); font-size:0.7rem;">(${m.score} Pts)</span></div>`;
+                }).join('');
+                box.style.display = 'block';
+            } else box.style.display = 'none';
+        }
+
+        function selectChainName(name, playerNum) {
+            document.getElementById(`chain-p${playerNum}-name`).value = name;
+            document.getElementById(`suggestions-p${playerNum}`).style.display = 'none';
+        }
+
+        function startChainGame() {
+            const p1 = document.getElementById('chain-p1-name').value.trim();
+            const p2 = document.getElementById('chain-p2-name').value.trim();
+            if (!p1 || !p2) { showPopup("ISI NAMA KEDUA PEMAIN!", "#e67e22"); return; }
+            if (p1.toLowerCase() === p2.toLowerCase()) { showPopup("NAMA P1 & P2 HARUS BEDA!", "#e67e22"); return; }
+            initWordChain(chain.mode, p1, p2);
+        }
+
+        function cancelChainRegister() {
+            showScreen('screen-welcome');
+        }
+
+        /* --- [JS BLOCK 7B] CHAIN GAME — accept names, apply turn-based color theme --- */
+        function initWordChain(mode, p1Name, p2Name) {
             document.getElementById('modal-modes').style.display = 'none';
             showScreen('screen-word-chain');
             chain.timer = mode === 'chaos' ? 10 : 30;
             chain.curTime = chain.timer;
             chain.lastWord = ""; chain.suffix = ""; chain.used = []; chain.turn = 0;
+            chain.players = [p1Name || 'Player 1', p2Name || 'Player 2'];
+            chain.mode = mode;
             document.getElementById('chain-history').innerHTML = "";
             document.getElementById('chain-input').value = "";
+            applyChainTurnTheme(); // NEW [2026-05-27]: apply P1 (merah) theme dari start
             updateChainUI(); renderChainPlayers(); startChainTimer();
             setTimeout(() => document.getElementById('chain-input').focus(), 500);
+        }
+
+        // NEW [2026-05-27]: set class turn-p1 / turn-p2 di screen + game-container untuk smooth color transition
+        function applyChainTurnTheme() {
+            const screen = document.getElementById('screen-word-chain');
+            const gc = document.getElementById('game-container');
+            screen.classList.remove('turn-p1', 'turn-p2');
+            gc.classList.remove('turn-p1', 'turn-p2');
+            const cls = chain.turn === 0 ? 'turn-p1' : 'turn-p2';
+            screen.classList.add(cls);
+            gc.classList.add(cls);
         }
 
         function startChainTimer() {
@@ -1188,9 +1355,13 @@
                     if(Math.round(chain.curTime*10)%10===0) playSfx(200,'sine',0.05);
                 } else document.getElementById('game-container').classList.remove('pulse-red');
                 if(chain.curTime <= 0) {
-                    clearInterval(chain.interval); sfx.wrong();
-                    alert(`PLAYER ${chain.turn + 1} KALAH! WAKTU HABIS.`);
-                    location.reload();
+                    clearInterval(chain.interval);
+                    sfx.wrong();
+                    const gc = document.getElementById('game-container');
+                    gc.classList.remove('pulse-red', 'turn-p1', 'turn-p2');
+                    // CHANGED [2026-05-27]: was alert + location.reload. Sekarang panggil endChainGame
+                    // dengan chain.turn sebagai loser (player yg ngga submit dalam waktu).
+                    endChainGame(chain.turn);
                 }
             }, 100);
         }
@@ -1199,20 +1370,24 @@
             const display = document.getElementById('current-word-display');
             const input = document.getElementById('chain-input');
             const status = document.getElementById('typing-status');
-            if (chain.used.length === 0) { display.innerHTML = "READY?"; input.placeholder = "P1: Ketik kata pembuka..."; }
+            const turnName = (chain.players && chain.players[chain.turn]) || `PLAYER ${chain.turn + 1}`;
+            if (chain.used.length === 0) { display.innerHTML = "READY?"; input.placeholder = `${turnName}: Ketik kata pembuka...`; }
             else {
                 const w = chain.lastWord; const s = chain.suffix; const base = w.substring(0, w.length - 1);
                 display.innerHTML = `${base}<span class="suffix-highlight">${s}</span>`;
-                input.placeholder = `P${chain.turn+1}: Sambung huruf '${s}'...`;
+                input.placeholder = `${turnName}: Sambung huruf '${s}'...`;
             }
-            status.innerText = `GILIRAN PLAYER ${chain.turn + 1}`;
+            status.innerText = `GILIRAN ${turnName.toUpperCase()}`;
             document.getElementById('chain-title').innerText = `MODE: 1V1 ${chain.timer === 10 ? 'CHAOS' : 'CASUAL'}`;
         }
 
         function renderChainPlayers() {
+            const p1 = (chain.players && chain.players[0]) || 'PLAYER 1';
+            const p2 = (chain.players && chain.players[1]) || 'PLAYER 2';
+            // CHANGED [2026-05-27]: tag dapat class .player-1 / .player-2 untuk color theming (merah/biru)
             document.getElementById('chain-players').innerHTML = `
-                <div class="p-tag ${chain.turn === 0 ? 'active' : ''}">PLAYER 1</div>
-                <div class="p-tag ${chain.turn === 1 ? 'active' : ''}">PLAYER 2</div>
+                <div class="p-tag player-1 ${chain.turn === 0 ? 'active' : ''}">${p1.toUpperCase()}</div>
+                <div class="p-tag player-2 ${chain.turn === 1 ? 'active' : ''}">${p2.toUpperCase()}</div>
             `;
         }
 
@@ -1223,23 +1398,89 @@
             if(chain.used.includes(val)) { showPopup("SUDAH DIPAKAI!", "#e67e22"); return; }
 
             sfx.correct();
-            document.getElementById('chain-history').innerHTML += `<div><b>P${chain.turn+1}:</b> ${val}</div>`;
+            const pName = (chain.players && chain.players[chain.turn]) || `P${chain.turn+1}`;
+            document.getElementById('chain-history').innerHTML += `<div><b>${pName}:</b> ${val}</div>`;
             chain.used.push(val); chain.lastWord = val; chain.suffix = val.charAt(val.length - 1);
             chain.turn = (chain.turn + 1) % 2; chain.curTime = chain.timer;
             sessionScore += 10;
-            input.value = ""; updateChainUI(); renderChainPlayers(); input.focus();
+            input.value = "";
+            updateChainUI(); renderChainPlayers();
+            applyChainTurnTheme(); // NEW [2026-05-27]: smooth color transition saat ganti giliran
+            input.focus();
         }
 
         function handleChainKey(e) { if(e.key === 'Enter') submitChain(); }
 
+        /* --- [JS BLOCK 7C] CHAIN END-GAME [2026-05-27] — auto add scores to LB, show result --- */
+        function endChainGame(loserIdx) {
+            const winnerIdx = 1 - loserIdx;
+            const winnerName = (chain.players && chain.players[winnerIdx]) || `Player ${winnerIdx + 1}`;
+            const loserName = (chain.players && chain.players[loserIdx]) || `Player ${loserIdx + 1}`;
+
+            // Auto add to LB: winner +200, loser +50. Kalau nama sudah ada, tambah point ke existing.
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            [{ name: winnerName, points: 200 }, { name: loserName, points: 50 }].forEach(p => {
+                const idx = lb.findIndex(e => e.name.toLowerCase() === p.name.toLowerCase());
+                if (idx !== -1) lb[idx].score += p.points;
+                else lb.push({ name: p.name, score: p.points });
+            });
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+
+            // Simpan winner untuk auto-focus di leaderboard view
+            chain.lastWinner = winnerName;
+
+            // Tampilkan result screen
+            document.getElementById('chain-winner-name').innerText = winnerName.toUpperCase();
+            document.getElementById('chain-loser-name').innerText = loserName.toUpperCase();
+            document.getElementById('chain-result-mode').innerText = (chain.mode || 'casual').toUpperCase();
+            showScreen('screen-chain-result');
+        }
+
+        function chainViewLeaderboard() {
+            const winnerName = chain.lastWinner || ((chain.players && chain.players[0]) || 'Player 1');
+            sessionScore = 0;
+            stopMatchTimer();
+
+            showScreen('screen-result');
+            document.getElementById('save-section').style.display = 'none';
+            document.getElementById('result-status').innerText = 'LEADERBOARD GLOBAL';
+            document.getElementById('final-score').style.display = 'none';
+
+            const section = document.getElementById('leaderboard-section');
+            section.style.display = 'flex';
+            section.classList.add('fixed-layout');
+
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const winnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
+            // startThroneBattle dengan start == end → ngga ada count-up (instant final state), tetap dapat
+            // reshuffle (no-op karena posisi sama) + medal podium + auto-scroll ke winner via scrollToMyPosition.
+            startThroneBattle(lb, winnerName, winnerScore, winnerScore);
+        }
+
+        function backToWelcomeFromChain() {
+            if (chain.interval) clearInterval(chain.interval);
+            sessionScore = 0;
+            stopMatchTimer();
+            const gc = document.getElementById('game-container');
+            gc.classList.remove('pulse-red', 'turn-p1', 'turn-p2');
+            // Reset display final-score yang dimatiin di chainViewLeaderboard supaya ngga break flow Guess Rush
+            document.getElementById('final-score').style.display = '';
+            showScreen('screen-welcome');
+        }
+
         /* --- [JS BLOCK 8] TERMINATION & FINALIZATION --- */
         // terminateMatch dipakai oleh SAMBUNG KATA (mode 1v1) — kalau user pencet AKHIRI di sana
+        // CHANGED [2026-05-27]: was showFinalResult (flow Guess Rush). Sekarang panggil endChainGame
+        // dengan chain.turn sebagai loser (player yg "menyerah" — yg giliran saat tombol dipencet).
         function terminateMatch() {
-            if(confirm("Akhiri pertandingan sekarang? Skor akan disimpan.")) {
-                if(chain.interval) clearInterval(chain.interval);
-                document.getElementById('game-container').classList.remove('pulse-red');
+            if (confirm("Akhiri pertandingan? Pemain dengan giliran saat ini dianggap menyerah.")) {
+                if (chain.interval) clearInterval(chain.interval);
+                const gc = document.getElementById('game-container');
+                gc.classList.remove('pulse-red', 'turn-p1', 'turn-p2');
                 stopMatchTimer();
-                showFinalResult();
+                endChainGame(chain.turn);
             }
         }
 
