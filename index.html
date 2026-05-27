@@ -210,6 +210,51 @@
         #screen-word-chain.turn-p1 #typing-status { color: var(--p1); }
         #screen-word-chain.turn-p2 #typing-status { color: var(--p2); }
 
+        /* --- Combo system [2026-05-27]: track berapa kali pemain saling berbalas, fire emoji escalation --- */
+        .chain-word-big { position: relative; }  /* supaya .combo-float absolute bisa anchor */
+        .chain-combo {
+            font-weight: 900; font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 4px 12px; border-radius: 14px;
+            letter-spacing: 1px; white-space: nowrap;
+            display: inline-block;
+            transition: color 0.3s, background 0.3s, border-color 0.3s, text-shadow 0.3s;
+        }
+        .chain-combo.active { color: #ff9500; background: rgba(255,149,0,0.12); border-color: rgba(255,149,0,0.4); text-shadow: 0 0 8px rgba(255,149,0,0.4); }
+        .chain-combo.hot { color: #ff5500; background: rgba(255,85,0,0.14); border-color: rgba(255,85,0,0.5); text-shadow: 0 0 10px rgba(255,85,0,0.6); }
+        .chain-combo.inferno {
+            color: #ffe000;
+            background: linear-gradient(135deg, rgba(255,61,0,0.28), rgba(255,224,0,0.14));
+            border-color: rgba(255,224,0,0.65);
+            text-shadow: 0 0 14px rgba(255,224,0,0.8), 0 0 24px rgba(255,140,0,0.5);
+        }
+        .chain-combo.bump { animation: combo-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes combo-bump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+        }
+
+        /* Floating combo emoji yang muncul di atas current-word-display tiap submit */
+        .combo-float {
+            position: absolute;
+            left: 50%; top: -8px;
+            font-size: 1.5rem; font-weight: 900;
+            color: #ff7700;
+            text-shadow: 0 0 18px rgba(255,119,0,0.75), 0 0 32px rgba(255,61,0,0.4);
+            pointer-events: none; z-index: 50;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            animation: combo-float-up 1.3s ease-out forwards;
+        }
+        @keyframes combo-float-up {
+            0%   { opacity: 0; transform: translate(-50%, 20px) scale(0.6) rotate(-12deg); }
+            25%  { opacity: 1; transform: translate(-50%, 0) scale(1.18) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -70px) scale(1.3) rotate(8deg); }
+        }
+
         /* --- Chain result screen --- */
         .chain-result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
         .chain-result-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
@@ -682,8 +727,10 @@
 
         <!-- [BLOCK: SCREEN SAMBUNG KATA 1V1] -->
         <div id="screen-word-chain" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 8px;">
                 <span id="chain-title" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG KATA 1V1</span>
+                <!-- NEW [2026-05-27]: combo counter, escalate dengan fire emoji 🔥 → 🔥🔥 → 🔥🔥🔥 (inferno) -->
+                <span id="chain-combo" class="chain-combo">🔥 0</span>
                 <span id="chain-timer-display" style="color:var(--danger); font-weight:bold; font-family:monospace; font-size:1.3rem; text-shadow: 0 0 10px rgba(255,77,77,0.3);">30s</span>
             </div>
             <div id="chain-players" style="margin-bottom: 10px; display: flex; justify-content: center; gap: 10px;"></div>
@@ -715,6 +762,11 @@
                 <div id="chain-loser-name" class="chain-result-name"></div>
                 <div class="chain-result-pts">+50 POIN</div>
             </div>
+
+            <!-- NEW [2026-05-27]: tampilin max combo dicapai selama duel -->
+            <p style="text-align: center; margin: 16px 0 4px; color: #ff7700; font-size: 0.95rem; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255,119,0,0.4);">
+                🔥 COMBO TERTINGGI: <span id="chain-result-combo">0</span> 🔥
+            </p>
 
             <button onclick="chainViewLeaderboard()" style="margin-top: 18px;">LIHAT LEADERBOARD</button>
             <button class="btn-ghost" onclick="backToWelcomeFromChain()">KELUAR KE MENU</button>
@@ -974,6 +1026,7 @@
 
         /* --- [JS BLOCK 5] ROUND INITIALIZATION ENGINE — NEW: 4-CARD DEALING + CATEGORY SPINNER --- */
         function initRound() {
+            lastGameMode = 'guess'; // NEW [2026-05-27]: mark mode supaya playAgain tau rute ke initRound (bukan chain register)
             // Stop any leftover spinner/timer
             if (categorySpinInterval) { clearInterval(categorySpinInterval); categorySpinInterval = null; }
 
@@ -1270,7 +1323,12 @@
 
         /* --- [JS BLOCK 7] SAMBUNG KATA DUEL ENGINE --- */
         // CHANGED [2026-05-27]: tambah `players` (nama dari register screen) + `mode` (casual/chaos) ke chain state
-        let chain = { timer: 30, curTime: 30, lastWord: "", suffix: "", used: [], turn: 0, interval: null, players: ['Player 1', 'Player 2'], mode: 'casual' };
+        // CHANGED [2026-05-27]: tambah `combo` (counter saling berbalas) + `bestCombo` (max selama duel) untuk fire emoji system
+        let chain = { timer: 30, curTime: 30, lastWord: "", suffix: "", used: [], turn: 0, interval: null, players: ['Player 1', 'Player 2'], mode: 'casual', combo: 0, bestCombo: 0 };
+
+        // NEW [2026-05-27]: track game mode terakhir supaya playAgain tau mau ke mana
+        // ('guess' = tebak-tebakan flow / initRound, 'chain' = sambung kata flow / openChainRegister)
+        let lastGameMode = 'guess';
 
         /* --- [JS BLOCK 7A] CHAIN REGISTER FLOW [2026-05-27] — autosuggest dari LB, start dengan nama --- */
         function openChainRegister(mode) {
@@ -1327,8 +1385,12 @@
             chain.lastWord = ""; chain.suffix = ""; chain.used = []; chain.turn = 0;
             chain.players = [p1Name || 'Player 1', p2Name || 'Player 2'];
             chain.mode = mode;
+            chain.combo = 0;        // NEW [2026-05-27]: reset combo counter
+            chain.bestCombo = 0;    // NEW [2026-05-27]: reset best combo tracker
+            lastGameMode = 'chain'; // NEW [2026-05-27]: mark mode supaya playAgain rute balik ke sini
             document.getElementById('chain-history').innerHTML = "";
             document.getElementById('chain-input').value = "";
+            updateComboDisplay(); // NEW [2026-05-27]: reset combo UI ke "🔥 0"
             applyChainTurnTheme(); // NEW [2026-05-27]: apply P1 (merah) theme dari start
             updateChainUI(); renderChainPlayers(); startChainTimer();
             setTimeout(() => document.getElementById('chain-input').focus(), 500);
@@ -1403,10 +1465,61 @@
             chain.used.push(val); chain.lastWord = val; chain.suffix = val.charAt(val.length - 1);
             chain.turn = (chain.turn + 1) % 2; chain.curTime = chain.timer;
             sessionScore += 10;
+            // NEW [2026-05-27]: increment combo + track best, trigger fire animation
+            chain.combo = (chain.combo || 0) + 1;
+            if (chain.combo > (chain.bestCombo || 0)) chain.bestCombo = chain.combo;
+            spawnComboFloat(chain.combo);
+            updateComboDisplay();
+            bumpCombo();
             input.value = "";
             updateChainUI(); renderChainPlayers();
             applyChainTurnTheme(); // NEW [2026-05-27]: smooth color transition saat ganti giliran
             input.focus();
+        }
+
+        /* --- [JS BLOCK 7B2] COMBO SYSTEM [2026-05-27]
+              Counter saling-berbalas dengan fire emoji escalation:
+              0-2: muted gray "🔥 N"  |  3-7: orange "🔥 N"  |  8-14: red "🔥🔥 N"  |  15+: gold "🔥🔥🔥 N" (inferno) --- */
+        function updateComboDisplay() {
+            const el = document.getElementById('chain-combo');
+            if (!el) return;
+            const c = chain.combo || 0;
+            let fire = '🔥';
+            if (c >= 15) fire = '🔥🔥🔥';
+            else if (c >= 8) fire = '🔥🔥';
+            el.innerText = `${fire} ${c}`;
+            el.classList.remove('active', 'hot', 'inferno');
+            if (c >= 15) el.classList.add('inferno');
+            else if (c >= 8) el.classList.add('hot');
+            else if (c >= 3) el.classList.add('active');
+        }
+
+        function bumpCombo() {
+            const el = document.getElementById('chain-combo');
+            if (!el) return;
+            el.classList.remove('bump');
+            void el.offsetWidth; // restart animation
+            el.classList.add('bump');
+            setTimeout(() => el.classList.remove('bump'), 470);
+        }
+
+        function spawnComboFloat(comboCount) {
+            const display = document.getElementById('current-word-display');
+            if (!display) return;
+            let txt = '';
+            if (comboCount >= 15) txt = `💥🔥 INFERNO ×${comboCount} 🔥💥`;
+            else if (comboCount >= 10) txt = `🔥🔥🔥 HOT ×${comboCount}`;
+            else if (comboCount >= 5) txt = `🔥🔥 COMBO ×${comboCount}`;
+            else if (comboCount >= 3) txt = `🔥 COMBO ×${comboCount}`;
+            else if (comboCount >= 2) txt = `✨ ×${comboCount}`;
+            else return; // combo 1 → ngga ada float (terlalu awal)
+            const float = document.createElement('div');
+            float.className = 'combo-float';
+            float.innerText = txt;
+            display.appendChild(float);
+            setTimeout(() => float.remove(), 1350);
+            // Pitch SFX naik dengan combo (capped supaya ngga screech)
+            playSfx(660 + Math.min(comboCount, 25) * 30, 'sine', 0.18);
         }
 
         function handleChainKey(e) { if(e.key === 'Enter') submitChain(); }
@@ -1417,9 +1530,15 @@
             const winnerName = (chain.players && chain.players[winnerIdx]) || `Player ${winnerIdx + 1}`;
             const loserName = (chain.players && chain.players[loserIdx]) || `Player ${loserIdx + 1}`;
 
-            // Auto add to LB: winner +200, loser +50. Kalau nama sudah ada, tambah point ke existing.
             let lb = [];
             try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+
+            // CHANGED [2026-05-27]: track OLD scores SEBELUM add points, supaya bisa count-up animasi
+            // dari oldScore → oldScore + reward di chainViewLeaderboard.
+            const oldWinnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
+            const oldLoserScore = (lb.find(e => e.name.toLowerCase() === loserName.toLowerCase()) || {}).score || 0;
+
+            // Auto add to LB: winner +200, loser +50. Kalau nama sudah ada, tambah point ke existing.
             [{ name: winnerName, points: 200 }, { name: loserName, points: 50 }].forEach(p => {
                 const idx = lb.findIndex(e => e.name.toLowerCase() === p.name.toLowerCase());
                 if (idx !== -1) lb[idx].score += p.points;
@@ -1427,18 +1546,26 @@
             });
             localStorage.setItem('guessRushLB', JSON.stringify(lb));
 
-            // Simpan winner untuk auto-focus di leaderboard view
+            // Simpan untuk auto-focus + count-up animation di leaderboard view
             chain.lastWinner = winnerName;
+            chain.lastLoser = loserName;
+            chain.lastOldWinnerScore = oldWinnerScore;
+            chain.lastOldLoserScore = oldLoserScore;
 
             // Tampilkan result screen
             document.getElementById('chain-winner-name').innerText = winnerName.toUpperCase();
             document.getElementById('chain-loser-name').innerText = loserName.toUpperCase();
             document.getElementById('chain-result-mode').innerText = (chain.mode || 'casual').toUpperCase();
+            // NEW [2026-05-27]: tampilin max combo dicapai
+            document.getElementById('chain-result-combo').innerText = chain.bestCombo || 0;
             showScreen('screen-chain-result');
         }
 
         function chainViewLeaderboard() {
             const winnerName = chain.lastWinner || ((chain.players && chain.players[0]) || 'Player 1');
+            const loserName = chain.lastLoser || ((chain.players && chain.players[1]) || 'Player 2');
+            const oldWS = chain.lastOldWinnerScore || 0;
+            const oldLS = chain.lastOldLoserScore || 0;
             sessionScore = 0;
             stopMatchTimer();
 
@@ -1453,10 +1580,9 @@
 
             let lb = [];
             try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
-            const winnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
-            // startThroneBattle dengan start == end → ngga ada count-up (instant final state), tetap dapat
-            // reshuffle (no-op karena posisi sama) + medal podium + auto-scroll ke winner via scrollToMyPosition.
-            startThroneBattle(lb, winnerName, winnerScore, winnerScore);
+            // CHANGED [2026-05-27]: ganti dari `startThroneBattle(lb, winner, score, score)` (no animation)
+            // ke `startThroneBattleChain` yang animasi count-up untuk BOTH winner (+200) dan loser (+50).
+            startThroneBattleChain(lb, winnerName, loserName, oldWS, oldLS);
         }
 
         function backToWelcomeFromChain() {
@@ -1808,6 +1934,127 @@
                     }
                 }, order * 700);
             });
+        }
+
+        /* --- [JS BLOCK 9F] THRONE BATTLE CHAIN — render leaderboard dengan count-up animasi
+              UNTUK 2 PEMAIN sekaligus (winner +200, loser +50). Dipanggil dari chainViewLeaderboard().
+              Flow: render dengan OLD scores → count-up dual → reshuffle (LB sudah punya new scores) → podium. */
+        function startThroneBattleChain(fullData, winnerName, loserName, oldWinnerScore, oldLoserScore) {
+            const arena = document.getElementById('leaderboard-arena');
+            arena.innerHTML = '';
+
+            // Build initial list dengan OLD scores untuk winner & loser (supaya count-up bisa terlihat)
+            const initialList = fullData.map(e => {
+                let score = e.score;
+                if (e.name.toLowerCase() === winnerName.toLowerCase()) score = oldWinnerScore;
+                else if (e.name.toLowerCase() === loserName.toLowerCase()) score = oldLoserScore;
+                return { name: e.name, score: score };
+            }).sort((a, b) => b.score - a.score).slice(0, 30);
+
+            // Pastikan winner & loser ada di list (kalau LB sebelumnya kosong / mereka baru)
+            if (!initialList.find(e => e.name.toLowerCase() === winnerName.toLowerCase())) {
+                initialList.push({ name: winnerName, score: oldWinnerScore });
+            }
+            if (!initialList.find(e => e.name.toLowerCase() === loserName.toLowerCase())) {
+                initialList.push({ name: loserName, score: oldLoserScore });
+            }
+
+            const ROW_H = 60;
+            initialList.forEach((entry, i) => {
+                const isWinner = entry.name.toLowerCase() === winnerName.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'rank-card';
+                div.id = `card-${entry.name.replace(/\s+/g, '-')}`;
+                div.style.top = `${i * ROW_H}px`;
+                if (isWinner) div.classList.add('player-focus');
+
+                div.innerHTML = `
+                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <div class="rank-pos">#${i + 1}</div>
+                    <div class="rank-info">${entry.name}</div>
+                    <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
+                `;
+                arena.appendChild(div);
+
+                if (i === 0) div.classList.add('gold-rank');
+                else if (i === 1) div.classList.add('silver-rank');
+                else if (i === 2) div.classList.add('bronze-rank');
+            });
+
+            const spacer = document.createElement('div');
+            spacer.style.height = `${initialList.length * ROW_H + 30}px`;
+            spacer.style.pointerEvents = 'none';
+            arena.appendChild(spacer);
+
+            // Scroll ke winner position dulu (kalau winner di posisi rendah, tetap ke-fokus)
+            setTimeout(() => scrollToMyPosition(winnerName), 120);
+
+            // Count-up DUAL (winner +200, loser +50, sync) → reshuffle → podium
+            setTimeout(() => {
+                phaseCountUpDual(
+                    winnerName, oldWinnerScore, oldWinnerScore + 200,
+                    loserName, oldLoserScore, oldLoserScore + 50,
+                    () => {
+                        phaseReshuffle(fullData, winnerName, () => {
+                            phasePodium(fullData);
+                        });
+                    }
+                );
+            }, 900);
+        }
+
+        /* --- [JS BLOCK 9F2] PHASE COUNT-UP DUAL — animasi 2 pemain bersamaan dengan SYNC duration.
+              Winner float `+200` (gold), loser float `+50` (default green). --- */
+        function phaseCountUpDual(winnerName, wStart, wEnd, loserName, lStart, lEnd, done) {
+            const wCard = document.getElementById(`card-${winnerName.replace(/\s+/g, '-')}`);
+            const wPts  = document.getElementById(`pts-${winnerName.replace(/\s+/g, '-')}`);
+            const lCard = document.getElementById(`card-${loserName.replace(/\s+/g, '-')}`);
+            const lPts  = document.getElementById(`pts-${loserName.replace(/\s+/g, '-')}`);
+            if (!wPts || !lPts) { setTimeout(() => done && done(), 200); return; }
+
+            // Floating +200 (gold) di atas winner card
+            if (wCard) {
+                const wFloat = document.createElement('div');
+                wFloat.className = 'points-add-float';
+                wFloat.style.color = 'var(--gold)';
+                wFloat.style.textShadow = '0 0 12px rgba(255,215,0,0.7)';
+                wFloat.innerText = `+200`;
+                wCard.appendChild(wFloat);
+                setTimeout(() => wFloat.remove(), 1500);
+            }
+            // Floating +50 (default green) di atas loser card
+            if (lCard) {
+                const lFloat = document.createElement('div');
+                lFloat.className = 'points-add-float';
+                lFloat.innerText = `+50`;
+                lCard.appendChild(lFloat);
+                setTimeout(() => lFloat.remove(), 1500);
+            }
+
+            const wDelta = wEnd - wStart;
+            const lDelta = lEnd - lStart;
+            // Sync duration: 1800ms untuk kedua count-up selesai bareng (ngga awkward kalau loser selesai duluan)
+            const duration = 1800;
+            const startT = Date.now();
+            let lastSfx = 0;
+
+            function step() {
+                const t = Math.min((Date.now() - startT) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                let wCur = Math.floor(wStart + wDelta * eased);
+                let lCur = Math.floor(lStart + lDelta * eased);
+                if (t >= 1) { wCur = wEnd; lCur = lEnd; }
+                wPts.innerText = wCur;
+                lPts.innerText = lCur;
+                if (Date.now() - lastSfx > 90) { sfx.tick(); lastSfx = Date.now(); }
+                if (t < 1) requestAnimationFrame(step);
+                else {
+                    wPts.innerText = wEnd;
+                    lPts.innerText = lEnd;
+                    setTimeout(() => done && done(), 350);
+                }
+            }
+            requestAnimationFrame(step);
         }
 
         /* --- [JS BLOCK 9D1] SCROLL TO MY POSITION — center current player's card in arena view

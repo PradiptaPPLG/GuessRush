@@ -1,5 +1,20 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - Sambung Kata: Count-Up Dual Animation di Leaderboard (Winner +200, Loser +50) [AI / arahan Pradipta]
+### Added
+- **`startThroneBattleChain(fullData, winnerName, loserName, oldWS, oldLS)`** (JS Block 9F): variant `startThroneBattle` khusus chain mode. Render leaderboard dengan OLD scores untuk winner & loser, lalu trigger `phaseCountUpDual` → reshuffle (LB sudah punya new scores) → podium.
+- **`phaseCountUpDual(winnerName, wStart, wEnd, loserName, lStart, lEnd, done)`** (JS Block 9F2): animasi count-up DUAL — winner card animate dari `oldScore → oldScore+200` dengan floating "+200" gold, loser card animate dari `oldScore → oldScore+50` dengan floating "+50" green. Sync duration 1800ms supaya kedua animasi selesai bareng (ngga awkward kalau loser selesai duluan dengan delta lebih kecil).
+- **`chain.lastLoser`** + **`chain.lastOldWinnerScore`** + **`chain.lastOldLoserScore`**: state baru di `endChainGame` untuk track OLD scores SEBELUM add points, supaya `chainViewLeaderboard` bisa animasi dari old → new.
+
+### Changed
+- **`endChainGame`**: track `oldWinnerScore` & `oldLoserScore` sebelum LB di-update. Simpan ke `chain.lastOld*Score` untuk diambil sama `chainViewLeaderboard`.
+- **`chainViewLeaderboard`**: was panggil `startThroneBattle(lb, winner, score, score)` (delta 0 → no animation), sekarang panggil `startThroneBattleChain(lb, winnerName, loserName, oldWS, oldLS)` → keduanya pemain count-up bersamaan. Winner masih dapat `.player-focus` (highlight gold) + auto-scroll.
+
+### Files
+- `index.html`: JS Block 7C (`endChainGame` + `chainViewLeaderboard` modifikasi), JS Block 9F baru (`startThroneBattleChain`), Block 9F2 baru (`phaseCountUpDual`).
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - Sambung Kata: Register 2-Player + Turn Color (P1 Merah / P2 Biru) + Auto-LB [AI / arahan Pradipta]
 ### Added
 - **Screen `#screen-chain-register`**: register Pemain 1 + Pemain 2 dengan label color-coded (P1 merah, P2 biru), VS divider di tengah, autosuggest dropdown dari leaderboard (`handleChainNameInput` mirip `handleNameInput` di flow Guess Rush). Trigger via klik mode card di modal MODE LAINNYA (was: langsung initWordChain).
