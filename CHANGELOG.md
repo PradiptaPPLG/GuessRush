@@ -1,5 +1,34 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - Ceremony Podium: Flex Layout (Cluster di Center) [AI / arahan Pradipta]
+### Fixed
+- **JUARA 2 & 3 menjauh dari JUARA 1 di wide screen**: Root cause: slot pakai positioning absolute `left: 3vw / right: 3vw / left: 50% margin-left: -15vw` → anchored ke edge viewport. Di layar lebar (laptop landscape), gap antar slot bisa ratusan px → terlihat tidak konsisten / "JUARA 3 jauh amat".
+- **Solusi**: `.ceremony-podium` ganti ke FLEX LAYOUT (`display: flex; justify-content: center; align-items: flex-end; gap: 2vw`). Slot ganti dari `position: absolute` → `position: relative` (flex child). Position lock (right/left/margin-left) dihapus. Sekarang 3 slot dirender berurutan sesuai HTML order (rank-2 → rank-1 → rank-3) dengan gap 2vw, otomatis cluster di tengah viewport apapun ukurannya.
+- **Transform animasi tetap**: `.show` reveal animation (translateY scale) sama persis, transform-origin: bottom center. Spotlight position tidak diubah — masih cover area kiri/tengah/kanan dengan radial gradient soft edges yang naturally illuminate the new clustered positions.
+
+### Files
+- `index.html`: CSS section 16 — `.ceremony-podium`, `.ceremony-slot`, `.ceremony-rank-1/2/3` (positioning).
+- `CHANGELOG.md`: entri ini.
+
+
+## [2026-05-27] - Leaderboard: Player Highlight Gold + Layer Fix + Auto-scroll to Me [AI / arahan Pradipta]
+### Added
+- **Highlight current player NAMA + SKOR jadi GOLD**: CSS rule baru `.player-focus .rank-info, .player-focus .rank-pts { color: var(--gold) !important; text-shadow: 0 0 10px rgba(255,215,0,0.5); }`. Jadi misal user pake nama "Pradipta", baris dengan "Pradipta" + skornya jadi warna kuning emas (bukan putih/cyan default), langsung kelihatan baris mana yang dipakai.
+- **`scrollToMyPosition(myName)`** (JS Block 9D1): hitung posisi current player card berdasarkan `style.top`, scroll arena supaya card-nya center di view. Math.max 0 supaya #1/#2 ngga scroll negatif. Dipanggil 2 kali: (a) setelah initial render di `startThroneBattle` (120ms delay) → fokus ke posisi awal player; (b) setelah reshuffle di `phaseReshuffle` → ikutin posisi BARU setelah rank naik.
+
+### Fixed
+- **Layer bug — `.player-focus` card nembus area button** (kasus user di #7 Maharani, cyan border + glow keliatan di atas MAIN LAGI button). Root cause: arena `position: relative` TANPA z-index → ngga create stacking context → child `.player-focus` (z-index 100) leak ke parent (game-container) stacking dan paint OVER `.lb-actions` (z-index 10). Fix: `#leaderboard-arena { z-index: 1 }` → bikin stacking context lokal. Sekarang `.player-focus` z-index 100 contained di arena, arena overall di z-index 1 < `.lb-actions` z-index 10 → button menang.
+- **Gradient `.lb-actions` terlalu transparent**: was `linear-gradient(transparent, rgba(17,20,27,0.95) 35%)` — top 35% transparan sampai 0.95, jadi card bawah keliatan jelas. Sekarang `linear-gradient(rgba(17,20,27,0.7) 0%, rgba(17,20,27,1) 45%, rgba(17,20,27,1) 100%)` — top 0.7 opacity (was full transparent), full opaque dari 45% → card bawah tertutup dengan rapi tapi tetap ada fade effect halus.
+- **Margin overlap dikurangi**: `.lb-actions { margin-top: -22px → -14px }`, `padding-top: 10px → 14px` — transisi visual lebih bersih.
+
+### Changed
+- **`phasePodium`**: `arena.scrollTo({ top: 0, behavior: 'smooth' })` saat reveal #1 DIHAPUS. Sebelumnya auto-scroll ke top, jadi player di rank rendah ke-bypass. Sekarang scroll diserahkan ke `scrollToMyPosition(myName)` yang dipanggil di startThroneBattle + phaseReshuffle. Player #1 tetap ke top secara natural (math: cardTop 0 → scrollTarget Math.max(0, 26 - arenaH/2) = 0).
+
+### Files
+- `index.html`: CSS section 8 (`.player-focus .rank-info`, `.player-focus .rank-pts`), section 14 (`#leaderboard-arena z-index`, `.lb-actions background`/`margin-top`/`padding-top`). JS Block 9 (`startThroneBattle` — scrollToMyPosition call after spacer), Block 9C (`phaseReshuffle` — scrollToMyPosition di done timeout), Block 9D (`phasePodium` — hapus scrollTo top), Block 9D1 baru (`scrollToMyPosition` function).
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - Leaderboard: Consistent width + Hapus shake/medal animations [AI / arahan Pradipta]
 ### Changed
 - **`.gold-rank`**: hapus `transform: scale(1.02)`. Sebelumnya gold card lebih besar 2% dari silver/bronze — bikin width inconsistent antar podium.
