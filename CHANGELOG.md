@@ -1,5 +1,62 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - Leaderboard: Consistent width + Hapus shake/medal animations [AI / arahan Pradipta]
+### Changed
+- **`.gold-rank`**: hapus `transform: scale(1.02)`. Sebelumnya gold card lebih besar 2% dari silver/bronze — bikin width inconsistent antar podium.
+- **`.player-focus`**: hapus `transform: scale(1.05)`. Current player card sekarang highlight via cyan border + glow box-shadow doang (no scale). Sebelumnya kalau current player kebetulan #3 (bronze), scale 1.05 nya bikin #3 lebih besar dari #1 (gold scale 1.02) → konsistensi rusak.
+- **`.podium-medal`**: `transform: translateY(-50%) scale(0)` + `transition: 0.45s` DIHAPUS. Medal sekarang langsung visible saat card render (no pop-in animation). `.podium-medal.show` jadi no-op.
+- **`phaseCountUp`**: `myCard.classList.add('shake-climb')` + corresponding `.remove()` DIHAPUS. Skor masih count-up smooth + jitter, tapi card ngga shake-shake lagi saat poin naik.
+- **`phaseReshuffle`**: `card.classList.add('rank-jump')` DIHAPUS. Reshuffle posisi tetap pakai `transition: top 1.2s cubic-bezier(...)` (smooth slide), tapi tanpa scale/rotation animation pas naik signifikan.
+- **`phasePodium`**: `card.classList.add('podium-celebrate')` DIHAPUS. Reveal podium hanya nampilin medal (yang sudah static) + SFX, tanpa scale-up animation card.
+
+### Preserved (CSS rules masih ada untuk backward-compat)
+- `.shake-climb` + `@keyframes battle-shake`
+- `.rank-jump` + `@keyframes rank-jump`
+- `.rank-card.podium-celebrate` + `@keyframes podium-celebrate`
+- `.podium-medal.show` (sebagai no-op selector)
+- Class-class ini masih definisi di CSS, cuma JS ngga lagi nambahin. Bisa di-restore dengan add class application kalau dibutuhin lagi.
+
+### Files
+- `index.html`: CSS section 8 (`.gold-rank`, `.player-focus`, `.podium-medal` + `.podium-medal.show`), JS Block 9B/9C/9D (`phaseCountUp`, `phaseReshuffle`, `phasePodium`).
+- `CHANGELOG.md`: entri ini.
+
+
+## [2026-05-27] - Polish: Confetti z-index, Hover button, Leaderboard layout [AI / arahan Pradipta]
+### Fixed
+- **Confetti tidak muncul di ceremony**: `.ceremony-overlay` z-index 99999 → **5000**. Confetti (z-index 9999) dan shockwave (9997) yang di-spawn ke `document.body` jadi MENUMPUK DI ATAS ceremony overlay (sebelumnya ketutup dark bg). Sekarang confetti rain visible saat JUARA 1 reveal.
+- **Tombol KEMBALI KE MENU geser saat hover**: base `button:hover:not(:active)` punya specificity (0,2,1) yang menang dari `.ceremony-close:hover` (0,2,0), jadi `transform: translateX(-50%)` ke-override pure `translateY(-2px)` dan button "loncat" ke kanan (lost centering). Fix: selector ditingkatkan jadi `button.ceremony-close:hover:not(:active)` (specificity 0,3,1) yang menang dari base. Active state juga di-override dengan `button.ceremony-close:active` supaya tetap center saat di-klik.
+- **Leaderboard medal dempet dengan #**: medal `font-size: 1.05rem → 1.25rem` + `left: -4px → 8px` (medal sit DI DALAM card, ngga overhang lagi).
+- **Leaderboard layout cramped**: `.rank-pos` dari `width: 34px` no-padding → `width: 52px; padding-left: 28px; box-sizing: border-box`. Sekarang SEMUA card (podium & non-podium) reserve slot 28px untuk medal di kiri, # selalu align di kolom yang sama. `.rank-info` dapat `padding-left: 6px` untuk gap kecil antara # dan nama. Visual hierarchy [medal | # | name ............ score] jadi lebih breathable.
+
+### Files
+- `index.html`: CSS section 8 (`.rank-pos`, `.rank-info`, `.podium-medal`, `.gold-rank .rank-pos`) + section 16 (`.ceremony-overlay` z-index, `button.ceremony-close:hover:not(:active)`, `button.ceremony-close:active`).
+- `CHANGELOG.md`: entri ini.
+
+
+## [2026-05-27] - Champion Ceremony (Quizizz-style) di AKHIRI PERTANDINGAN [AI / arahan Pradipta]
+### Added
+- **CSS Section 16 — CHAMPION CEREMONY**: Overlay full-viewport (`#ceremony-overlay`) dengan dark radial bg + starfield.
+- **3 Spotlight cones** (`.ceremony-spot-1/2/3`): kerucut cahaya kuning/perak/perunggu dari atas, fade-in pakai keyframes `ceremony-spot-focus` (blur 45→4→10px) — meniru lampu sorot quizizz.
+- **Podium slots** (`.ceremony-slot.ceremony-rank-1/2/3`): tata letak — JUARA 2 kiri, JUARA 1 tengah (terbesar, pedestal 100px), JUARA 3 kanan (pedestal 45px). Masing-masing punya medal 🥇🥈🥉, label "JUARA N", nama, skor, pedestal.
+- **`ceremony-medal-shine`** keyframes: medal emas berdenyut drop-shadow + scale (1 → 1.08) infinite.
+- **`startCeremony()`** (JS Block 11): baca top 3 dari `localStorage.guessRushLB`, jalankan sequence: 0ms overlay → 800ms JUARA 3 (right spotlight, SFX G4) → 3500ms JUARA 2 (left spotlight, SFX C5) → 7000ms JUARA 1 (center spotlight + chord E5-G5-C6 + 3 gelombang confetti + shockwave ring) → 10000ms tombol KEMBALI KE MENU muncul.
+- **`closeCeremony()`** + **`backToMenuAfterCeremony()`**: tutup overlay → reset sessionScore/save-section/leaderboard-section → showScreen welcome.
+- **HTML overlay** `#ceremony-overlay` setelah `#juara-banner` di body.
+
+### Changed
+- **`endMatchFinal()`**: sebelumnya `confirm("Akhiri pertandingan...")` lalu langsung balik ke welcome. Sekarang hanya `startCeremony()` — confirm dialog dihapus karena tombol ini "bukan reset/quit langsung" (arahan Pradipta), tapi pemicu animasi ceremony. Reset & balik menu dilakukan `closeCeremony()` setelah user pencet KEMBALI KE MENU.
+- **`phasePodium()`**: hilangkan trigger JUARA banner + trophy floating + shockwave + confetti saat reveal #1 di leaderboard. Yang tersisa di leaderboard hanya medal `.podium-medal.show` + `.podium-celebrate` (animasi ringan ranking) + `sfx.correct()` + auto-scroll. Animasi heavy "JUARA 1 [NAMA]" terus-terusan SUDAH TIDAK MUNCUL saat skor disimpan — sekarang hanya muncul kalau user pencet AKHIRI PERTANDINGAN.
+
+### Preserved (NOT removed per rules.md)
+- `triggerJuaraPeak()`, `#juara-banner` element + CSS section 15, `.trophy-emoji` CSS — semua TETAP ada. Trophy emoji tidak lagi di-append ke gold card (kreasi DOM dihapus dari phasePodium) tapi class CSS dipertahankan. `triggerJuaraPeak` tidak dipanggil dari mana pun tapi function tetap di-define — bisa dipakai future feature.
+- `spawnConfetti()` dipakai ulang dari startCeremony (climax JUARA 1).
+- `#juara-shockwave` element dipakai ulang dari startCeremony.
+
+### Files
+- `index.html`: CSS section 16 baru (sebelum `</style>`), HTML overlay `#ceremony-overlay` di body, JS — modifikasi `phasePodium` + `endMatchFinal`, tambah JS Block 11 (`startCeremony`/`closeCeremony`/`backToMenuAfterCeremony`).
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - Ekspansi Data: 3 Kategori Baru + Penambahan Item [AI / arahan Pradipta]
 ### Added
 - **Kategori baru HEWAN** (12 item): Singa, Gajah, Kucing (easy) → Harimau, Panda, Kuda (medium) → Komodo, Flamingo, Tapir (hard) → Axolotl, Okapi, Dugong (impossible).

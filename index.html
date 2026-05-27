@@ -104,8 +104,12 @@
 
         /* FIX: inset left/right + tinggi & padding ramping; arena dikasih padding lateral supaya glow tidak kepotong overflow. */
         .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s, transform 0.3s; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
-        .rank-pos { width: 34px; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
-        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; }
+        /* FIX [2026-05-27]: rank-pos lebih lebar (52px) + padding-left 28px → reserved slot untuk medal di SEMUA card
+           (podium & non-podium aligned di kolom yang sama). # ngga lagi dempet medal. box-sizing: border-box supaya
+           padding tidak menambah total width. */
+        .rank-pos { width: 52px; padding-left: 28px; box-sizing: border-box; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        /* FIX [2026-05-27]: padding-left 6px → gap kecil antara # dan nama player supaya ngga dempet */
+        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; padding-left: 6px; }
         .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
 
         /* Special Throne Ranking Glows */
@@ -113,11 +117,15 @@
         @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
         @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
 
-        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; transform: scale(1.02); z-index: 5; }
+        /* FIX [2026-05-27]: transform: scale dihapus dari gold-rank & player-focus supaya semua card podium (1,2,3)
+           punya WIDTH yang konsisten. Sebelumnya: gold scale(1.02), silver baseline, bronze baseline, player-focus scale(1.05).
+           Kalau current player kebetulan #3, dia jadi paling besar (1.05) > gold (1.02) → inconsistent. Sekarang semua = 1.
+           Border + glow + animasi throne masih jalan untuk visual hierarchy. */
+        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; z-index: 5; }
         .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; z-index: 4; }
         .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; z-index: 3; }
 
-        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; transform: scale(1.05); }
+        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; }
         .shake-climb { animation: battle-shake 0.4s infinite; }
         @keyframes battle-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1px) rotate(-0.5deg); } 75% { transform: translateX(1px) rotate(0.5deg); } }
 
@@ -245,9 +253,15 @@
         @keyframes trophy-pop { 0% { transform: translateX(-50%) scale(0) rotate(-240deg); } 60% { transform: translateX(-50%) scale(1.35) rotate(20deg); } 100% { transform: translateX(-50%) scale(1) rotate(0); } }
         @keyframes trophy-float { 0%, 100% { transform: translateX(-50%) translateY(0) scale(1) rotate(-4deg); } 50% { transform: translateX(-50%) translateY(-6px) scale(1.1) rotate(4deg); } }
 
-        .podium-medal { position: absolute; left: -4px; top: 50%; transform: translateY(-50%) scale(0); font-size: 1.05rem; transition: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; filter: drop-shadow(0 0 6px rgba(255,255,255,0.3)); }
-        .podium-medal.show { transform: translateY(-50%) scale(1); }
-        .gold-rank .rank-pos, .silver-rank .rank-pos, .bronze-rank .rank-pos { padding-left: 18px; }
+        /* FIX [2026-05-27]: medal lebih besar (1.05 → 1.25rem) + posisi `left: 8px` (was -4px) supaya
+           sit di dalam card, ngga overhang. Drop-shadow lebih kuat untuk pop-out.
+           CHANGED [2026-05-27]: hapus scale(0) initial + transition pop-in (arahan Pradipta — "ngga usah ada
+           animasi emoji medali 1 2 3"). Medal sekarang langsung visible saat card render, tanpa animasi. */
+        .podium-medal { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 1.25rem; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.35)); }
+        .podium-medal.show { transform: translateY(-50%); } /* no-op, kept untuk backward-compat dengan JS yang masih nambah class .show */
+        /* Redundant sekarang karena .rank-pos sudah punya padding-left 28px default — tapi dipertahankan
+           dengan nilai sama untuk dokumentasi intent "podium butuh ruang untuk medal". */
+        .gold-rank .rank-pos, .silver-rank .rank-pos, .bronze-rank .rank-pos { padding-left: 28px; }
 
         .rank-card.podium-celebrate { animation: podium-celebrate 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes podium-celebrate { 0% { transform: scale(1); } 35% { transform: scale(1.1); box-shadow: 0 0 45px rgba(255,215,0,0.6); } 100% { transform: scale(1.02); } }
@@ -291,6 +305,172 @@
             0% { width: 0; height: 0; opacity: 0.8; border-width: 6px; }
             100% { width: 120vmax; height: 120vmax; opacity: 0; border-width: 1px; }
         }
+
+        /* ============================================================
+           16. CHAMPION CEREMONY — Quizizz-style podium reveal (NEW)
+           Trigger: tombol AKHIRI PERTANDINGAN di leaderboard.
+           Sequence: dark overlay → spotlight #3 (right) → #2 (left) → #1 (center, climax).
+           ============================================================ */
+        .ceremony-overlay {
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at center, #07090f 0%, #000 80%);
+            /* FIX [2026-05-27]: z-index 99999 → 5000 supaya confetti (z-index 9999) & shockwave (9997)
+               yang di-spawn ke document.body bisa render DI ATAS ceremony overlay (bukan ketutup). */
+            z-index: 5000;
+            display: none;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.6s ease-in;
+        }
+        .ceremony-overlay.active { display: block; opacity: 1; }
+
+        .ceremony-bg-stars {
+            position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+            background-image:
+                radial-gradient(1.5px 1.5px at 15% 22%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1px 1px at 78% 38%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(2px 2px at 42% 65%, rgba(255,255,255,0.4), transparent),
+                radial-gradient(1px 1px at 88% 12%, rgba(255,255,255,0.5), transparent),
+                radial-gradient(1.5px 1.5px at 28% 80%, rgba(255,255,255,0.35), transparent),
+                radial-gradient(1px 1px at 62% 90%, rgba(255,255,255,0.4), transparent);
+        }
+
+        /* Spotlight cones — turn on per phase via .active */
+        .ceremony-spot {
+            position: absolute;
+            top: -25vh;
+            width: 65vw;
+            height: 160vh;
+            pointer-events: none;
+            opacity: 0;
+            transform-origin: 50% 0%;
+            will-change: opacity, filter;
+        }
+        .ceremony-spot.active { animation: ceremony-spot-focus 0.95s ease-out forwards; }
+        @keyframes ceremony-spot-focus {
+            0%   { opacity: 0; filter: blur(45px) brightness(0.25); }
+            60%  { opacity: 1; filter: blur(4px) brightness(1.5); }
+            100% { opacity: 1; filter: blur(10px) brightness(1); }
+        }
+        .ceremony-spot-3 {
+            right: -22vw;
+            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(205,127,50,0.6), rgba(205,127,50,0.12) 38%, transparent 72%);
+            transform: rotate(14deg);
+        }
+        .ceremony-spot-2 {
+            left: -22vw;
+            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(220,220,220,0.55), rgba(220,220,220,0.12) 38%, transparent 72%);
+            transform: rotate(-14deg);
+        }
+        .ceremony-spot-1 {
+            left: 50%; transform: translateX(-50%); width: 75vw;
+            background: radial-gradient(ellipse 42% 80% at 50% 3%, rgba(255,215,0,0.75), rgba(255,215,0,0.18) 36%, transparent 70%);
+        }
+
+        .ceremony-podium { position: absolute; inset: 0; pointer-events: none; }
+
+        /* Podium slots — base hidden, reveal via .show */
+        .ceremony-slot {
+            position: absolute; bottom: 8vh;
+            width: 30vw; max-width: 230px; min-width: 110px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.9s ease-out, transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            will-change: opacity, transform;
+        }
+        .ceremony-rank-3 { right: 3vw; transform: translateY(80px) scale(0.82); transform-origin: bottom center; }
+        .ceremony-rank-3.show { opacity: 1; transform: translateY(0) scale(0.82); }
+        .ceremony-rank-2 { left: 3vw; transform: translateY(80px) scale(0.9); transform-origin: bottom center; }
+        .ceremony-rank-2.show { opacity: 1; transform: translateY(0) scale(0.9); }
+        .ceremony-rank-1 { left: 50%; margin-left: -15vw; transform: translateY(120px) scale(0.5); transform-origin: bottom center; }
+        .ceremony-rank-1.show { opacity: 1; transform: translateY(0) scale(1); }
+
+        .ceremony-medal-big {
+            font-size: 4rem; line-height: 1; margin-bottom: 4px;
+            filter: drop-shadow(0 0 18px currentColor);
+        }
+        .ceremony-rank-1 .ceremony-medal-big {
+            font-size: 5.5rem; color: var(--gold);
+            animation: ceremony-medal-shine 2.4s 0.4s infinite ease-in-out;
+        }
+        .ceremony-rank-2 .ceremony-medal-big { color: var(--silver); }
+        .ceremony-rank-3 .ceremony-medal-big { color: var(--bronze); }
+        @keyframes ceremony-medal-shine {
+            0%, 100% { filter: drop-shadow(0 0 18px rgba(255,215,0,0.5)); transform: scale(1); }
+            50%      { filter: drop-shadow(0 0 30px rgba(255,215,0,1)) drop-shadow(0 0 60px rgba(255,215,0,0.5)); transform: scale(1.08); }
+        }
+
+        .ceremony-rank-label {
+            font-size: 0.85rem; font-weight: 900; letter-spacing: 4px;
+            color: rgba(255,255,255,0.85); margin-bottom: 6px;
+        }
+        .ceremony-rank-1 .ceremony-rank-label { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.7); font-size: 1.05rem; letter-spacing: 6px; }
+        .ceremony-rank-2 .ceremony-rank-label { color: var(--silver); }
+        .ceremony-rank-3 .ceremony-rank-label { color: var(--bronze); }
+
+        .ceremony-player-name {
+            font-size: 1.15rem; font-weight: 900; color: white;
+            text-shadow: 0 0 14px rgba(255,255,255,0.45);
+            letter-spacing: 1.5px; margin-top: 5px; word-break: break-word;
+        }
+        .ceremony-rank-1 .ceremony-player-name { font-size: 1.6rem; text-shadow: 0 0 22px rgba(255,215,0,0.7); }
+
+        .ceremony-player-score {
+            font-size: 0.75rem; color: var(--accent-color); font-weight: 700;
+            margin-top: 4px; letter-spacing: 2px;
+        }
+        .ceremony-rank-1 .ceremony-player-score { font-size: 0.9rem; }
+
+        /* Pedestal: tinggi 1 > 2 > 3 (klasik podium) */
+        .ceremony-pedestal {
+            margin-top: 12px; width: 100%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+            border-radius: 8px 8px 0 0;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-bottom: 0;
+        }
+        .ceremony-rank-1 .ceremony-pedestal {
+            height: 100px;
+            background: linear-gradient(180deg, rgba(255,215,0,0.28), rgba(255,215,0,0.04));
+            border-color: rgba(255,215,0,0.4);
+            box-shadow: 0 -10px 30px rgba(255,215,0,0.18);
+        }
+        .ceremony-rank-2 .ceremony-pedestal {
+            height: 70px;
+            background: linear-gradient(180deg, rgba(192,192,192,0.22), rgba(192,192,192,0.04));
+            border-color: rgba(192,192,192,0.4);
+        }
+        .ceremony-rank-3 .ceremony-pedestal {
+            height: 45px;
+            background: linear-gradient(180deg, rgba(205,127,50,0.22), rgba(205,127,50,0.04));
+            border-color: rgba(205,127,50,0.4);
+        }
+
+        .ceremony-close {
+            position: absolute; bottom: 2.5vh; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,242,255,0.12); border: 1px solid rgba(0,242,255,0.5);
+            color: var(--accent-color); padding: 11px 22px;
+            border-radius: 14px; font-weight: 900; font-size: 0.75rem;
+            letter-spacing: 2px; cursor: pointer;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s, background 0.25s, transform 0.25s, box-shadow 0.25s;
+            text-transform: uppercase; width: auto;
+            box-shadow: none; margin: 0;
+        }
+        .ceremony-close.show { opacity: 1; pointer-events: auto; }
+        /* FIX [2026-05-27]: pakai selector `button.ceremony-close` supaya specificity (0,3,1) menang dari
+           base `button:hover:not(:active)` (0,2,1). Kalau ngga, translateX(-50%) hilang saat hover →
+           button geser jauh ke kanan dari center. Active state juga di-override supaya tetap center. */
+        button.ceremony-close:hover:not(:active) {
+            background: rgba(0,242,255,0.25);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 0 18px rgba(0,242,255,0.25);
+        }
+        button.ceremony-close:active {
+            transform: translateX(-50%) translateY(1px);
+            box-shadow: none;
+        }
     </style>
 </head>
 
@@ -302,6 +482,39 @@
     <!-- NEW: PODIUM PEAK OVERLAYS — slam in saat juara 1 di-reveal -->
     <div id="juara-shockwave" class="juara-shockwave"></div>
     <div id="juara-banner" class="juara-banner"></div>
+
+    <!-- NEW [2026-05-27]: CHAMPION CEREMONY — Quizizz-style podium reveal triggered by AKHIRI PERTANDINGAN.
+         Sequence: dark bg + starfield → spotlight #3 (right) → #2 (left) → #1 (center, with confetti+shockwave). -->
+    <div id="ceremony-overlay" class="ceremony-overlay">
+        <div class="ceremony-bg-stars"></div>
+        <div class="ceremony-spot ceremony-spot-3"></div>
+        <div class="ceremony-spot ceremony-spot-2"></div>
+        <div class="ceremony-spot ceremony-spot-1"></div>
+        <div class="ceremony-podium">
+            <div class="ceremony-slot ceremony-rank-2" id="ceremony-slot-2">
+                <div class="ceremony-medal-big">🥈</div>
+                <div class="ceremony-rank-label">JUARA 2</div>
+                <div class="ceremony-player-name"></div>
+                <div class="ceremony-player-score"></div>
+                <div class="ceremony-pedestal"></div>
+            </div>
+            <div class="ceremony-slot ceremony-rank-1" id="ceremony-slot-1">
+                <div class="ceremony-medal-big">🥇</div>
+                <div class="ceremony-rank-label">JUARA 1</div>
+                <div class="ceremony-player-name"></div>
+                <div class="ceremony-player-score"></div>
+                <div class="ceremony-pedestal"></div>
+            </div>
+            <div class="ceremony-slot ceremony-rank-3" id="ceremony-slot-3">
+                <div class="ceremony-medal-big">🥉</div>
+                <div class="ceremony-rank-label">JUARA 3</div>
+                <div class="ceremony-player-name"></div>
+                <div class="ceremony-player-score"></div>
+                <div class="ceremony-pedestal"></div>
+            </div>
+        </div>
+        <button class="ceremony-close" onclick="closeCeremony()">KEMBALI KE MENU</button>
+    </div>
 
     <div id="game-container">
         <!-- [BLOCK: SCREEN WELCOME] -->
@@ -1024,9 +1237,103 @@
             initRound();
         }
 
-        // NEW: AKHIRI PERTANDINGAN (dari leaderboard) — kembali ke welcome screen
+        // CHANGED [2026-05-27]: AKHIRI PERTANDINGAN bukan lagi confirm + quit langsung.
+        // Sekarang trigger CHAMPION CEREMONY (3→2→1 reveal Quizizz-style).
+        // Reset & balik ke welcome screen dilakukan oleh closeCeremony() setelah ceremony selesai.
         function endMatchFinal() {
-            if (!confirm("Akhiri pertandingan dan kembali ke menu utama?")) return;
+            startCeremony();
+        }
+
+        /* --- [JS BLOCK 11] CHAMPION CEREMONY — Quizizz-style podium reveal
+              Phase 1: dark overlay + starfield masuk
+              Phase 2 (800ms): spotlight kanan menyala → reveal JUARA 3
+              Phase 3 (3500ms): spotlight kiri menyala → reveal JUARA 2
+              Phase 4 (7000ms): spotlight tengah menyala → reveal JUARA 1 + confetti + shockwave + chord
+              Phase 5 (10000ms): tombol KEMBALI KE MENU muncul --- */
+        function startCeremony() {
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const top3 = [...lb].sort((a, b) => b.score - a.score).slice(0, 3);
+
+            // Edge case: leaderboard kosong → skip ceremony langsung balik menu
+            if (top3.length === 0) { backToMenuAfterCeremony(); return; }
+
+            const overlay = document.getElementById('ceremony-overlay');
+            const closeBtn = document.querySelector('.ceremony-close');
+
+            // RESET: hapus state dari ceremony sebelumnya (kalau pernah dipanggil)
+            document.querySelectorAll('.ceremony-slot').forEach(s => s.classList.remove('show'));
+            document.querySelectorAll('.ceremony-spot').forEach(s => s.classList.remove('active'));
+            if (closeBtn) closeBtn.classList.remove('show');
+
+            // FILL: isi nama + skor per slot. Slot tanpa data → hide.
+            for (let r = 1; r <= 3; r++) {
+                const entry = top3[r - 1];
+                const slot = document.getElementById(`ceremony-slot-${r}`);
+                if (!slot) continue;
+                if (entry) {
+                    slot.querySelector('.ceremony-player-name').innerText = entry.name.toUpperCase();
+                    slot.querySelector('.ceremony-player-score').innerText = `${entry.score} POIN`;
+                    slot.style.visibility = 'visible';
+                } else {
+                    slot.style.visibility = 'hidden';
+                }
+            }
+
+            overlay.classList.add('active');
+
+            // PHASE — JUARA 3 (right) @ 800ms
+            if (top3[2]) {
+                setTimeout(() => {
+                    const spot = document.querySelector('.ceremony-spot-3');
+                    const slot = document.getElementById('ceremony-slot-3');
+                    if (spot) spot.classList.add('active');
+                    if (slot) slot.classList.add('show');
+                    playSfx(392, 'sine', 0.5); // G4
+                }, 800);
+            }
+
+            // PHASE — JUARA 2 (left) @ 3500ms
+            if (top3[1]) {
+                setTimeout(() => {
+                    const spot = document.querySelector('.ceremony-spot-2');
+                    const slot = document.getElementById('ceremony-slot-2');
+                    if (spot) spot.classList.add('active');
+                    if (slot) slot.classList.add('show');
+                    playSfx(523, 'sine', 0.55); // C5
+                }, 3500);
+            }
+
+            // PHASE — JUARA 1 (center, climax) @ 7000ms
+            setTimeout(() => {
+                if (!top3[0]) return;
+                const spot = document.querySelector('.ceremony-spot-1');
+                const slot = document.getElementById('ceremony-slot-1');
+                if (spot) spot.classList.add('active');
+                if (slot) slot.classList.add('show');
+                // Chord C-major naik E-G-C
+                playSfx(659, 'sine', 0.6);                                  // E5
+                setTimeout(() => playSfx(784, 'sine', 0.6), 150);           // G5
+                setTimeout(() => playSfx(1047, 'sine', 0.8), 300);          // C6
+                // Confetti 3 gelombang
+                spawnConfetti(0); spawnConfetti(450); spawnConfetti(900);
+                // Reuse shockwave ring overlay yang sudah ada
+                const sw = document.getElementById('juara-shockwave');
+                if (sw) { sw.classList.remove('go'); void sw.offsetWidth; sw.classList.add('go'); }
+            }, 7000);
+
+            // Close button muncul setelah climax
+            setTimeout(() => { if (closeBtn) closeBtn.classList.add('show'); }, 10000);
+        }
+
+        function closeCeremony() {
+            const overlay = document.getElementById('ceremony-overlay');
+            if (overlay) overlay.classList.remove('active');
+            backToMenuAfterCeremony();
+        }
+
+        // Helper — reset state & balik ke welcome screen (dipakai closeCeremony & edge case empty LB)
+        function backToMenuAfterCeremony() {
             sessionScore = 0;
             stopMatchTimer();
             document.getElementById('save-section').style.display = 'block';
@@ -1140,7 +1447,8 @@
             myCard.appendChild(floatEl);
             setTimeout(() => floatEl.remove(), 1200);
 
-            myCard.classList.add('shake-climb');
+            // REMOVED [2026-05-27]: myCard.classList.add('shake-climb') — arahan Pradipta "ngga usah ada animasi shake
+            // tiap penambahan point". Class .shake-climb + @keyframes battle-shake masih ada di CSS untuk backward-compat.
             const duration = Math.min(2200, 700 + delta * 5);
             const startT = Date.now();
             let lastSfx = 0;
@@ -1154,7 +1462,7 @@
                 myPts.innerText = cur;
                 if (Date.now() - lastSfx > 70) { sfx.tick(); lastSfx = Date.now(); }
                 if (t < 1) requestAnimationFrame(step);
-                else { myCard.classList.remove('shake-climb'); myPts.innerText = endScore; setTimeout(() => done && done(), 350); }
+                else { myPts.innerText = endScore; setTimeout(() => done && done(), 350); }
             }
             requestAnimationFrame(step);
         }
@@ -1185,11 +1493,12 @@
                 else if (idx === 1) card.classList.add('silver-rank');
                 else if (idx === 2) card.classList.add('bronze-rank');
 
-                // Kalau kartu naik signifikan, kasih jump animation
+                // REMOVED [2026-05-27]: rank-jump animation pas card naik signifikan — arahan Pradipta
+                // "ngga usah ada animasi shake ... pas naik". Reshuffle tetap pakai transition top:1.2s
+                // (smooth slide), tapi tanpa rotation/jump animation. Class .rank-jump + @keyframes
+                // rank-jump masih di CSS untuk backward-compat.
                 if (oldTop - newTop > 30) {
                     anyChanged = true;
-                    setTimeout(() => card.classList.add('rank-jump'), 280);
-                    setTimeout(() => card.classList.remove('rank-jump'), 1100);
                 }
             });
 
@@ -1207,23 +1516,18 @@
                 const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
                 if (!card) return;
                 setTimeout(() => {
-                    card.classList.add('podium-celebrate');
+                    // REMOVED [2026-05-27]: card.classList.add('podium-celebrate') — arahan Pradipta "ngga usah
+                    // ada animasi emoji medali 1 2 3" (animasi scale-up card waktu reveal medal). Medal sekarang
+                    // sudah always-visible via CSS (transform: translateY(-50%) tanpa scale animation). Class
+                    // .show masih ditambah ke medal sebagai no-op untuk backward-compat.
                     const medal = card.querySelector('.podium-medal');
                     if (medal) medal.classList.add('show');
                     playSfx(500 + order * 250, 'sine', 0.35);
                     if (rankIdx === 0) {
-                        // PEAK: trophy 🏆, shockwave, JUARA banner, confetti
-                        triggerJuaraPeak(entry.name);
-                        let trophy = card.querySelector('.trophy-emoji');
-                        if (!trophy) {
-                            trophy = document.createElement('span');
-                            trophy.className = 'trophy-emoji';
-                            trophy.innerText = '🏆';
-                            card.appendChild(trophy);
-                        }
-                        setTimeout(() => trophy.classList.add('revealed'), 80);
+                        // CHANGED [2026-05-27]: JUARA banner + trophy floating + shockwave + confetti
+                        // DIPINDAH ke startCeremony() yang di-trigger AKHIRI PERTANDINGAN.
+                        // Di sini hanya medal podium-celebrate (indikator ranking ringan) + auto-scroll.
                         sfx.correct();
-                        // Auto-scroll ke top supaya juara 1 keliatan
                         const arena = document.getElementById('leaderboard-arena');
                         if (arena) arena.scrollTo({ top: 0, behavior: 'smooth' });
                     }
