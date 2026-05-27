@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Rush - SMK Throne Battle</title>
+    <style>
+        /* ============================================================
+           1. ROOT VARIABLES & THEME CONFIGURATION
+           Mengatur palet warna utama (Cyberpunk/Dark Theme).
+           ============================================================ */
+        :root {
+            --gold: #ffd700;
+            --bg-color: #05070a;
+            --card-bg: #11141b;
+            --accent-color: #00f2ff;
+            --accent-hover: #00d1db;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --correct: #2ecc71;
+            --present: #f1c40f;
+            --wrong: #21262d;
+            --silver: #e0e0e0;
+            --bronze: #cd7f32;
+            --danger: #ff4d4d;
+        }
+
+        /* ============================================================
+           2. GLOBAL RESET & BASE STYLES
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; position: relative; }
+
+        /* ============================================================
+           3. BACKGROUND VISUAL EFFECTS (AMBIENT ORBS)
+           ============================================================ */
+        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: 0; pointer-events: none; }
+        .orb-1 { width: 400px; height: 400px; background: rgba(0, 242, 255, 0.15); top: -100px; left: -100px; animation: moveOrb 15s infinite alternate ease-in-out; }
+        .orb-2 { width: 450px; height: 450px; background: rgba(123, 44, 255, 0.15); bottom: -150px; right: -150px; animation: moveOrb 20s infinite alternate-reverse ease-in-out; }
+        @keyframes moveOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(100px, 100px) scale(1.1); } }
+
+        /* ============================================================
+           4. MAIN CONTAINER & SCREEN TRANSITIONS
+           ============================================================ */
+        #game-container {
+            width: 95%; max-width: 500px; background: rgba(17, 20, 27, 0.85); padding: 2rem; border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0, 242, 255, 0.05); text-align: center; position: relative; z-index: 1;
+            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes screenIn { from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+
+        /* ============================================================
+           5. CINEMATIC INTRO STYLES
+           ============================================================ */
+        .intro-stage { position: relative; padding: 20px 0; overflow: hidden; margin: -2rem; padding-top: 4rem; padding-bottom: 3rem; border-radius: 32px; }
+        .intro-grid { position: absolute; inset: -50px; background-image: linear-gradient(rgba(0, 242, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%); opacity: 0; animation: intro-grid-in 1.5s 0.2s forwards; pointer-events: none; }
+        @keyframes intro-grid-in { to { opacity: 1; } }
+        .intro-scanline { position: absolute; top: 0; left: -10%; width: 120%; height: 6px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 25px var(--accent-color); animation: intro-scanline 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; pointer-events: none; z-index: 5; }
+        @keyframes intro-scanline { 0% { top: 0%; opacity: 1; } 80% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        .intro-title { font-size: 3.5rem; font-weight: 900; letter-spacing: 8px; line-height: 1; margin: 0; display: flex; justify-content: center; gap: 15px; text-transform: uppercase; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.2)); }
+        .intro-word.guess { animation: intro-slam-left 0.8s 0.5s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; opacity: 0; color: white; }
+        .intro-word.rush { animation: intro-slam-right 0.8s 0.7s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; opacity: 0; background: linear-gradient(180deg, var(--accent-color), #00d1db); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @keyframes intro-slam-left { 0% { opacity: 0; transform: translateX(-150px) skewX(-30deg) scale(1.5); filter: blur(20px); } 100% { opacity: 1; transform: translateX(0) skewX(0) scale(1); filter: blur(0); } }
+        @keyframes intro-slam-right { 0% { opacity: 0; transform: translateX(150px) skewX(30deg) scale(1.5); filter: blur(20px); } 100% { opacity: 1; transform: translateX(0) skewX(0) scale(1); filter: blur(0); } }
+        .intro-underline { height: 4px; width: 70%; margin: 15px auto 0; background: linear-gradient(90deg, transparent, var(--accent-color), #ff3d8a, var(--accent-color), transparent); transform: scaleX(0); animation: intro-underline 0.8s 1.3s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        @keyframes intro-underline { to { transform: scaleX(1); } }
+
+        /* ============================================================
+           6. UI COMPONENTS: BUTTONS & INPUTS
+           ============================================================ */
+        button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
+        button:active { transform: translateY(3px); box-shadow: 0 1px 0 #00b8c4; }
+        button:hover:not(:active) { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+
+        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.3); color: var(--accent-color); box-shadow: none; }
+        .btn-ghost:hover { background: rgba(0,242,255,0.1); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+
+        .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3); padding: 8px 16px; margin-top: 15px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: 0.3s; width: auto; display: inline-block; }
+        .btn-danger:hover { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 15px rgba(255,77,77,0.3); }
+
+        /* ============================================================
+           7. WORDLE INPUT GRID
+           ============================================================ */
+        #word-input-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 30px 0; }
+        .letter-box { width: 42px; height: 55px; background: rgba(0,0,0,0.2); border: 2px solid #30363d; color: white; font-size: 1.8rem; font-weight: bold; text-align: center; text-transform: uppercase; outline: none; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px; }
+        .letter-box:focus { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); background: rgba(0, 242, 255, 0.05); }
+        .letter-box.correct { background: var(--correct); border-color: var(--correct); transform: translateY(-5px); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
+        .letter-box.present { background: var(--present); border-color: var(--present); color: #000; }
+        .letter-box.absent { background: #21262d; border-color: #21262d; opacity: 0.5; }
+        .pop-anim { animation: letterPop 0.2s ease-out; }
+        @keyframes letterPop { 0% { transform: scale(0.8); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* ============================================================
+           8. LEADERBOARD & THRONE BATTLE ANIMATIONS
+           ============================================================ */
+        #leaderboard-arena { position: relative; margin-top: 15px; height: 350px; overflow-y: auto; padding-bottom: 80px; scroll-behavior: smooth; }
+        #leaderboard-arena::-webkit-scrollbar { width: 5px; }
+        #leaderboard-arena::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        /* FIX: inset left/right + tinggi & padding ramping; arena dikasih padding lateral supaya glow tidak kepotong overflow. */
+        .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s, transform 0.3s; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
+        .rank-pos { width: 34px; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; }
+        .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
+
+        /* Special Throne Ranking Glows */
+        @keyframes throne-gold { 0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); } }
+        @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
+        @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
+
+        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; transform: scale(1.02); z-index: 5; }
+        .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; z-index: 4; }
+        .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; z-index: 3; }
+
+        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; transform: scale(1.05); }
+        .shake-climb { animation: battle-shake 0.4s infinite; }
+        @keyframes battle-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1px) rotate(-0.5deg); } 75% { transform: translateX(1px) rotate(0.5deg); } }
+
+        /* RESTORED: FIXED ACTION FOOTER (Sticky Button) */
+        .fixed-lb-footer { position: sticky; bottom: -2px; left: 0; right: 0; background: linear-gradient(transparent, #0a0e14 60%); padding: 20px 10px; display: none; z-index: 200; transform: translateY(10px); }
+
+        /* ============================================================
+           9. CARD REVEAL UI
+           ============================================================ */
+        .card-container { perspective: 1000px; width: 150px; height: 210px; margin: 20px auto; }
+        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 24px; border: 3px solid var(--accent-color); background: #1c2128; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        .card-front { background: radial-gradient(circle at center, #1c2128, #11141b); }
+        .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, #1c2128, #11141b); }
+        .card-shuffle { animation: cardShuffle 0.15s infinite alternate; }
+        @keyframes cardShuffle { from { transform: translate(-3px, -3px) rotate(-1deg); } to { transform: translate(3px, 3px) rotate(1deg); } }
+
+        /* ============================================================
+           10. SAMBUNG KATA (WORD CHAIN) UI
+           ============================================================ */
+        .chain-word-big { font-size: 3rem; font-weight: 900; color: white; text-transform: uppercase; margin: 20px 0; letter-spacing: 3px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
+        .suffix-highlight { color: var(--accent-color); text-decoration: underline; text-underline-offset: 10px; text-decoration-thickness: 3px; }
+        .p-tag { padding: 8px 18px; border-radius: 25px; background: #1c2128; font-size: 0.75rem; font-weight: 900; border: 2px solid transparent; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin: 0 6px; display: inline-block; color: var(--text-secondary); }
+        .p-tag.active { border-color: var(--accent-color); box-shadow: 0 0 20px var(--accent-color); transform: scale(1.15); color: white; background: rgba(0,242,255,0.1); }
+        .chain-history { height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 20px; padding: 15px; font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column-reverse; gap: 6px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+
+        .pulse-red { animation: screen-pulse 0.5s infinite; }
+        @keyframes screen-pulse { 0% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 80px rgba(255,77,77,0.3); } 100% { box-shadow: inset 0 0 0px var(--danger); } }
+
+        /* ============================================================
+           11. MODALS & NOTIFICATIONS
+           ============================================================ */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(15px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .mode-selection-container { max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        .mode-card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; text-align: left; position: relative; overflow: hidden; }
+        .mode-card:hover { border-color: var(--accent-color); transform: scale(1.03); background: rgba(0, 242, 255, 0.05); }
+        .mode-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,242,255,0.1); color: var(--accent-color); padding: 3px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
+
+        #msg-popup { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; border-radius: 15px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #fff; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        .points-pop { animation: pointsPop 0.3s ease-out; }
+        @keyframes pointsPop { 0% { transform: scale(1.3); color: var(--accent-color); } 100% { transform: scale(1); } }
+
+        /* ============================================================
+           12. NEW: 4-CARD DEALING DECK & CATEGORY SPINNER (REVEAL)
+           Replaces single-card reveal. Cards dealt L→R, category text
+           spins through random labels then locks on the real category.
+           ============================================================ */
+        .category-spinner-wrap { background: rgba(0,0,0,0.45); border: 1px solid rgba(0,242,255,0.2); border-radius: 18px; padding: 14px 16px; margin: 8px auto 18px; max-width: 360px; overflow: hidden; position: relative; }
+        .category-spinner-label { font-size: 0.6rem; color: var(--text-secondary); letter-spacing: 2.5px; font-weight: 900; margin-bottom: 6px; }
+        .category-spinner-text { font-size: 1.25rem; font-weight: 900; color: var(--accent-color); letter-spacing: 1.5px; transition: 0.05s; min-height: 1.5rem; }
+        .category-spinner-text.locked { color: var(--gold); text-shadow: 0 0 18px rgba(255,215,0,0.7); animation: locked-pulse 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes locked-pulse { 0% { transform: scale(1.5); letter-spacing: 5px; } 70% { transform: scale(0.95); } 100% { transform: scale(1); letter-spacing: 1.5px; } }
+
+        /* min-height ditambah supaya kartu yang scale-up tidak nabrak dinding atas. */
+        .deck-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 18px auto 12px; min-height: 220px; perspective: 1200px; max-width: 380px; padding: 30px 5px 20px; }
+        .deck-card { width: 75px; height: 110px; background: linear-gradient(135deg, #1c2128, #0a0e14); border-radius: 14px; border: 2px solid var(--accent-color); box-shadow: 0 10px 25px rgba(0,0,0,0.55), inset 0 0 12px rgba(0,242,255,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.3s, box-shadow 0.3s; opacity: 0; transform: translateX(-280px) rotate(-8deg); }
+        .deck-card.dealt { animation: deal-card 0.55s cubic-bezier(0.2, 0.85, 0.3, 1.05) forwards; }
+        @keyframes deal-card { 0% { opacity: 0; transform: translateX(-280px) rotate(-12deg) scale(0.8); } 60% { opacity: 1; transform: translateX(10px) rotate(2deg) scale(1.04); } 100% { opacity: 1; transform: translateX(0) rotate(0deg) scale(1); } }
+        .deck-card.idle-bob { animation: card-bob 2.4s ease-in-out infinite; }
+        /* FIX: opacity:1 di tiap keyframe — kalau tidak, base opacity:0 dari .deck-card kembali aktif saat idle-bob menggantikan deal-card. */
+        @keyframes card-bob { 0%, 100% { opacity: 1; transform: translateY(0) rotate(0); } 50% { opacity: 1; transform: translateY(-4px) rotate(0.5deg); } }
+        .deck-card:hover:not(.flipped):not(.disabled) { transform: translateY(-12px) scale(1.06); box-shadow: 0 18px 35px rgba(0,242,255,0.35); border-color: var(--gold); }
+        .deck-card .card-q { font-size: 2.4rem; color: var(--accent-color); font-weight: 900; text-shadow: 0 0 14px rgba(0,242,255,0.5); }
+        .deck-card.flipped { background: linear-gradient(135deg, rgba(255,215,0,0.12), #11141b); border-color: var(--gold); box-shadow: 0 0 35px rgba(255,215,0,0.45); animation: flip-reveal 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        /* FIX: opacity:1 supaya kartu yang dipilih tetap visible setelah animasi flip-reveal selesai. */
+        @keyframes flip-reveal { 0% { opacity: 1; transform: rotateY(0) scale(1); } 50% { opacity: 1; transform: rotateY(90deg) scale(1.1); } 100% { opacity: 1; transform: rotateY(0) scale(1.08) translateY(-6px); } }
+        /* FIX: pakai filter (bukan opacity) supaya tidak ketimpa animation forwards/active. */
+        .deck-card.disabled:not(.flipped) { pointer-events: none; filter: grayscale(0.85) brightness(0.45); }
+
+        /* NEW: animasi DROP (kartu yang tidak dipilih jatuh ke bawah) */
+        .deck-card.dropping { animation: card-drop 0.7s cubic-bezier(0.55, 0.05, 0.7, 0.4) forwards !important; pointer-events: none; z-index: 1; }
+        @keyframes card-drop {
+            0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+            30% { opacity: 1; transform: translateY(20px) rotate(calc(var(--drop-rot, 15deg) * 0.4)) scale(0.95); }
+            100% { opacity: 0; transform: translateY(350px) rotate(var(--drop-rot, 25deg)) scale(0.55); }
+        }
+
+        /* NEW: animasi CHOSEN (kartu dipilih membesar + flip) — override flip-reveal */
+        .deck-card.chosen { z-index: 30; animation: card-chosen-flip 0.95s cubic-bezier(0.34,1.56,0.64,1) forwards !important; }
+        @keyframes card-chosen-flip {
+            0% { opacity: 1; transform: rotateY(0) scale(1); }
+            35% { opacity: 1; transform: rotateY(90deg) scale(1.25); }
+            70% { opacity: 1; transform: rotateY(0deg) scale(1.7); }
+            100% { opacity: 1; transform: rotateY(0deg) scale(1.55); }
+        }
+        .deck-card .card-content { display: none; text-align: center; padding: 4px; }
+        .deck-card.flipped .card-content { display: block; animation: fade-in 0.4s 0.32s both; }
+        .deck-card.flipped .card-q { display: none; }
+        @keyframes fade-in { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+        .deck-card .card-diff { font-size: 0.6rem; font-weight: 900; color: var(--gold); letter-spacing: 1.2px; }
+        .deck-card .card-pts { font-size: 0.85rem; font-weight: 900; color: white; margin-top: 4px; }
+        .deck-card .card-cat-hint { font-size: 0.55rem; color: var(--text-secondary); margin-top: 3px; letter-spacing: 1px; }
+
+        .deck-hint { font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 2px; font-weight: 900; margin-top: 4px; min-height: 18px; }
+        .deck-hint.flash { color: var(--accent-color); animation: deck-hint-flash 1s infinite; }
+        @keyframes deck-hint-flash { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* ============================================================
+           13. NEW: MATCH TIMER BAR (IN-GAME, 2 MENIT)
+           ============================================================ */
+        .timer-wrap { margin: 4px 0 14px; }
+        .timer-meta { display: flex; justify-content: space-between; font-family: monospace; font-size: 0.7rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 5px; letter-spacing: 1px; }
+        .timer-meta .t-label { color: var(--accent-color); }
+        .timer-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+        .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #7b2cff); width: 100%; box-shadow: 0 0 10px rgba(0,242,255,0.4); transition: width 0.2s linear; }
+        .timer-bar-fill.warning { background: linear-gradient(90deg, #f1c40f, #e67e22); box-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .timer-bar-fill.danger { background: linear-gradient(90deg, var(--danger), #ff3d8a); box-shadow: 0 0 15px rgba(255,77,77,0.6); animation: bar-pulse 0.5s infinite alternate; }
+        @keyframes bar-pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+        /* ============================================================
+           14. NEW: FIXED LEADERBOARD LAYOUT, PODIUM SHOWCASE, CONFETTI
+           Hanya area leaderboard yang scroll. Tombol fixed di bawah.
+           ============================================================ */
+        #leaderboard-section.fixed-layout { display: flex !important; flex-direction: column; height: 72vh; max-height: 620px; min-height: 460px; }
+        #leaderboard-section.fixed-layout .lb-header { flex-shrink: 0; }
+        /* FIX: padding-top 40px supaya trophy 🏆 (top: -32px relative ke card #1) tidak terpotong overflow. */
+        #leaderboard-section.fixed-layout #leaderboard-arena { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; height: auto; padding: 40px 4px 20px; min-height: 0; position: relative; }
+        #leaderboard-section.fixed-layout .lb-actions { flex-shrink: 0; padding-top: 10px; background: linear-gradient(transparent, rgba(17,20,27,0.95) 35%); margin-top: -22px; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+
+        /* Trophy lebih besar + dramatic. top diturunkan -32px supaya pas dengan padding-top arena 40px. */
+        .trophy-emoji { position: absolute; top: -32px; left: 50%; transform: translateX(-50%) scale(0); font-size: 2.2rem; filter: drop-shadow(0 0 22px rgba(255,215,0,0.9)) drop-shadow(0 0 8px rgba(255,215,0,0.6)); pointer-events: none; z-index: 50; }
+        .trophy-emoji.revealed { animation: trophy-pop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, trophy-float 2.2s 0.85s infinite ease-in-out; }
+        @keyframes trophy-pop { 0% { transform: translateX(-50%) scale(0) rotate(-240deg); } 60% { transform: translateX(-50%) scale(1.35) rotate(20deg); } 100% { transform: translateX(-50%) scale(1) rotate(0); } }
+        @keyframes trophy-float { 0%, 100% { transform: translateX(-50%) translateY(0) scale(1) rotate(-4deg); } 50% { transform: translateX(-50%) translateY(-6px) scale(1.1) rotate(4deg); } }
+
+        .podium-medal { position: absolute; left: -4px; top: 50%; transform: translateY(-50%) scale(0); font-size: 1.05rem; transition: 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); pointer-events: none; filter: drop-shadow(0 0 6px rgba(255,255,255,0.3)); }
+        .podium-medal.show { transform: translateY(-50%) scale(1); }
+        .gold-rank .rank-pos, .silver-rank .rank-pos, .bronze-rank .rank-pos { padding-left: 18px; }
+
+        .rank-card.podium-celebrate { animation: podium-celebrate 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes podium-celebrate { 0% { transform: scale(1); } 35% { transform: scale(1.1); box-shadow: 0 0 45px rgba(255,215,0,0.6); } 100% { transform: scale(1.02); } }
+        .rank-card.rank-jump { animation: rank-jump 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes rank-jump { 0% { transform: scale(1) rotate(0); } 30% { transform: scale(1.08) rotate(-1.5deg); box-shadow: 0 0 35px rgba(0,242,255,0.5); } 60% { transform: scale(1.04) rotate(1deg); } 100% { transform: scale(1.05) rotate(0); } }
+
+        /* Confetti pakai position:fixed supaya bebas terbang ke luar bounds leaderboard-arena. */
+        .confetti-piece { position: fixed; width: 9px; height: 14px; pointer-events: none; opacity: 0; top: 50vh; left: 50vw; border-radius: 2px; z-index: 9999; }
+        .confetti-piece.fly { animation: confetti-fly 2s cubic-bezier(0.15, 0.6, 0.55, 0.95) forwards; }
+        @keyframes confetti-fly { 0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1.2); } 100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(900deg) scale(0.3); } }
+
+        .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.1s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+
+        .btn-end-match { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.35); padding: 12px 16px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.25s; width: 100%; letter-spacing: 1.5px; font-size: 0.78rem; text-transform: uppercase; box-shadow: none; margin: 0; }
+        .btn-end-match:hover { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 18px rgba(255,77,77,0.35); transform: translateY(-1px); }
+
+        /* ============================================================
+           15. NEW: JUARA BANNER PEAK & SHOCKWAVE
+           Overlay full-viewport yang slam in saat #1 di-reveal.
+           ============================================================ */
+        .juara-banner { position: fixed; top: 18vh; left: 50%; transform: translateX(-50%) scale(0); font-size: 2rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b; pointer-events: none; z-index: 9998; opacity: 0; white-space: nowrap; text-align: center; }
+        .juara-banner.show { animation: juara-slam 0.85s cubic-bezier(0.34,1.56,0.64,1) forwards, juara-pulse 1.6s 0.85s 3 ease-in-out, juara-out 0.5s 5.5s forwards; }
+        @keyframes juara-slam {
+            0%   { opacity: 0; transform: translateX(-50%) scale(3) rotate(-15deg); filter: blur(20px); }
+            60%  { opacity: 1; transform: translateX(-50%) scale(0.85) rotate(2deg); filter: blur(0); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); filter: blur(0); }
+        }
+        @keyframes juara-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b; }
+            50% { transform: translateX(-50%) scale(1.08); text-shadow: 0 0 35px rgba(255,215,0,1), 0 0 70px rgba(255,215,0,0.8), 0 4px 0 #b8860b; }
+        }
+        @keyframes juara-out {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(-40px); }
+        }
+
+        .juara-shockwave { position: fixed; top: 50vh; left: 50vw; width: 0; height: 0; border-radius: 50%; border: 4px solid var(--gold); opacity: 0; pointer-events: none; z-index: 9997; transform: translate(-50%, -50%); }
+        .juara-shockwave.go { animation: shockwave 0.9s ease-out forwards; }
+        @keyframes shockwave {
+            0% { width: 0; height: 0; opacity: 0.8; border-width: 6px; }
+            100% { width: 120vmax; height: 120vmax; opacity: 0; border-width: 1px; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- [BLOCK: GLOBAL OVERLAYS] -->
+    <div id="msg-popup"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <!-- NEW: PODIUM PEAK OVERLAYS — slam in saat juara 1 di-reveal -->
+    <div id="juara-shockwave" class="juara-shockwave"></div>
+    <div id="juara-banner" class="juara-banner"></div>
+
+    <div id="game-container">
+        <!-- [BLOCK: SCREEN WELCOME] -->
+        <div id="screen-welcome" class="screen active">
+            <div class="intro-stage">
+                <div class="intro-grid"></div>
+                <div class="intro-scanline"></div>
+                <h1 class="intro-title">
+                    <span class="intro-word guess">GUESS</span>
+                    <span class="intro-word rush">RUSH</span>
+                </h1>
+                <div class="intro-underline"></div>
+                <p style="color: var(--text-secondary); margin: 25px 0; font-size: 0.85rem; letter-spacing: 1.5px; font-weight: 600;">ARENA TAKLUKAN ALAT TEKNIK SMK</p>
+                <div style="max-width: 300px; margin: 0 auto; display: flex; flex-direction: column; gap: 5px;">
+                    <button onclick="enterArena()">MASUK ARENA</button>
+                    <button class="btn-ghost" onclick="openMoreModes()">MODE LAINNYA</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [BLOCK: SCREEN REVEAL] - NEW 4-CARD DECK + CATEGORY SPINNER -->
+        <div id="screen-reveal" class="screen">
+            <h2 style="margin-bottom: 8px; font-size: 1.3rem; letter-spacing: 2px; font-weight: 900;">SPIN KATEGORI</h2>
+            <div class="category-spinner-wrap">
+                <div class="category-spinner-label">KATEGORI ARENA</div>
+                <div id="category-spinner-text" class="category-spinner-text">— — —</div>
+            </div>
+            <div id="deck-row" class="deck-row"></div>
+            <p id="deck-hint" class="deck-hint">SEDANG MEMBAGIKAN KARTU...</p>
+            <button id="btn-continue" style="display:none;" onclick="goToGame()">MULAI MISI</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN GUESS RUSH GAMEPLAY] - NEW: 2-MIN TIMER BAR, NO AKHIRI (pindah ke leaderboard) -->
+        <div id="screen-game" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span id="game-category-label" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">MODUL: ALAT TEKNIK</span>
+                <span id="stat-points-label" style="background: rgba(0,242,255,0.12); border: 1px solid rgba(0,242,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 900;">0 POIN</span>
+            </div>
+            <!-- NEW: TIMER BAR 2 MENIT -->
+            <div class="timer-wrap">
+                <div class="timer-meta">
+                    <span class="t-label">WAKTU PERTANDINGAN</span>
+                    <span id="timer-text">01:00</span>
+                </div>
+                <div class="timer-bar-track"><div id="timer-bar" class="timer-bar-fill"></div></div>
+            </div>
+            <div id="hint-list" style="margin: 10px 0; min-height: 90px; max-height: 120px; overflow-y: auto; text-align: left; font-size: 0.9rem;"></div>
+            <div id="word-input-area"></div>
+            <div style="display: flex; gap: 10px;">
+                <button style="flex: 2;" onclick="checkGuess()">SUBMIT KATA</button>
+                <button id="btn-next-hint" style="flex: 1; background: #30363d; color: white; box-shadow: 0 4px 0 #1c2128;" onclick="nextHint()">HINT</button>
+            </div>
+            <!-- MENYERAH: akhiri match ronde ini, simpan skor, masuk leaderboard -->
+            <div class="btn-surrender" onclick="surrender()" style="margin-top:12px; cursor:pointer; color: var(--text-secondary); font-size: 0.75rem; letter-spacing: 1px; text-align:center; font-weight: 700;">MENYERAH (PASRAH)</div>
+        </div>
+
+        <!-- [BLOCK: SCREEN SAMBUNG KATA 1V1] -->
+        <div id="screen-word-chain" class="screen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span id="chain-title" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG KATA 1V1</span>
+                <span id="chain-timer-display" style="color:var(--danger); font-weight:bold; font-family:monospace; font-size:1.3rem; text-shadow: 0 0 10px rgba(255,77,77,0.3);">30s</span>
+            </div>
+            <div id="chain-players" style="margin-bottom: 10px; display: flex; justify-content: center; gap: 10px;"></div>
+            <div id="current-word-display" class="chain-word-big">---</div>
+            <div class="chain-history" id="chain-history"></div>
+            <input type="text" id="chain-input" style="width:100%; padding:16px; border-radius:18px; background:rgba(0,0,0,0.3); border:2px solid #30363d; color:white; outline:none; text-align:center; font-size:1.2rem; margin-bottom: 15px; transition: 0.3s;" placeholder="Ketik kata..." onkeydown="handleChainKey(event)" autocomplete="off">
+            <p id="typing-status" style="font-size:0.85rem; color:var(--accent-color); font-weight: 900; height:24px; margin-top:-10px; margin-bottom:12px; opacity:1; text-align: center;">Giliran Player 1</p>
+            <div style="display:flex; flex-direction: column; gap:10px;">
+                <button onclick="submitChain()">KIRIM KATA</button>
+                <!-- RESTORED: AKHIRI PERTANDINGAN -->
+                <button class="btn-danger" style="margin:0;" onclick="terminateMatch()">AKHIRI PERTANDINGAN</button>
+                <button class="btn-ghost" style="flex:1; margin:0;" onclick="location.reload()">KELUAR KE MENU</button>
+            </div>
+        </div>
+
+        <!-- [BLOCK: SCREEN RESULTS & LEADERBOARD] - NEW: FIXED LAYOUT, hanya leaderboard yg scroll, MAIN LAGI + AKHIRI PERTANDINGAN -->
+        <div id="screen-result" class="screen">
+            <h2 id="result-status" style="letter-spacing: 2px; font-weight: 900; font-size: 1.5rem; color: white;">MISI SELESAI!</h2>
+            <div style="font-size: 5rem; color: var(--accent-color); margin: 10px 0; font-weight: 900; text-shadow: 0 0 30px rgba(0, 242, 255, 0.3);" id="final-score">0</div>
+
+            <div id="save-section">
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 10px;">Simpan pencapaianmu:</p>
+                <div class="input-group" style="position: relative;">
+                    <div id="suggestions" style="display:none; position: absolute; bottom: 100%; left: 0; right: 0; background:rgba(28, 33, 40, 0.98); border-radius:15px; padding:10px; border:1px solid #333; z-index: 100; margin-bottom: 10px; text-align: left; max-height: 180px; overflow-y: auto;"></div>
+                    <input type="text" id="player-name" placeholder="Masukkan namamu..." oninput="handleNameInput(this.value)" maxlength="15" autocomplete="off" style="padding: 18px; border-radius: 18px; font-size: 1.2rem; width:100%; background: rgba(0,0,0,0.2); border: 2px solid #333; color: white; outline: none; text-align: center;">
+                </div>
+                <button onclick="finalizeScore()" style="margin-top: 15px;">AMANKAN SKOR</button>
+            </div>
+
+            <!-- LEADERBOARD: FIXED LAYOUT — hanya area arena yg scroll -->
+            <div id="leaderboard-section" style="display:none;">
+                <div class="lb-header">
+                    <h3 style="margin-bottom: 12px; color: var(--accent-color); font-weight: 900; font-size: 1.2rem; letter-spacing: 1px;">SMK GLOBAL RANKING</h3>
+                    <input type="text" class="search-input" style="width:100%; padding:12px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid #444; color:white; margin-bottom:12px;" placeholder="Cari penantang..." oninput="searchPlayer(this.value)">
+                </div>
+
+                <div id="leaderboard-arena"></div>
+
+                <!-- FIXED: MAIN LAGI + AKHIRI PERTANDINGAN (di akhir, sesuai logic baru) -->
+                <div class="lb-actions">
+                    <button onclick="playAgain()" style="background: var(--accent-color); color: black; font-weight: 900; box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4); margin: 0;">MAIN LAGI</button>
+                    <button class="btn-end-match" onclick="endMatchFinal()">AKHIRI PERTANDINGAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [BLOCK: MODAL MODE SELECTION] -->
+    <div id="modal-modes" class="modal-overlay" onclick="this.style.display='none'">
+        <div class="mode-selection-container" onclick="event.stopPropagation()">
+            <h2 style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">MODE LAINNYA</h2>
+            <div class="mode-card" onclick="initWordChain('casual')">
+                <div class="mode-badge">30 DETIK</div>
+                <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
+            </div>
+            <div class="mode-card" onclick="initWordChain('chaos')">
+                <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
+                <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================
+           1. CORE AUDIO & SFX ENGINE
+           ============================================================ */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, t, d) {
+            try {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = t;
+                o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start();
+                o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
+        }
+        const sfx = {
+            correct: () => { playSfx(600, 'sine', 0.2); setTimeout(() => playSfx(900, 'sine', 0.3), 100); },
+            wrong: () => { playSfx(200, 'sawtooth', 0.3); },
+            hint: () => { playSfx(800, 'sine', 0.1); },
+            flip: () => { playSfx(400, 'sine', 0.2); },
+            tick: () => { playSfx(1000, 'sine', 0.05); }
+        };
+
+        /* ============================================================
+           2. DATABASE: PENGETAHUAN UMUM (4 kategori × 4 difficulty × 3 item = 48 item)
+           Kategori: NEGARA, PROFESI, BUAH, BARANG
+           ============================================================ */
+        const itemsData = [
+            /* === NEGARA === */
+            { name: "Italia", difficulty: "easy", category: "NEGARA", hints: ["Negara berbentuk sepatu boot.", "Ibukotanya Roma.", "Terkenal pizza dan pasta."] },
+            { name: "India", difficulty: "easy", category: "NEGARA", hints: ["Negara dengan Sungai Gangga.", "Ibukotanya New Delhi.", "Negara asal Taj Mahal."] },
+            { name: "Mesir", difficulty: "easy", category: "NEGARA", hints: ["Negara di benua Afrika.", "Memiliki Piramida Giza.", "Dilewati Sungai Nil."] },
+            { name: "Jepang", difficulty: "medium", category: "NEGARA", hints: ["Negara matahari terbit.", "Ibukotanya Tokyo.", "Asal anime dan sushi."] },
+            { name: "Brazil", difficulty: "medium", category: "NEGARA", hints: ["Negara terbesar di Amerika Selatan.", "Hutan Amazon ada di sini.", "Asal pesepak bola Ronaldo."] },
+            { name: "Jerman", difficulty: "medium", category: "NEGARA", hints: ["Negara di Eropa Tengah.", "Ibukotanya Berlin.", "Asal mobil BMW dan Mercedes."] },
+            { name: "Indonesia", difficulty: "hard", category: "NEGARA", hints: ["Negara kepulauan terbesar.", "Memiliki 17 ribu pulau.", "Ibukotanya Jakarta."] },
+            { name: "Argentina", difficulty: "hard", category: "NEGARA", hints: ["Negara asal Lionel Messi.", "Ibukotanya Buenos Aires.", "Terkenal tarian tango."] },
+            { name: "Australia", difficulty: "hard", category: "NEGARA", hints: ["Negara sekaligus benua.", "Hewan khasnya kanguru.", "Ibukotanya Canberra."] },
+            { name: "Mozambik", difficulty: "impossible", category: "NEGARA", hints: ["Negara di Afrika Tenggara.", "Berbatasan dengan Tanzania.", "Bekas jajahan Portugal."] },
+            { name: "Slovenia", difficulty: "impossible", category: "NEGARA", hints: ["Negara kecil di Eropa Tengah.", "Pecahan negara Yugoslavia.", "Ibukotanya Ljubljana."] },
+            { name: "Bangladesh", difficulty: "impossible", category: "NEGARA", hints: ["Negara tetangga India dan Myanmar.", "Ibukotanya Dhaka.", "Berbatasan dengan Teluk Benggala."] },
+
+            /* === PROFESI === */
+            { name: "Guru", difficulty: "easy", category: "PROFESI", hints: ["Mengajar di kelas.", "Pekerjaan yang mulia.", "Membentuk generasi penerus."] },
+            { name: "Dokter", difficulty: "easy", category: "PROFESI", hints: ["Mengobati orang sakit.", "Bekerja di rumah sakit.", "Memakai jas putih."] },
+            { name: "Petani", difficulty: "easy", category: "PROFESI", hints: ["Bekerja di sawah atau kebun.", "Menanam padi atau sayur.", "Memanen hasil bumi."] },
+            { name: "Penyanyi", difficulty: "medium", category: "PROFESI", hints: ["Profesi di dunia musik.", "Tampil di panggung konser.", "Suaranya merdu."] },
+            { name: "Tentara", difficulty: "medium", category: "PROFESI", hints: ["Bertugas menjaga negara.", "Memakai seragam loreng.", "Dilatih di militer."] },
+            { name: "Pelukis", difficulty: "medium", category: "PROFESI", hints: ["Membuat karya seni rupa.", "Memakai kuas dan cat.", "Karyanya bisa sangat mahal."] },
+            { name: "Arsitek", difficulty: "hard", category: "PROFESI", hints: ["Merancang bangunan.", "Membuat gambar desain rumah.", "Berkolaborasi dengan kontraktor."] },
+            { name: "Notaris", difficulty: "hard", category: "PROFESI", hints: ["Membuat akta resmi.", "Bekerja di kantor hukum.", "Mengurus jual beli tanah."] },
+            { name: "Pengacara", difficulty: "hard", category: "PROFESI", hints: ["Membela klien di sidang.", "Mendalami ilmu hukum.", "Memakai toga hitam."] },
+            { name: "Antropolog", difficulty: "impossible", category: "PROFESI", hints: ["Mempelajari budaya manusia.", "Sering riset ke pedalaman.", "Meneliti suku dan tradisi."] },
+            { name: "Apoteker", difficulty: "impossible", category: "PROFESI", hints: ["Bekerja di apotek.", "Meracik dan menyalurkan obat.", "Mendalami ilmu farmasi."] },
+            { name: "Sosiolog", difficulty: "impossible", category: "PROFESI", hints: ["Mempelajari masyarakat.", "Meneliti interaksi sosial.", "Sering pakai kuesioner."] },
+
+            /* === BUAH === */
+            { name: "Apel", difficulty: "easy", category: "BUAH", hints: ["Buah favorit dokter.", "Warnanya merah atau hijau.", "Logo brand teknologi terkenal."] },
+            { name: "Pisang", difficulty: "easy", category: "BUAH", hints: ["Buah kuning panjang.", "Favorit monyet.", "Bisa dimakan langsung tanpa dikupas pisau."] },
+            { name: "Mangga", difficulty: "easy", category: "BUAH", hints: ["Buah tropis manis.", "Saat muda bisa untuk rujak.", "Varietas populer: arumanis."] },
+            { name: "Pepaya", difficulty: "medium", category: "BUAH", hints: ["Daging buah oranye.", "Baik untuk pencernaan.", "Banyak biji hitam di tengahnya."] },
+            { name: "Semangka", difficulty: "medium", category: "BUAH", hints: ["Buah besar berkulit hijau bergaris.", "Isinya merah berair segar.", "Banyak biji hitam."] },
+            { name: "Durian", difficulty: "medium", category: "BUAH", hints: ["Raja buah tropis.", "Berduri tajam di luar.", "Baunya menyengat khas."] },
+            { name: "Manggis", difficulty: "hard", category: "BUAH", hints: ["Berkulit ungu tebal.", "Daging putih segmen seperti bawang.", "Disebut ratu buah."] },
+            { name: "Rambutan", difficulty: "hard", category: "BUAH", hints: ["Buah berambut merah.", "Daging putih bening.", "Banyak di Asia Tenggara."] },
+            { name: "Belimbing", difficulty: "hard", category: "BUAH", hints: ["Bentuknya bintang lima.", "Rasanya asam segar.", "Bagus untuk jus."] },
+            { name: "Matoa", difficulty: "impossible", category: "BUAH", hints: ["Buah khas Papua.", "Rasa campuran kelengkeng dan rambutan.", "Berkulit cokelat halus."] },
+            { name: "Bisbul", difficulty: "impossible", category: "BUAH", hints: ["Buah berbulu halus seperti beludru.", "Disebut juga apel beludru.", "Daging buah manis bertepung."] },
+            { name: "Kawista", difficulty: "impossible", category: "BUAH", hints: ["Kulitnya keras seperti batok.", "Khas Madura dan Jawa.", "Sering diolah jadi sirup."] },
+
+            /* === BARANG === */
+            { name: "Meja", difficulty: "easy", category: "BARANG", hints: ["Tempat menaruh barang.", "Memiliki empat kaki.", "Permukaannya datar."] },
+            { name: "Kursi", difficulty: "easy", category: "BARANG", hints: ["Tempat duduk.", "Punya sandaran punggung.", "Pasangan dari meja."] },
+            { name: "Buku", difficulty: "easy", category: "BARANG", hints: ["Berisi tulisan dan gambar.", "Sumber ilmu pengetahuan.", "Dibaca lembar per lembar."] },
+            { name: "Lemari", difficulty: "medium", category: "BARANG", hints: ["Tempat menyimpan baju.", "Memiliki pintu yang bisa dibuka.", "Biasanya bahan kayu atau besi."] },
+            { name: "Cermin", difficulty: "medium", category: "BARANG", hints: ["Memantulkan bayangan.", "Wajib ada di kamar.", "Permukaan halus mengkilap."] },
+            { name: "Karpet", difficulty: "medium", category: "BARANG", hints: ["Alas lantai berbulu.", "Membuat lantai hangat.", "Banyak motif dan warna."] },
+            { name: "Saklar", difficulty: "hard", category: "BARANG", hints: ["Menyalakan dan mematikan lampu.", "Terpasang di tembok.", "Berhubungan dengan arus listrik."] },
+            { name: "Sangkar", difficulty: "hard", category: "BARANG", hints: ["Tempat burung peliharaan.", "Berbentuk kerangkeng.", "Biasanya digantung."] },
+            { name: "Pigura", difficulty: "hard", category: "BARANG", hints: ["Bingkai foto atau lukisan.", "Digantung di dinding.", "Pelindung gambar di dalamnya."] },
+            { name: "Centong", difficulty: "impossible", category: "BARANG", hints: ["Sendok besar khusus nasi.", "Selalu ada di rice cooker.", "Bahannya plastik atau kayu."] },
+            { name: "Kemoceng", difficulty: "impossible", category: "BARANG", hints: ["Alat pembersih debu.", "Berbulu warna-warni.", "Bertangkai panjang."] },
+            { name: "Tatakan", difficulty: "impossible", category: "BARANG", hints: ["Alas gelas atau piring.", "Mencegah noda di meja.", "Bentuknya bulat atau kotak kecil."] }
+        ];
+
+        // Spinner fake categories (visual saja) — campur real + decoy supaya tidak gampang ditebak
+        const SPINNER_FAKE_CATEGORIES = [
+            "NEGARA", "PROFESI", "BUAH", "BARANG",
+            "HEWAN", "OLAHRAGA", "MAKANAN", "MINUMAN",
+            "WARNA", "TUMBUHAN", "TRANSPORTASI", "ALAT MUSIK",
+            "PROVINSI", "IBUKOTA", "PULAU", "GUNUNG",
+            "ARTIS", "KLUB BOLA", "BENUA"
+        ];
+
+        /* --- [JS BLOCK 3] GLOBAL SESSION STATE --- */
+        let sessionScore = 0, currentItem = null, currentHintIndex = 0;
+        let weights = JSON.parse(localStorage.getItem('guessRushWeights')) || itemsData.map(() => 100);
+        const difficultyPoints = { easy: 50, medium: 80, hard: 120, impossible: 200 };
+
+        // NEW: 4-card deck state & match timer state
+        let deckCards = [];        // [{ item, idx, difficulty, points }, ...]
+        let deckLocked = false;     // user sudah pilih kartu
+        let categorySpinInterval = null;
+        // CHANGED: 120s → 60s (1 menit)
+        let matchTimer = { total: 60, remaining: 60, interval: null, running: false };
+
+        /* --- [JS BLOCK 4] NAVIGATION & CORE UI --- */
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(id);
+            if(target) target.classList.add('active');
+        }
+
+        function enterArena() { sfx.correct(); initRound(); }
+        function openMoreModes() { sfx.flip(); document.getElementById('modal-modes').style.display = 'flex'; }
+
+        function showPopup(t, c) {
+            const p = document.getElementById('msg-popup');
+            p.innerText = t; p.style.background = c; p.style.display = 'block';
+            setTimeout(() => p.style.display = 'none', 1800);
+        }
+
+        /* --- [JS BLOCK 5] ROUND INITIALIZATION ENGINE — NEW: 4-CARD DEALING + CATEGORY SPINNER --- */
+        function initRound() {
+            // Stop any leftover spinner/timer
+            if (categorySpinInterval) { clearInterval(categorySpinInterval); categorySpinInterval = null; }
+
+            // 1) Pick primary item via weights (menentukan KATEGORI ronde ini)
+            let totalW = weights.reduce((a, b) => a + b, 0);
+            let random = Math.random() * totalW;
+            let primaryIdx = 0;
+            for (let i = 0; i < weights.length; i++) { random -= weights[i]; if (random <= 0) { primaryIdx = i; break; } }
+            const primary = itemsData[primaryIdx];
+            const chosenCategory = primary.category;
+
+            // 2) Build 4 kartu dari kategori sama — 1 per difficulty kalau bisa
+            const diffOrder = ["easy", "medium", "hard", "impossible"];
+            deckCards = [];
+            diffOrder.forEach(diff => {
+                const pool = itemsData.map((it, idx) => ({ it, idx }))
+                    .filter(({ it }) => it.category === chosenCategory && it.difficulty === diff);
+                if (pool.length > 0) {
+                    const pick = pool[Math.floor(Math.random() * pool.length)];
+                    deckCards.push({ item: pick.it, idx: pick.idx, difficulty: pick.it.difficulty, points: difficultyPoints[pick.it.difficulty] });
+                }
+            });
+            // Fill kalau kategori kekurangan difficulty — ambil random dari sisa kategori
+            while (deckCards.length < 4) {
+                const pool = itemsData.map((it, idx) => ({ it, idx }))
+                    .filter(({ it, idx }) => it.category === chosenCategory && !deckCards.find(c => c.idx === idx));
+                if (pool.length === 0) break;
+                const pick = pool[Math.floor(Math.random() * pool.length)];
+                deckCards.push({ item: pick.it, idx: pick.idx, difficulty: pick.it.difficulty, points: difficultyPoints[pick.it.difficulty] });
+            }
+            // Fallback super-rare: kalau tetap < 4, pad dengan primary
+            while (deckCards.length < 4) {
+                deckCards.push({ item: primary, idx: primaryIdx, difficulty: primary.difficulty, points: difficultyPoints[primary.difficulty] });
+            }
+            // Shuffle posisi biar bukan selalu easy → impossible
+            for (let i = deckCards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deckCards[i], deckCards[j]] = [deckCards[j], deckCards[i]];
+            }
+
+            deckLocked = false;
+            currentItem = null;
+            currentHintIndex = 0;
+            document.getElementById('btn-continue').style.display = 'none';
+
+            // 3) Render kartu (face-down) dan animasikan dealing satu-per-satu L→R
+            const row = document.getElementById('deck-row');
+            row.innerHTML = '';
+            deckCards.forEach((c, i) => {
+                const el = document.createElement('div');
+                el.className = 'deck-card';
+                el.dataset.idx = i;
+                el.innerHTML = `
+                    <span class="card-q">?</span>
+                    <div class="card-content">
+                        <div class="card-diff">${c.difficulty.toUpperCase()}</div>
+                        <div class="card-pts">${c.points} PT</div>
+                        <div class="card-cat-hint">${c.item.category}</div>
+                    </div>`;
+                el.addEventListener('click', () => pickCard(i));
+                row.appendChild(el);
+            });
+
+            // 4) Set hint state + reset spinner text
+            const hint = document.getElementById('deck-hint');
+            hint.innerText = 'SEDANG MEMBAGIKAN KARTU...';
+            hint.classList.remove('flash');
+            const spinEl = document.getElementById('category-spinner-text');
+            spinEl.classList.remove('locked');
+            spinEl.innerText = '— — —';
+
+            showScreen('screen-reveal');
+
+            // 5) Trigger deal animation per kartu (cascade)
+            const cards = row.querySelectorAll('.deck-card');
+            cards.forEach((el, i) => {
+                setTimeout(() => {
+                    el.classList.add('dealt');
+                    sfx.flip();
+                }, 200 + i * 280);
+            });
+
+            // 6) Start kategori spinner (jalan sampai semua kartu kebagi)
+            const totalDealTime = 200 + cards.length * 280 + 350;
+            startCategorySpinner(chosenCategory, totalDealTime);
+
+            // Setelah dealing selesai → idle bob + flash hint
+            setTimeout(() => {
+                cards.forEach(el => el.classList.add('idle-bob'));
+                hint.innerText = 'PILIH SATU KARTU!';
+                hint.classList.add('flash');
+            }, totalDealTime + 200);
+        }
+
+        /* --- [JS BLOCK 5B] CATEGORY SPINNER — random text cycle, lock pada kategori target --- */
+        function startCategorySpinner(targetCategory, duration) {
+            const el = document.getElementById('category-spinner-text');
+            const startT = Date.now();
+            let nextDelay = 50;
+
+            const tick = () => {
+                const elapsed = Date.now() - startT;
+                const progress = Math.min(elapsed / duration, 1);
+                // Slow down ke akhir (cubic ease-out)
+                nextDelay = 50 + Math.pow(progress, 3) * 350;
+
+                if (elapsed < duration) {
+                    const pool = SPINNER_FAKE_CATEGORIES;
+                    let pick;
+                    do { pick = pool[Math.floor(Math.random() * pool.length)]; } while (pick === el.innerText);
+                    el.innerText = pick;
+                    if (Math.random() < 0.4) playSfx(1200, 'square', 0.03);
+                    categorySpinInterval = setTimeout(tick, nextDelay);
+                } else {
+                    el.innerText = targetCategory;
+                    el.classList.add('locked');
+                    playSfx(900, 'sine', 0.25);
+                    setTimeout(() => playSfx(1300, 'sine', 0.35), 120);
+                    categorySpinInterval = null;
+                }
+            };
+            tick();
+        }
+
+        /* --- [JS BLOCK 5C] PICK CARD — user click salah satu kartu --- */
+        function pickCard(deckIdx) {
+            if (deckLocked) return;
+            const cards = document.querySelectorAll('#deck-row .deck-card');
+            if (!cards[deckIdx]) return;
+            deckLocked = true;
+
+            // PICK: kartu terpilih → enlarge+flip. Kartu lain → drop ke bawah dengan rotasi acak.
+            cards.forEach((el, i) => {
+                el.classList.remove('idle-bob');
+                if (i === deckIdx) {
+                    el.classList.add('flipped', 'chosen');
+                } else {
+                    el.style.setProperty('--drop-rot', `${(Math.random() - 0.5) * 80}deg`);
+                    el.classList.add('dropping');
+                }
+            });
+
+            const chosen = deckCards[deckIdx];
+            currentItem = chosen.item;
+            currentItem.idx = chosen.idx;
+            sfx.correct();
+
+            // Update hint
+            const hint = document.getElementById('deck-hint');
+            hint.classList.remove('flash');
+            hint.innerText = `${chosen.difficulty.toUpperCase()} • ${chosen.points} POIN`;
+
+            setTimeout(() => {
+                const btn = document.getElementById('btn-continue');
+                btn.style.display = 'block';
+                btn.classList.add('pop-anim');
+            }, 700);
+        }
+
+        function goToGame() {
+            document.getElementById('stat-points-label').innerText = `${sessionScore} POIN`;
+            document.getElementById('game-category-label').innerText = `KATEGORI: ${currentItem.category}`;
+            document.getElementById('hint-list').innerHTML = "";
+            generateInputBoxes(); addHint();
+            showScreen('screen-game');
+            startMatchTimer(); // NEW: start 2-min match timer kalau belum jalan
+        }
+
+        /* --- [JS BLOCK 5D] MATCH TIMER (2 MENIT, persistent antar ronde) --- */
+        function startMatchTimer() {
+            // Hanya init sekali per pertandingan; antar-ronde, timer tetap jalan
+            if (matchTimer.running) { updateTimerUI(); return; }
+            matchTimer.total = 60;
+            matchTimer.remaining = 60;
+            matchTimer.running = true;
+            updateTimerUI();
+            matchTimer.interval = setInterval(() => {
+                matchTimer.remaining -= 0.2;
+                if (matchTimer.remaining <= 0) {
+                    matchTimer.remaining = 0;
+                    stopMatchTimer();
+                    updateTimerUI();
+                    sfx.wrong();
+                    showPopup("WAKTU HABIS!", "var(--danger)");
+                    setTimeout(() => showFinalResult(), 800);
+                    return;
+                }
+                updateTimerUI();
+            }, 200);
+        }
+
+        function stopMatchTimer() {
+            if (matchTimer.interval) { clearInterval(matchTimer.interval); matchTimer.interval = null; }
+            matchTimer.running = false;
+        }
+
+        function updateTimerUI() {
+            const bar = document.getElementById('timer-bar');
+            const txt = document.getElementById('timer-text');
+            if (!bar || !txt) return;
+            const pct = (matchTimer.remaining / matchTimer.total) * 100;
+            bar.style.width = pct + '%';
+            const totalSec = Math.ceil(matchTimer.remaining);
+            const m = Math.floor(totalSec / 60), s = totalSec % 60;
+            txt.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            bar.classList.remove('warning', 'danger');
+            // CHANGED: threshold disesuaikan dengan timer 60s — danger ≤8s, warning ≤20s
+            if (matchTimer.remaining <= 8) bar.classList.add('danger');
+            else if (matchTimer.remaining <= 20) bar.classList.add('warning');
+        }
+
+        /* --- [JS BLOCK 6] WORDLE CORE MECHANICS --- */
+        function generateInputBoxes() {
+            const area = document.getElementById('word-input-area'); area.innerHTML = "";
+            const name = currentItem.name.toUpperCase();
+            for (let i = 0; i < name.length; i++) {
+                const input = document.createElement('input');
+                input.type = 'text'; input.maxLength = 1; input.className = 'letter-box'; input.dataset.index = i;
+                if(name[i] === " ") { input.style.visibility = "hidden"; input.value = " "; }
+                input.addEventListener('input', (e) => {
+                    if(e.target.value) {
+                        e.target.classList.add('pop-anim');
+                        const next = area.querySelector(`input[data-index="${i+1}"]`);
+                        if(next) next.focus();
+                    }
+                });
+                input.addEventListener('keydown', (e) => {
+                    if(e.key === 'Backspace' && !e.target.value) { const prev = area.querySelector(`input[data-index="${i-1}"]`); if(prev) prev.focus(); }
+                    if(e.key === 'Enter') checkGuess();
+                });
+                area.appendChild(input);
+            }
+            const first = area.querySelector('input:not([style*="hidden"])');
+            if(first) first.focus();
+        }
+
+        function addHint() {
+            const list = document.getElementById('hint-list');
+            const div = document.createElement('div');
+            div.style = "background: rgba(255,255,255,0.03); padding: 14px; border-radius: 16px; border-left: 5px solid var(--accent-color); margin-bottom: 10px; animation: screenIn 0.4s forwards;";
+            div.innerHTML = `<span style="font-size:0.75rem; color:var(--accent-color); font-weight:900; display:block; margin-bottom:4px;">HINT ${currentHintIndex+1}</span>${currentItem.hints[currentHintIndex]}`;
+            list.appendChild(div); list.scrollTop = list.scrollHeight; sfx.hint();
+        }
+
+        function nextHint() {
+            if (currentHintIndex < currentItem.hints.length - 1) { currentHintIndex++; addHint(); }
+            else { showPopup("HINT SUDAH HABIS!", "#e67e22"); }
+        }
+
+        function checkGuess() {
+            const area = document.getElementById('word-input-area');
+            const inputs = area.querySelectorAll('.letter-box');
+            let guess = ""; inputs.forEach(i => { if(i.style.visibility !== "hidden") guess += i.value.toUpperCase(); });
+            const cleanAnswer = currentItem.name.replace(/\s/g, '').toUpperCase();
+
+            if (guess.length < cleanAnswer.length) { showPopup("ISI SEMUA HURUF!", "#e67e22"); return; }
+
+            let allCorrect = true; const answerArr = currentItem.name.toUpperCase().split('');
+            inputs.forEach((input, i) => {
+                if (input.style.visibility === "hidden") return;
+                const char = input.value.toUpperCase();
+                input.classList.remove('correct', 'present', 'absent', 'pop-anim');
+                setTimeout(() => {
+                    if (char === answerArr[i]) { input.classList.add('correct'); input.readOnly = true; }
+                    else {
+                        allCorrect = false;
+                        if (answerArr.includes(char)) {
+                            // PRESENT: huruf benar tapi salah posisi — JANGAN clear value supaya kelihatan
+                            input.classList.add('present');
+                        } else {
+                            // ABSENT: huruf tidak ada — clear supaya user bisa ketik ulang
+                            input.classList.add('absent');
+                            input.value = "";
+                        }
+                    }
+                    input.classList.add('pop-anim');
+                }, i * 100);
+            });
+
+            setTimeout(() => {
+                if (allCorrect) {
+                    // CHANGED: 1 ronde per match — jawab benar → tampilkan hasil + masuk leaderboard
+                    sessionScore += difficultyPoints[currentItem.difficulty]; sfx.correct();
+                    const label = document.getElementById('stat-points-label');
+                    label.innerText = `${sessionScore} POIN`;
+                    label.classList.add('points-pop');
+                    setTimeout(() => label.classList.remove('points-pop'), 400);
+                    weights[currentItem.idx] *= 0.2; localStorage.setItem('guessRushWeights', JSON.stringify(weights));
+                    showPopup("BENAR! +" + difficultyPoints[currentItem.difficulty] + " POIN", "var(--correct)");
+                    setTimeout(showFinalResult, 1400);
+                } else { sfx.wrong(); if (currentHintIndex < currentItem.hints.length - 1) { currentHintIndex++; addHint(); } }
+            }, cleanAnswer.length * 100 + 200);
+        }
+
+        /* --- [JS BLOCK 7] SAMBUNG KATA DUEL ENGINE --- */
+        let chain = { timer: 30, curTime: 30, lastWord: "", suffix: "", used: [], turn: 0, interval: null };
+
+        function initWordChain(mode) {
+            document.getElementById('modal-modes').style.display = 'none';
+            showScreen('screen-word-chain');
+            chain.timer = mode === 'chaos' ? 10 : 30;
+            chain.curTime = chain.timer;
+            chain.lastWord = ""; chain.suffix = ""; chain.used = []; chain.turn = 0;
+            document.getElementById('chain-history').innerHTML = "";
+            document.getElementById('chain-input').value = "";
+            updateChainUI(); renderChainPlayers(); startChainTimer();
+            setTimeout(() => document.getElementById('chain-input').focus(), 500);
+        }
+
+        function startChainTimer() {
+            clearInterval(chain.interval);
+            chain.interval = setInterval(() => {
+                chain.curTime -= 0.1;
+                document.getElementById('chain-timer-display').innerText = Math.ceil(chain.curTime) + "s";
+                if(chain.curTime < 3.5) {
+                    document.getElementById('game-container').classList.add('pulse-red');
+                    if(Math.round(chain.curTime*10)%10===0) playSfx(200,'sine',0.05);
+                } else document.getElementById('game-container').classList.remove('pulse-red');
+                if(chain.curTime <= 0) {
+                    clearInterval(chain.interval); sfx.wrong();
+                    alert(`PLAYER ${chain.turn + 1} KALAH! WAKTU HABIS.`);
+                    location.reload();
+                }
+            }, 100);
+        }
+
+        function updateChainUI() {
+            const display = document.getElementById('current-word-display');
+            const input = document.getElementById('chain-input');
+            const status = document.getElementById('typing-status');
+            if (chain.used.length === 0) { display.innerHTML = "READY?"; input.placeholder = "P1: Ketik kata pembuka..."; }
+            else {
+                const w = chain.lastWord; const s = chain.suffix; const base = w.substring(0, w.length - 1);
+                display.innerHTML = `${base}<span class="suffix-highlight">${s}</span>`;
+                input.placeholder = `P${chain.turn+1}: Sambung huruf '${s}'...`;
+            }
+            status.innerText = `GILIRAN PLAYER ${chain.turn + 1}`;
+            document.getElementById('chain-title').innerText = `MODE: 1V1 ${chain.timer === 10 ? 'CHAOS' : 'CASUAL'}`;
+        }
+
+        function renderChainPlayers() {
+            document.getElementById('chain-players').innerHTML = `
+                <div class="p-tag ${chain.turn === 0 ? 'active' : ''}">PLAYER 1</div>
+                <div class="p-tag ${chain.turn === 1 ? 'active' : ''}">PLAYER 2</div>
+            `;
+        }
+
+        function submitChain() {
+            const input = document.getElementById('chain-input'); const val = input.value.trim().toUpperCase();
+            if(val.length < 3) { showPopup("MIN 3 HURUF!", "#e67e22"); return; }
+            if(chain.used.length > 0 && !val.startsWith(chain.suffix)) { showPopup(`HARUS MULAI HURUF ${chain.suffix}!`, "#ff4d4d"); return; }
+            if(chain.used.includes(val)) { showPopup("SUDAH DIPAKAI!", "#e67e22"); return; }
+
+            sfx.correct();
+            document.getElementById('chain-history').innerHTML += `<div><b>P${chain.turn+1}:</b> ${val}</div>`;
+            chain.used.push(val); chain.lastWord = val; chain.suffix = val.charAt(val.length - 1);
+            chain.turn = (chain.turn + 1) % 2; chain.curTime = chain.timer;
+            sessionScore += 10;
+            input.value = ""; updateChainUI(); renderChainPlayers(); input.focus();
+        }
+
+        function handleChainKey(e) { if(e.key === 'Enter') submitChain(); }
+
+        /* --- [JS BLOCK 8] TERMINATION & FINALIZATION --- */
+        // terminateMatch dipakai oleh SAMBUNG KATA (mode 1v1) — kalau user pencet AKHIRI di sana
+        function terminateMatch() {
+            if(confirm("Akhiri pertandingan sekarang? Skor akan disimpan.")) {
+                if(chain.interval) clearInterval(chain.interval);
+                document.getElementById('game-container').classList.remove('pulse-red');
+                stopMatchTimer();
+                showFinalResult();
+            }
+        }
+
+        // CHANGED: surrender = akhiri pertandingan ronde ini → tampil hasil → input nama → leaderboard
+        function surrender() {
+            if (!confirm("Menyerah? Pertandingan akan diakhiri dan skormu disimpan.")) return;
+            sfx.wrong();
+            showFinalResult();
+        }
+
+        // NEW: MAIN LAGI — reset sessionScore, kembali deal kartu, restart timer 2-menit
+        function playAgain() {
+            sessionScore = 0;
+            stopMatchTimer();
+            matchTimer.running = false;
+            document.getElementById('save-section').style.display = 'block';
+            document.getElementById('leaderboard-section').style.display = 'none';
+            document.getElementById('leaderboard-section').classList.remove('fixed-layout');
+            document.getElementById('player-name').value = '';
+            initRound();
+        }
+
+        // NEW: AKHIRI PERTANDINGAN (dari leaderboard) — kembali ke welcome screen
+        function endMatchFinal() {
+            if (!confirm("Akhiri pertandingan dan kembali ke menu utama?")) return;
+            sessionScore = 0;
+            stopMatchTimer();
+            document.getElementById('save-section').style.display = 'block';
+            document.getElementById('leaderboard-section').style.display = 'none';
+            document.getElementById('leaderboard-section').classList.remove('fixed-layout');
+            document.getElementById('player-name').value = '';
+            showScreen('screen-welcome');
+        }
+
+        function showFinalResult() {
+            stopMatchTimer();
+            showScreen('screen-result');
+            // Reset visibility ke save-section
+            document.getElementById('save-section').style.display = 'block';
+            document.getElementById('leaderboard-section').style.display = 'none';
+            document.getElementById('leaderboard-section').classList.remove('fixed-layout');
+            const finalScoreEl = document.getElementById('final-score');
+            finalScoreEl.innerText = "0";
+            let cur = 0; const step = Math.ceil(sessionScore / 20) || 1;
+            const countInt = setInterval(() => {
+                cur += step;
+                if(cur >= sessionScore) { cur = sessionScore; clearInterval(countInt); }
+                finalScoreEl.innerText = cur; if(cur > 0) sfx.tick();
+            }, 50);
+            setTimeout(() => document.getElementById('player-name').focus(), 800);
+        }
+
+        function finalizeScore() {
+            const name = document.getElementById('player-name').value.trim(); if (!name) { showPopup("ISI NAMAMU!", "#e67e22"); return; }
+            // FIX: load LB dari localStorage, accumulate kalau sudah ada
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            let existingIdx = lb.findIndex(e => e.name.toLowerCase() === name.toLowerCase());
+            let startVal = 0;
+            if (existingIdx !== -1) { startVal = lb[existingIdx].score; lb[existingIdx].score += sessionScore; }
+            else { lb.push({ name: name, score: sessionScore }); }
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+            document.getElementById('save-section').style.display = 'none';
+            const section = document.getElementById('leaderboard-section');
+            section.style.display = 'flex';
+            section.classList.add('fixed-layout');
+            startThroneBattle(lb, name, startVal, startVal + sessionScore);
+        }
+
+        /* --- [JS BLOCK 9] LEADERBOARD & THRONE BATTLE — ENHANCED:
+              Fase 1: render dengan score AWAL → Fase 2: count up player → Fase 3: reshuffle smooth → Fase 4: podium showcase trophy 🏆 --- */
+        function startThroneBattle(fullData, myName, startScore, endScore) {
+            const arena = document.getElementById('leaderboard-arena'); arena.innerHTML = "";
+
+            // Build initial list dengan skor LAMA player (untuk posisi awal)
+            const initialList = fullData.map(e => ({
+                name: e.name,
+                score: (e.name.toLowerCase() === myName.toLowerCase()) ? startScore : e.score
+            })).sort((a, b) => b.score - a.score).slice(0, 30);
+
+            if (!initialList.find(e => e.name.toLowerCase() === myName.toLowerCase())) {
+                initialList.push({ name: myName, score: startScore });
+            }
+
+            const ROW_H = 60;
+            initialList.forEach((entry, i) => {
+                const isMe = entry.name.toLowerCase() === myName.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'rank-card';
+                div.id = `card-${entry.name.replace(/\s+/g, '-')}`;
+                div.style.top = `${i * ROW_H}px`;
+                if (isMe) div.classList.add('player-focus');
+
+                div.innerHTML = `
+                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <div class="rank-pos">#${i + 1}</div>
+                    <div class="rank-info">${entry.name}</div>
+                    <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
+                `;
+                arena.appendChild(div);
+
+                if (i === 0) div.classList.add('gold-rank');
+                else if (i === 1) div.classList.add('silver-rank');
+                else if (i === 2) div.classList.add('bronze-rank');
+            });
+
+            // Spacer untuk scroll (cards pakai position:absolute)
+            const spacer = document.createElement('div');
+            spacer.style.height = `${initialList.length * ROW_H + 30}px`;
+            spacer.style.pointerEvents = 'none';
+            arena.appendChild(spacer);
+
+            // Fase 1 → Fase 2: count up score player
+            setTimeout(() => phaseCountUp(myName, startScore, endScore, () => {
+                // Fase 3: reshuffle ke ranking baru
+                phaseReshuffle(fullData, myName, () => {
+                    // Fase 4: podium showcase + trophy 🏆
+                    phasePodium(fullData);
+                });
+            }), 900);
+        }
+
+        /* --- [JS BLOCK 9B] PHASE: COUNT UP poin player (smooth, ease-out + jitter) --- */
+        function phaseCountUp(myName, startScore, endScore, done) {
+            const myCard = document.getElementById(`card-${myName.replace(/\s+/g, '-')}`);
+            const myPts = document.getElementById(`pts-${myName.replace(/\s+/g, '-')}`);
+            if (!myCard || !myPts) { done && done(); return; }
+
+            const delta = endScore - startScore;
+            if (delta <= 0) { myPts.innerText = endScore; setTimeout(() => done && done(), 200); return; }
+
+            // Floating +XX teks di samping card
+            const floatEl = document.createElement('div');
+            floatEl.className = 'points-add-float';
+            floatEl.innerText = `+${delta}`;
+            myCard.appendChild(floatEl);
+            setTimeout(() => floatEl.remove(), 1200);
+
+            myCard.classList.add('shake-climb');
+            const duration = Math.min(2200, 700 + delta * 5);
+            const startT = Date.now();
+            let lastSfx = 0;
+
+            function step() {
+                const t = Math.min((Date.now() - startT) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                const jitter = t < 0.97 ? Math.floor(Math.random() * 5) : 0;
+                let cur = Math.floor(startScore + delta * eased + jitter);
+                if (t >= 1) cur = endScore;
+                myPts.innerText = cur;
+                if (Date.now() - lastSfx > 70) { sfx.tick(); lastSfx = Date.now(); }
+                if (t < 1) requestAnimationFrame(step);
+                else { myCard.classList.remove('shake-climb'); myPts.innerText = endScore; setTimeout(() => done && done(), 350); }
+            }
+            requestAnimationFrame(step);
+        }
+
+        /* --- [JS BLOCK 9C] PHASE: RESHUFFLE — sort baru, geser kartu, update medal/throne --- */
+        function phaseReshuffle(fullData, myName, done) {
+            const ROW_H = 60;
+            const finalRanks = [...fullData].sort((a, b) => b.score - a.score).slice(0, 30);
+            let anyChanged = false;
+
+            finalRanks.forEach((entry, idx) => {
+                const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
+                if (!card) return;
+                const oldTop = parseInt(card.style.top) || 0;
+                const newTop = idx * ROW_H;
+
+                card.style.top = `${newTop}px`;
+                card.querySelector('.rank-pos').innerText = `#${idx + 1}`;
+
+                const medal = card.querySelector('.podium-medal');
+                if (medal) {
+                    medal.innerText = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+                    medal.classList.remove('show');
+                }
+
+                card.classList.remove('gold-rank', 'silver-rank', 'bronze-rank');
+                if (idx === 0) card.classList.add('gold-rank');
+                else if (idx === 1) card.classList.add('silver-rank');
+                else if (idx === 2) card.classList.add('bronze-rank');
+
+                // Kalau kartu naik signifikan, kasih jump animation
+                if (oldTop - newTop > 30) {
+                    anyChanged = true;
+                    setTimeout(() => card.classList.add('rank-jump'), 280);
+                    setTimeout(() => card.classList.remove('rank-jump'), 1100);
+                }
+            });
+
+            setTimeout(() => done && done(), 1300);
+        }
+
+        /* --- [JS BLOCK 9D] PHASE: PODIUM SHOWCASE — reveal medal #3 → #2 → #1, trophy + shockwave + JUARA banner + confetti --- */
+        function phasePodium(fullData) {
+            const top3 = [...fullData].sort((a, b) => b.score - a.score).slice(0, 3);
+
+            // Reveal bawah → atas (bronze → silver → gold) untuk efek climactic
+            const reveal = [2, 1, 0].filter(i => top3[i]);
+            reveal.forEach((rankIdx, order) => {
+                const entry = top3[rankIdx];
+                const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
+                if (!card) return;
+                setTimeout(() => {
+                    card.classList.add('podium-celebrate');
+                    const medal = card.querySelector('.podium-medal');
+                    if (medal) medal.classList.add('show');
+                    playSfx(500 + order * 250, 'sine', 0.35);
+                    if (rankIdx === 0) {
+                        // PEAK: trophy 🏆, shockwave, JUARA banner, confetti
+                        triggerJuaraPeak(entry.name);
+                        let trophy = card.querySelector('.trophy-emoji');
+                        if (!trophy) {
+                            trophy = document.createElement('span');
+                            trophy.className = 'trophy-emoji';
+                            trophy.innerText = '🏆';
+                            card.appendChild(trophy);
+                        }
+                        setTimeout(() => trophy.classList.add('revealed'), 80);
+                        sfx.correct();
+                        // Auto-scroll ke top supaya juara 1 keliatan
+                        const arena = document.getElementById('leaderboard-arena');
+                        if (arena) arena.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }, order * 700);
+            });
+        }
+
+        /* --- [JS BLOCK 9D2] JUARA PEAK — banner + shockwave overlay --- */
+        function triggerJuaraPeak(name) {
+            const banner = document.getElementById('juara-banner');
+            const sw = document.getElementById('juara-shockwave');
+            if (banner) {
+                banner.innerText = `🏆 JUARA: ${name.toUpperCase()} 🏆`;
+                banner.classList.remove('show'); void banner.offsetWidth; // restart anim
+                banner.classList.add('show');
+                // Auto-cleanup after 6s
+                setTimeout(() => banner.classList.remove('show'), 6000);
+            }
+            if (sw) {
+                sw.classList.remove('go'); void sw.offsetWidth;
+                sw.classList.add('go');
+            }
+            // Burst confetti dalam beberapa gelombang
+            spawnConfetti(0);
+            spawnConfetti(300);
+            spawnConfetti(700);
+            // Bonus SFX chord
+            playSfx(523, 'sine', 0.4);
+            setTimeout(() => playSfx(659, 'sine', 0.4), 100);
+            setTimeout(() => playSfx(784, 'sine', 0.6), 200);
+        }
+
+        /* --- [JS BLOCK 9E] CONFETTI BURST (position:fixed, viewport-wide) --- */
+        function spawnConfetti(delay = 0) {
+            const colors = ['#00f2ff', '#ffd700', '#7b2cff', '#2ecc71', '#ff3d8a', '#ff4d4d', '#ffd700'];
+            const burst = () => {
+                for (let i = 0; i < 40; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'confetti-piece';
+                    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+                    p.style.setProperty('--cx', `${(Math.random() - 0.5) * window.innerWidth * 1.4}px`);
+                    p.style.setProperty('--cy', `${(Math.random() * 0.6 - 0.85) * window.innerHeight}px`);
+                    document.body.appendChild(p);
+                    setTimeout(() => p.classList.add('fly'), 10 + i * 8);
+                    setTimeout(() => p.remove(), 2400);
+                }
+            };
+            if (delay > 0) setTimeout(burst, delay); else burst();
+        }
+
+        /* --- [JS BLOCK 10] UTILITIES & AUTOCOMPLETE --- */
+        function handleNameInput(val) {
+            const box = document.getElementById('suggestions'); if (!val) { box.style.display = 'none'; return; }
+            const lb = JSON.parse(localStorage.getItem('guessRushLB')) || [];
+            const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase()));
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(m => `<div onclick="selectName('${m.name}')" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--accent-color); font-weight:bold;">${m.name} <span style="color:var(--text-secondary); font-size:0.7rem;">(${m.score} Pts)</span></div>`).join('');
+                box.style.display = 'block';
+            } else box.style.display = 'none';
+        }
+        function selectName(n) { document.getElementById('player-name').value = n; document.getElementById('suggestions').style.display = 'none'; }
+
+        function searchPlayer(val) {
+            document.querySelectorAll('.rank-card').forEach(c => {
+                const n = c.querySelector('.rank-info').innerText.toLowerCase();
+                c.style.opacity = n.includes(val.toLowerCase()) ? "1" : "0.1";
+                c.style.pointerEvents = n.includes(val.toLowerCase()) ? "auto" : "none";
+            });
+        }
+        document.getElementById('player-name').addEventListener('keypress', (e) => { if(e.key === 'Enter') finalizeScore(); });
+    </script>
+</body>
+</html>
