@@ -1,5 +1,24 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - Ekspansi Data: 3 Kategori Baru + Penambahan Item [AI / arahan Pradipta]
+### Added
+- **Kategori baru HEWAN** (12 item): Singa, Gajah, Kucing (easy) → Harimau, Panda, Kuda (medium) → Komodo, Flamingo, Tapir (hard) → Axolotl, Okapi, Dugong (impossible).
+- **Kategori baru OLAHRAGA** (12 item): Sepak Bola, Renang, Bulu Tangkis (easy) → Voli, Tinju, Panahan (medium) → Anggar, Polo, Squash (hard) → Korfball, Sepaktakraw, Kabaddi (impossible).
+- **Kategori baru IBUKOTA** (12 item): Jakarta, Tokyo, Paris (easy) → London, Beijing, Ankara (medium) → Canberra, Ottawa, Brasilia (hard) → Naypyidaw, Astana, Nuku'alofa (impossible).
+- **SPINNER_FAKE_CATEGORIES**: Tambah HEWAN, OLAHRAGA, IBUKOTA sebagai kategori real sehingga spinner bisa lock ke kategori baru ini.
+
+### Changed
+- **NEGARA**: Ditambah 10 item baru — China, Amerika, Prancis (easy); Rusia, Turki, Spanyol (medium); Kanada, Portugal (hard); Kamboja, Namibia (impossible). Total jadi 22 item.
+- **PROFESI**: Ditambah 7 item baru — Polisi, Koki (easy); Pilot, Wartawan (medium); Hakim, Astronot (hard); Kriminolog, Paleontolog (impossible). Total jadi 19 item.
+- **BUAH**: Ditambah 8 item baru — Jeruk, Anggur (easy); Nanas, Melon (medium); Salak, Lengkeng (hard); Kepel, Cempedak (impossible). Total jadi 20 item.
+- **BARANG**: Ditambah 7 item baru — Payung, Gunting (easy); Termos, Kompas (medium); Kunci, Stopkontak (hard); Susuk, Gentong (impossible). Total jadi 19 item.
+- **Total item keseluruhan**: 48 → ~104 item (2× lipat lebih banyak).
+
+### Files
+- `index.html`: `itemsData` array (JS block 2) — tambah item di 4 kategori lama + tambah 3 kategori baru. `SPINNER_FAKE_CATEGORIES` diperbarui.
+- `CHANGELOG.md`: Dicatat entri ini.
+
+
 ## [2026-05-26] - Timer 1 Menit + Podium Peak Showcase [AI / arahan Pradipta]
 ### Changed
 - **Match timer 120s → 60s** (1 menit). Threshold warning ≤20s, danger ≤8s (sebelumnya ≤40s/≤15s). Default display "01:00".
