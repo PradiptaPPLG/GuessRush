@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaching atau Kaboom! - Guess Rush</title>
+    <style>
+        /* ============================================================
+           1. ROOT VARIABLES (sync dengan index.html)
+           ============================================================ */
+        :root {
+            --gold: #ffd700;
+            --bg-color: #05070a;
+            --card-bg: #11141b;
+            --accent-color: #00f2ff;
+            --accent-hover: #00d1db;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --correct: #2ecc71;
+            --silver: #e0e0e0;
+            --bronze: #cd7f32;
+            --danger: #ff4d4d;
+            --p1: #ff4d6d;
+            --p2: #4dabff;
+        }
+
+        /* ============================================================
+           2. GLOBAL RESET & BASE
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; position: relative; }
+
+        /* ============================================================
+           3. AMBIENT ORBS
+           ============================================================ */
+        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: 0; pointer-events: none; }
+        .orb-1 { width: 400px; height: 400px; background: rgba(255, 77, 109, 0.18); top: -100px; left: -100px; animation: moveOrb 15s infinite alternate ease-in-out; }
+        .orb-2 { width: 450px; height: 450px; background: rgba(0, 242, 255, 0.15); bottom: -150px; right: -150px; animation: moveOrb 20s infinite alternate-reverse ease-in-out; }
+        @keyframes moveOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(100px, 100px) scale(1.1); } }
+
+        /* ============================================================
+           4. CONTAINER & SCREENS
+           ============================================================ */
+        #game-container {
+            width: 95%; max-width: 500px;
+            background: rgba(17, 20, 27, 0.85);
+            padding: 1.8rem 1.5rem;
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0, 242, 255, 0.05);
+            text-align: center; position: relative; z-index: 1;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: box-shadow 0.6s, border-color 0.6s;
+        }
+        #game-container.turn-p1 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,77,109,0.18); border-color: rgba(255,77,109,0.3); }
+        #game-container.turn-p2 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(77,171,255,0.18); border-color: rgba(77,171,255,0.3); }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes screenIn { from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+
+        /* ============================================================
+           5. BUTTONS
+           ============================================================ */
+        button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
+        button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #00b8c4; }
+        button:hover:not(:active):not(:disabled) { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.3); color: var(--accent-color); box-shadow: none; }
+        .btn-ghost:hover:not(:active) { background: rgba(0,242,255,0.1); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+        .btn-danger-soft { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3); padding: 10px 16px; margin-top: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; box-shadow: none; }
+        .btn-danger-soft:hover:not(:active) { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 15px rgba(255,77,77,0.3); }
+
+        /* ============================================================
+           6. REGISTER SCREEN (mirip Sambung Kata)
+           ============================================================ */
+        .register-row { margin: 14px 0; text-align: left; }
+        .register-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 8px; }
+        .register-p1 .register-label { color: var(--p1); text-shadow: 0 0 10px rgba(255,77,109,0.3); }
+        .register-p2 .register-label { color: var(--p2); text-shadow: 0 0 10px rgba(77,171,255,0.3); }
+        .register-row input { width: 100%; padding: 14px 16px; border-radius: 14px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
+        .register-p1 input { border: 2px solid rgba(255,77,109,0.3); }
+        .register-p1 input:focus { border-color: var(--p1); box-shadow: 0 0 15px rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
+        .register-p2 input { border: 2px solid rgba(77,171,255,0.3); }
+        .register-p2 input:focus { border-color: var(--p2); box-shadow: 0 0 15px rgba(77,171,255,0.3); background: rgba(77,171,255,0.05); }
+        .vs-divider { text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--accent-color); margin: 6px 0; letter-spacing: 6px; text-shadow: 0 0 12px rgba(0,242,255,0.4); }
+        .register-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: rgba(28,33,40,0.98); border-radius: 12px; padding: 8px; border: 1px solid #333; z-index: 100; margin-top: 6px; text-align: left; max-height: 180px; overflow-y: auto; }
+
+        /* ============================================================
+           7. GRID 5x5 (placement + game)
+           ============================================================ */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin: 20px auto;
+            max-width: 380px;
+            perspective: 800px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background-image: url('assets/tanah.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+            position: relative;
+            border: 2px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+        }
+        .cell:hover:not(.revealed):not(.locked) {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 14px rgba(0,242,255,0.4);
+            transform: translateY(-3px) scale(1.04);
+        }
+        .cell.locked { cursor: default; }
+
+        /* BOMB PLACED (during placement phase) — animasi handled via .flipping (cell-flip keyframes) */
+        .cell.bomb-placed {
+            background-image: url('assets/bom.png');
+            border-color: var(--danger);
+            box-shadow: 0 0 14px rgba(255,77,77,0.4), inset 0 0 15px rgba(255,77,77,0.2);
+        }
+
+        /* OWN BOMB (visible to current player during their guessing turn — locked, can't click) */
+        .cell.own-bomb {
+            background-image: url('assets/bom.png');
+            border-color: rgba(255,77,109,0.5);
+            box-shadow: inset 0 0 12px rgba(255,77,109,0.25);
+            cursor: not-allowed;
+            opacity: 0.55;
+            filter: brightness(0.75);
+        }
+        .cell.own-bomb::after {
+            content: 'MILIKMU';
+            position: absolute;
+            bottom: 4px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.5rem;
+            font-weight: 900;
+            color: white;
+            background: rgba(255,77,109,0.85);
+            padding: 1px 5px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* REVEAL FLIP — scaleX 1 → 0 → 1, bg change di 50% via JS */
+        .cell.flipping { animation: cell-flip 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes cell-flip {
+            0% { transform: scaleX(1); }
+            50% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+        .cell.revealed {
+            cursor: default;
+            border-color: rgba(255,255,255,0.2);
+        }
+        .cell.show-bomb { background-image: url('assets/bom.png'); border-color: var(--danger); box-shadow: 0 0 18px rgba(255,77,77,0.5); }
+        .cell.show-coin { background-image: url('assets/koin.png'); border-color: var(--gold); box-shadow: 0 0 14px rgba(255,215,0,0.4); }
+        .cell.show-money { background-image: url('assets/uang.png'); border-color: var(--correct); box-shadow: 0 0 14px rgba(46,204,113,0.4); }
+
+        /* ============================================================
+           8. STATUS BAR & LIVES
+           ============================================================ */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+        .status-bar .status-left { color: var(--text-secondary); }
+        .status-bar .status-right { color: var(--accent-color); }
+
+        .current-turn-display {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.3);
+            transition: 0.4s;
+        }
+        .current-turn-display.p1 { color: var(--p1); background: rgba(255,77,109,0.08); border: 1px solid rgba(255,77,109,0.3); text-shadow: 0 0 10px rgba(255,77,109,0.4); }
+        .current-turn-display.p2 { color: var(--p2); background: rgba(77,171,255,0.08); border: 1px solid rgba(77,171,255,0.3); text-shadow: 0 0 10px rgba(77,171,255,0.4); }
+
+        /* Pick timer bar [2026-05-28]: 10s per turn, visual countdown */
+        .pick-timer-wrap { margin: 6px 0 10px; }
+        .pick-timer-meta { display: flex; justify-content: space-between; font-size: 0.65rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 4px; font-family: monospace; }
+        .pick-timer-meta .t-label { color: var(--text-secondary); }
+        .pick-timer-meta .t-val { color: var(--accent-color); }
+        .pick-timer-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+        .pick-timer-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #7b2cff); width: 100%; box-shadow: 0 0 8px rgba(0,242,255,0.4); transition: width 0.1s linear; }
+        .pick-timer-fill.warning { background: linear-gradient(90deg, var(--gold), #e67e22); box-shadow: 0 0 8px rgba(241,196,15,0.5); }
+        .pick-timer-fill.danger { background: linear-gradient(90deg, var(--danger), #ff3d8a); box-shadow: 0 0 10px rgba(255,77,77,0.6); animation: bar-flash 0.4s infinite alternate; }
+        @keyframes bar-flash { from { opacity: 0.6; } to { opacity: 1; } }
+
+        .lives-bar {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .lives-side { flex: 1; text-align: center; }
+        .lives-name { font-size: 0.7rem; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 4px; }
+        .lives-name.p1 { color: var(--p1); }
+        .lives-name.p2 { color: var(--p2); }
+        .lives-hearts { font-size: 1.1rem; letter-spacing: 2px; }
+        .heart-lost { filter: grayscale(1) brightness(0.5); opacity: 0.4; }
+        .lives-side.active { transform: scale(1.06); }
+
+        /* ============================================================
+           9. TRANSITION SCREEN (5-sec countdown)
+           ============================================================ */
+        .transition-text {
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            margin: 20px 0 10px;
+            text-shadow: 0 0 16px rgba(0,242,255,0.4);
+        }
+        .transition-sub {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+            margin-bottom: 25px;
+        }
+        .countdown-big {
+            font-size: 5.5rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.3);
+            line-height: 1;
+            margin: 20px 0;
+            display: inline-block;
+        }
+        .countdown-big.pulse { animation: count-pulse 1s; }
+        @keyframes count-pulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .turn-icon { font-size: 4rem; margin: 10px 0; filter: drop-shadow(0 0 20px rgba(0,242,255,0.4)); }
+
+        /* ============================================================
+           10. EXPLOSION OVERLAY + SCREEN SHAKE
+           ============================================================ */
+        .explosion-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255,150,0,0.85) 0%, rgba(255,50,0,0.6) 30%, rgba(255,0,0,0.3) 60%, transparent 90%);
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .explosion-overlay.show { animation: explosion-flash 1s cubic-bezier(0.55, 0.05, 0.7, 0.4) forwards; }
+        @keyframes explosion-flash {
+            0% { opacity: 0; transform: scale(0.5); }
+            15% { opacity: 1; transform: scale(1.1); }
+            60% { opacity: 0.8; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.1); }
+        }
+        .explosion-text {
+            font-size: 5rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 30px #ff0, 0 0 60px #f80, 0 4px 0 #c00;
+            letter-spacing: 4px;
+            animation: explosion-text-anim 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes explosion-text-anim {
+            0% { transform: scale(0) rotate(-20deg); }
+            40% { transform: scale(1.3) rotate(8deg); }
+            70% { transform: scale(0.95) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+
+        .shake { animation: screen-shake 0.5s; }
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0,0) rotate(0); }
+            10% { transform: translate(-6px, -3px) rotate(-0.5deg); }
+            20% { transform: translate(7px, 4px) rotate(0.5deg); }
+            30% { transform: translate(-8px, 2px) rotate(-0.5deg); }
+            40% { transform: translate(6px, -4px) rotate(0.5deg); }
+            50% { transform: translate(-4px, 3px) rotate(-0.3deg); }
+            60% { transform: translate(5px, 2px) rotate(0.3deg); }
+            70% { transform: translate(-3px, -2px) rotate(-0.2deg); }
+            80% { transform: translate(2px, 1px) rotate(0.2deg); }
+            90% { transform: translate(-1px, -1px) rotate(0); }
+        }
+
+        /* COIN/MONEY BURST (floating emojis at cell) */
+        .burst-emoji {
+            position: absolute;
+            font-size: 1.4rem;
+            pointer-events: none;
+            z-index: 50;
+            animation: burst-up 1s ease-out forwards;
+        }
+        @keyframes burst-up {
+            0%   { opacity: 0; transform: translateY(0) scale(0.5) rotate(0); }
+            30%  { opacity: 1; transform: translateY(-20px) scale(1.3) rotate(15deg); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1) rotate(-15deg); }
+        }
+        /* Sparkles around money cell */
+        .sparkle {
+            position: absolute;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            animation: sparkle-fade 1.2s ease-out forwards;
+        }
+        @keyframes sparkle-fade {
+            0% { opacity: 0; transform: scale(0); }
+            30% { opacity: 1; transform: scale(1.4); }
+            100% { opacity: 0; transform: scale(0.8) translateY(-15px); }
+        }
+
+        /* ============================================================
+           11. HEADINGS
+           ============================================================ */
+        h1, h2, h3 { color: white; font-weight: 900; letter-spacing: 1.5px; }
+        h1 { font-size: 1.5rem; margin-bottom: 4px; letter-spacing: 2.5px; }
+        h2 { font-size: 1.2rem; margin-bottom: 4px; }
+        .game-title { background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .game-subtitle { color: var(--text-secondary); font-size: 0.78rem; letter-spacing: 1.8px; margin-bottom: 18px; }
+
+        /* ============================================================
+           12. POPUP
+           ============================================================ */
+        #msg-popup { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; border-radius: 15px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #fff; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ============================================================
+           13. RESULT SCREEN
+           ============================================================ */
+        .result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
+        .result-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
+        .result-loser { background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.12); }
+        .result-badge { font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+        .result-winner .result-badge { color: var(--gold); }
+        .result-name { font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: 1px; margin: 4px 0; }
+        .result-winner .result-name { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.5); font-size: 1.7rem; }
+        .result-pts { font-size: 0.85rem; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; }
+
+        /* ============================================================
+           14. LEADERBOARD (simplified throne battle in-file)
+           ============================================================ */
+        #leaderboard-arena { position: relative; margin-top: 15px; height: 350px; overflow-y: auto; padding: 30px 4px 20px; scroll-behavior: smooth; }
+        #leaderboard-arena::-webkit-scrollbar { width: 5px; }
+        #leaderboard-arena::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+        .rank-pos { width: 52px; padding-left: 28px; box-sizing: border-box; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; padding-left: 6px; }
+        .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
+        .podium-medal { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 1.25rem; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.35)); }
+
+        @keyframes throne-gold { 0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); } }
+        @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
+        @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
+        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; }
+        .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; }
+        .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; }
+        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; }
+        .player-focus .rank-info, .player-focus .rank-pts { color: var(--gold) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.3s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+    </style>
+</head>
+
+<body>
+    <!-- [BLOCK: GLOBAL OVERLAYS] -->
+    <div id="msg-popup"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div id="explosion-overlay" class="explosion-overlay">
+        <div class="explosion-text">💥 BOOM! 💥</div>
+    </div>
+
+    <div id="game-container">
+
+        <!-- [BLOCK: SCREEN REGISTER] -->
+        <div id="screen-register" class="screen active">
+            <h1 class="game-title">💣 KACHING ATAU KABOOM! 💰</h1>
+            <p class="game-subtitle">5×5 GRID · 5 BOM · 3 NYAWA</p>
+
+            <div class="register-row register-p1">
+                <div class="register-label">🟥 PEMAIN 1</div>
+                <div style="position: relative;">
+                    <input type="text" id="p1-name" placeholder="Nama Pemain 1..." oninput="handleNameInput(this.value, 1)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p1" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="register-row register-p2">
+                <div class="register-label">🟦 PEMAIN 2</div>
+                <div style="position: relative;">
+                    <input type="text" id="p2-name" placeholder="Nama Pemain 2..." oninput="handleNameInput(this.value, 2)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p2" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+
+            <button onclick="startGame()" style="margin-top: 18px;">MULAI DUEL</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN TRANSITION] - 5-sec countdown buffer (turn around) -->
+        <div id="screen-transition" class="screen">
+            <div id="transition-icon" class="turn-icon">🙈</div>
+            <div id="transition-text" class="transition-text">PEMAIN 2 BERBALIK BADAN</div>
+            <p class="transition-sub">JANGAN MELIHAT LAYAR</p>
+            <div id="countdown" class="countdown-big">5</div>
+        </div>
+
+        <!-- [BLOCK: SCREEN PLACEMENT] -->
+        <div id="screen-place" class="screen">
+            <div class="status-bar">
+                <span class="status-left" id="placer-label">PEMAIN 1: TARO BOM</span>
+                <span class="status-right">SISA: <span id="bombs-left">5</span></span>
+            </div>
+            <p class="game-subtitle" style="margin-bottom: 4px;">Klik kotak untuk taro / cabut bom (max 5)</p>
+            <div class="grid" id="grid-place"></div>
+            <button id="btn-confirm" onclick="confirmPlacement()" disabled>SELESAI · TARO 5 BOM</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN GAME] -->
+        <div id="screen-game" class="screen">
+            <div id="current-turn-display" class="current-turn-display">GILIRAN PEMAIN 1</div>
+            <!-- NEW [2026-05-28]: pick timer 10s, expire → auto-pick random non-own-bomb cell -->
+            <div class="pick-timer-wrap">
+                <div class="pick-timer-meta">
+                    <span class="t-label">WAKTU PILIH</span>
+                    <span class="t-val" id="pick-timer-text">10s</span>
+                </div>
+                <div class="pick-timer-track">
+                    <div id="pick-timer-fill" class="pick-timer-fill"></div>
+                </div>
+            </div>
+            <div class="lives-bar">
+                <div class="lives-side" id="lives-side-1">
+                    <div class="lives-name p1" id="p1-name-lbl">PEMAIN 1</div>
+                    <div class="lives-hearts" id="p1-hearts">❤️ ❤️ ❤️</div>
+                </div>
+                <div class="lives-side" id="lives-side-2">
+                    <div class="lives-name p2" id="p2-name-lbl">PEMAIN 2</div>
+                    <div class="lives-hearts" id="p2-hearts">❤️ ❤️ ❤️</div>
+                </div>
+            </div>
+            <div class="grid" id="grid-game"></div>
+            <button class="btn-danger-soft" onclick="surrenderGame()">MENYERAH</button>
+            <button class="btn-ghost" onclick="backToMenu()">KELUAR KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN SERI] - NEW [2026-05-28]: semua kotak terbuka, nyawa sama → SERI.
+             Pilihan: MAIN LAGI (skip register, same names, NO point) atau AKHIRI (+150 each, ke LB) -->
+        <div id="screen-seri" class="screen">
+            <h1 style="font-size: 1.6rem; letter-spacing: 3px; color: var(--accent-color); text-shadow: 0 0 20px rgba(0,242,255,0.5);">🤝 SERI!</h1>
+            <p class="game-subtitle">Semua kotak terbuka, nyawa imbang</p>
+            <div class="result-row" style="background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(77,171,255,0.12)); border: 2px solid rgba(0,242,255,0.4); text-align: center;">
+                <div class="result-badge" style="color: var(--accent-color);">🤝 IMBANG</div>
+                <div id="seri-p1-name" class="result-name" style="color: var(--p1); font-size: 1.3rem;"></div>
+                <div style="color: var(--text-secondary); margin: 6px 0; font-size: 0.75rem; letter-spacing: 3px;">VS</div>
+                <div id="seri-p2-name" class="result-name" style="color: var(--p2); font-size: 1.3rem;"></div>
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 1.5px; margin-top: 14px;">PILIH LANJUTAN PERTANDINGAN</p>
+            <button onclick="seriPlayAgain()" style="margin-top: 10px;">MAIN LAGI (REMATCH)</button>
+            <button class="btn-ghost" onclick="seriEnd()">AKHIRI · +150 POIN EACH</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN RESULT] -->
+        <div id="screen-result" class="screen">
+            <h1 style="font-size: 1.5rem; letter-spacing: 2px;">🏆 HASIL DUEL!</h1>
+            <p class="game-subtitle">KACHING ATAU KABOOM!</p>
+
+            <div class="result-row result-winner">
+                <div class="result-badge">🏆 PEMENANG</div>
+                <div id="winner-name" class="result-name"></div>
+                <div class="result-pts">+200 POIN</div>
+            </div>
+            <div class="result-row result-loser">
+                <div class="result-badge" id="loser-badge">KALAH</div>
+                <div id="loser-name" class="result-name"></div>
+                <div class="result-pts" id="loser-pts">+50 POIN</div>
+            </div>
+
+            <button onclick="viewLeaderboard()" style="margin-top: 18px;">LIHAT LEADERBOARD</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN LEADERBOARD] -->
+        <div id="screen-leaderboard" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 1.5px; margin-bottom: 6px;">SMK GLOBAL RANKING</h2>
+            <p class="game-subtitle">Update dari pertandingan Kaboom!</p>
+            <div id="leaderboard-arena"></div>
+            <button onclick="playAgain()" style="margin-top: 10px;">MAIN LAGI</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+    </div>
+
+    <script>
+        /* ============================================================
+           1. AUDIO ENGINE & SFX
+           ============================================================ */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, t, d, vol) {
+            try {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = t;
+                o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
+        }
+        const sfx = {
+            click: () => playSfx(800, 'sine', 0.08),
+            flip: () => { playSfx(400, 'sine', 0.15); setTimeout(() => playSfx(700, 'sine', 0.18), 60); },
+            place: () => { playSfx(300, 'sine', 0.18); setTimeout(() => playSfx(220, 'square', 0.15), 60); },
+            coin: () => { playSfx(1200, 'sine', 0.1); setTimeout(() => playSfx(1600, 'sine', 0.12), 70); setTimeout(() => playSfx(2000, 'sine', 0.15), 140); },
+            money: () => { playSfx(900, 'sine', 0.12); setTimeout(() => playSfx(1100, 'square', 0.08), 80); setTimeout(() => playSfx(1500, 'sine', 0.18), 160); },
+            boom: () => { playSfx(110, 'sawtooth', 0.6, 0.18); setTimeout(() => playSfx(60, 'sawtooth', 0.7, 0.15), 80); setTimeout(() => playSfx(180, 'square', 0.4, 0.1), 180); },
+            tick: () => playSfx(1500, 'sine', 0.04),
+            win: () => { playSfx(523, 'sine', 0.3); setTimeout(() => playSfx(659, 'sine', 0.3), 150); setTimeout(() => playSfx(784, 'sine', 0.5), 300); setTimeout(() => playSfx(1047, 'sine', 0.6), 450); },
+        };
+
+        /* ============================================================
+           2. GAME STATE
+           ============================================================ */
+        let game = {
+            p1Name: '',
+            p2Name: '',
+            p1Lives: 3,
+            p2Lives: 3,
+            maxLives: 3,
+            cells: [],
+            currentPlayer: 1,
+            placementPlayer: 1,
+            bombsPlaced: 0,
+            minBombs: 1,           // [2026-05-28] minimum 1 bom per pemain
+            maxBombs: 5,
+            phase: 'register',
+            countdownInterval: null,
+            inputLocked: false,
+            lastWinner: null,
+            lastLoser: null,
+            lastOldWinnerScore: 0,
+            lastOldLoserScore: 0,
+            isDraw: false,
+            // Pick timer state [2026-05-28]: 10s per turn, expire → auto-pick
+            pickTimerInterval: null,
+            pickTimerRemaining: 10,
+            pickTimerTotal: 10,
+        };
+
+        /* ============================================================
+           3. CORE UI HELPERS
+           ============================================================ */
+        function showPopup(t, c) {
+            const p = document.getElementById('msg-popup');
+            p.innerText = t; p.style.background = c; p.style.display = 'block';
+            setTimeout(() => p.style.display = 'none', 1800);
+        }
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function applyTurnTheme(player) {
+            const gc = document.getElementById('game-container');
+            gc.classList.remove('turn-p1', 'turn-p2');
+            gc.classList.add(player === 1 ? 'turn-p1' : 'turn-p2');
+        }
+        function clearTurnTheme() {
+            const gc = document.getElementById('game-container');
+            gc.classList.remove('turn-p1', 'turn-p2');
+        }
+
+        /* ============================================================
+           4. AUTOSEARCH (shared dengan guessRushLB)
+           ============================================================ */
+        function handleNameInput(val, playerNum) {
+            const box = document.getElementById(`suggestions-p${playerNum}`);
+            if (!val) { box.style.display = 'none'; return; }
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6);
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(m => {
+                    const safe = m.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div onclick="selectName('${safe}', ${playerNum})" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--accent-color); font-weight:bold;">${m.name} <span style="color:var(--text-secondary); font-size:0.7rem;">(${m.score} Pts)</span></div>`;
+                }).join('');
+                box.style.display = 'block';
+            } else box.style.display = 'none';
+        }
+        function selectName(name, playerNum) {
+            document.getElementById(`p${playerNum}-name`).value = name;
+            document.getElementById(`suggestions-p${playerNum}`).style.display = 'none';
+        }
+
+        /* ============================================================
+           5. START GAME → INIT + TRANSITION → PLACEMENT
+           ============================================================ */
+        function startGame() {
+            const p1 = document.getElementById('p1-name').value.trim();
+            const p2 = document.getElementById('p2-name').value.trim();
+            if (!p1 || !p2) { showPopup("ISI NAMA KEDUA PEMAIN!", "#e67e22"); return; }
+            if (p1.toLowerCase() === p2.toLowerCase()) { showPopup("NAMA P1 & P2 HARUS BEDA!", "#e67e22"); return; }
+
+            game.p1Name = p1; game.p2Name = p2;
+            game.p1Lives = 3; game.p2Lives = 3;
+            game.cells = Array.from({ length: 25 }, () => ({ p1Bomb: false, p2Bomb: false, revealed: false, content: null }));
+            game.placementPlayer = 1;
+            game.bombsPlaced = 0;
+            game.phase = 'transition';
+            game.isDraw = false;
+
+            document.getElementById('p1-name-lbl').innerText = p1.toUpperCase();
+            document.getElementById('p2-name-lbl').innerText = p2.toUpperCase();
+
+            sfx.click();
+            // Transition: P2 berbalik sebelum P1 naro bom
+            startTransition(`${p2.toUpperCase()} BERBALIK BADAN`, '🙈', 5, () => startPlacement(1));
+        }
+
+        /* ============================================================
+           6. TRANSITION COUNTDOWN
+           ============================================================ */
+        function startTransition(text, icon, seconds, callback) {
+            document.getElementById('transition-text').innerText = text;
+            document.getElementById('transition-icon').innerText = icon;
+            const cdEl = document.getElementById('countdown');
+            cdEl.innerText = seconds;
+            cdEl.classList.remove('pulse');
+            void cdEl.offsetWidth;
+            cdEl.classList.add('pulse');
+            clearTurnTheme();
+            showScreen('screen-transition');
+
+            let remaining = seconds;
+            if (game.countdownInterval) clearInterval(game.countdownInterval);
+            game.countdownInterval = setInterval(() => {
+                remaining--;
+                if (remaining > 0) {
+                    cdEl.innerText = remaining;
+                    cdEl.classList.remove('pulse');
+                    void cdEl.offsetWidth;
+                    cdEl.classList.add('pulse');
+                    sfx.tick();
+                } else {
+                    clearInterval(game.countdownInterval);
+                    game.countdownInterval = null;
+                    callback();
+                }
+            }, 1000);
+        }
+
+        /* ============================================================
+           7. BOMB PLACEMENT PHASE
+           ============================================================ */
+        function startPlacement(playerNum) {
+            game.placementPlayer = playerNum;
+            game.bombsPlaced = 0;
+            game.phase = 'place';
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            document.getElementById('placer-label').innerText = `${name.toUpperCase()}: TARO BOM`;
+            document.getElementById('bombs-left').innerText = game.maxBombs;
+            const btn = document.getElementById('btn-confirm');
+            btn.disabled = true;
+            btn.innerText = `TARO MINIMAL ${game.minBombs} BOM`;
+            applyTurnTheme(playerNum);
+            renderPlacementGrid();
+            showScreen('screen-place');
+        }
+
+        function renderPlacementGrid() {
+            const grid = document.getElementById('grid-place');
+            grid.innerHTML = '';
+            const key = game.placementPlayer === 1 ? 'p1Bomb' : 'p2Bomb';
+            game.cells.forEach((cell, i) => {
+                const el = document.createElement('div');
+                el.className = 'cell';
+                if (cell[key]) el.classList.add('bomb-placed');
+                el.dataset.idx = i;
+                el.addEventListener('click', () => toggleBomb(i));
+                grid.appendChild(el);
+            });
+        }
+
+        /* CHANGED [2026-05-28]:
+           - Validasi 1-5 bom (was exactly 5) — tombol SELESAI active dari 1 bom keatas.
+           - Place & unplace pakai flip animation (cell-flip keyframes, swap bg di mid-flip). */
+        function toggleBomb(idx) {
+            const cell = game.cells[idx];
+            const key = game.placementPlayer === 1 ? 'p1Bomb' : 'p2Bomb';
+            const el = document.querySelector(`#grid-place .cell[data-idx="${idx}"]`);
+            if (!el || el.classList.contains('flipping')) return; // anti-spam click
+
+            if (cell[key]) {
+                // UNPLACE — flip animation, bg jadi tanah di tengah
+                cell[key] = false;
+                game.bombsPlaced--;
+                el.classList.add('flipping');
+                setTimeout(() => el.classList.remove('bomb-placed'), 270);
+                setTimeout(() => el.classList.remove('flipping'), 550);
+                sfx.flip();
+            } else {
+                if (game.bombsPlaced >= game.maxBombs) {
+                    showPopup(`MAX ${game.maxBombs} BOM!`, '#e67e22');
+                    return;
+                }
+                // PLACE — flip animation, bg jadi bom di tengah
+                cell[key] = true;
+                game.bombsPlaced++;
+                el.classList.add('flipping');
+                setTimeout(() => el.classList.add('bomb-placed'), 270);
+                setTimeout(() => el.classList.remove('flipping'), 550);
+                sfx.place();
+            }
+            const remaining = game.maxBombs - game.bombsPlaced;
+            document.getElementById('bombs-left').innerText = remaining;
+            const btn = document.getElementById('btn-confirm');
+            if (game.bombsPlaced >= game.minBombs) {
+                btn.disabled = false;
+                btn.innerText = `SELESAI · ${game.bombsPlaced} / ${game.maxBombs} BOM`;
+            } else {
+                btn.disabled = true;
+                btn.innerText = `TARO MINIMAL ${game.minBombs} BOM`;
+            }
+        }
+
+        function confirmPlacement() {
+            // CHANGED [2026-05-28]: was `< maxBombs`, sekarang `< minBombs` (1-5 lenient)
+            if (game.bombsPlaced < game.minBombs) return;
+            sfx.flip();
+            if (game.placementPlayer === 1) {
+                // P1 selesai → P2 berbalik dulu, baru P2 naro bom
+                startTransition(`${game.p1Name.toUpperCase()} BERBALIK BADAN`, '🙈', 5, () => startPlacement(2));
+            } else {
+                // P2 selesai → transisi ke guessing phase
+                startTransition(`SIAP BERTANDING!`, '⚔️', 5, () => startGuessing());
+            }
+        }
+
+        /* ============================================================
+           8. GUESSING PHASE
+           ============================================================ */
+        function startGuessing() {
+            game.currentPlayer = 1;
+            game.phase = 'guess';
+            game.inputLocked = false;
+            applyTurnTheme(1);
+            renderGameUI();
+            renderGameGrid();
+            showScreen('screen-game');
+            startPickTimer(); // [2026-05-28] start 10s timer untuk P1 pick pertama
+        }
+
+        function renderGameUI() {
+            const name = game.currentPlayer === 1 ? game.p1Name : game.p2Name;
+            const turnEl = document.getElementById('current-turn-display');
+            turnEl.innerText = `GILIRAN ${name.toUpperCase()}`;
+            turnEl.className = `current-turn-display p${game.currentPlayer}`;
+            // Hearts
+            document.getElementById('p1-hearts').innerHTML = renderHearts(game.p1Lives);
+            document.getElementById('p2-hearts').innerHTML = renderHearts(game.p2Lives);
+            // Active side glow
+            document.getElementById('lives-side-1').classList.toggle('active', game.currentPlayer === 1);
+            document.getElementById('lives-side-2').classList.toggle('active', game.currentPlayer === 2);
+        }
+        function renderHearts(lives) {
+            let html = '';
+            for (let i = 0; i < game.maxLives; i++) {
+                if (i < lives) html += '❤️ ';
+                else html += '<span class="heart-lost">🖤</span> ';
+            }
+            return html.trim();
+        }
+
+        /* CHANGED [2026-05-28]: tampilkan bom milik current player (visible + locked) supaya pemain
+           ngga keklik bomnya sendiri. Bom lawan tetap invisible (look like tanah, clickable). */
+        function renderGameGrid() {
+            const grid = document.getElementById('grid-game');
+            grid.innerHTML = '';
+            const ownBombKey = game.currentPlayer === 1 ? 'p1Bomb' : 'p2Bomb';
+            game.cells.forEach((cell, i) => {
+                const el = document.createElement('div');
+                el.className = 'cell';
+                if (cell.revealed) {
+                    el.classList.add('revealed', 'locked');
+                    if (cell.content === 'bomb') el.classList.add('show-bomb');
+                    else if (cell.content === 'coin') el.classList.add('show-coin');
+                    else if (cell.content === 'money') el.classList.add('show-money');
+                } else if (cell[ownBombKey]) {
+                    // Bom sendiri — visible + locked (cant click)
+                    el.classList.add('own-bomb', 'locked');
+                }
+                el.dataset.idx = i;
+                el.addEventListener('click', () => pickCell(i));
+                grid.appendChild(el);
+            });
+        }
+
+        function pickCell(idx) {
+            if (game.inputLocked) return;
+            const cell = game.cells[idx];
+            if (cell.revealed) return;
+            const player = game.currentPlayer;
+            const ownBomb = player === 1 ? 'p1Bomb' : 'p2Bomb';
+            // GUARD [2026-05-28]: bom sendiri di-block (sesuai arahan Pradipta — pemain ngga bisa klik bom sendiri)
+            if (cell[ownBomb]) return;
+
+            game.inputLocked = true;
+            stopPickTimer(); // [2026-05-28] stop timer saat pick valid
+            const oppBomb = player === 1 ? 'p2Bomb' : 'p1Bomb';
+
+            cell.revealed = true;
+            let content, damage = false;
+
+            if (cell[oppBomb]) {
+                // Bom lawan → BOOM, damage
+                content = 'bomb';
+                damage = true;
+            } else {
+                // Aman → random koin atau uang (no own bomb because sudah di-block di atas)
+                content = Math.random() < 0.5 ? 'coin' : 'money';
+            }
+            cell.content = content;
+
+            const cellEl = document.querySelector(`#grid-game .cell[data-idx="${idx}"]`);
+            cellEl.classList.add('flipping', 'locked');
+            // Change bg di tengah flip (saat scaleX=0)
+            setTimeout(() => {
+                if (content === 'bomb') cellEl.classList.add('show-bomb');
+                else if (content === 'coin') cellEl.classList.add('show-coin');
+                else if (content === 'money') cellEl.classList.add('show-money');
+            }, 270);
+            // Selesai flip → revealed
+            setTimeout(() => {
+                cellEl.classList.add('revealed');
+                cellEl.classList.remove('flipping');
+            }, 550);
+            sfx.flip();
+
+            if (damage) {
+                // Wait flip ~half, lalu BOOM
+                setTimeout(() => {
+                    playExplosion();
+                    sfx.boom();
+                    if (player === 1) game.p1Lives--;
+                    else game.p2Lives--;
+                }, 350);
+                setTimeout(() => {
+                    renderGameUI();
+                    checkEndOrNext();
+                }, 1400);
+            } else {
+                // Coin / money / own bomb (no damage)
+                setTimeout(() => {
+                    if (content === 'coin') {
+                        sfx.coin();
+                        spawnBurst(cellEl, '🪙');
+                        spawnSparkles(cellEl);
+                    } else if (content === 'money') {
+                        sfx.money();
+                        spawnBurst(cellEl, '💵');
+                        spawnSparkles(cellEl);
+                    } else {
+                        // own bomb, light feedback
+                        sfx.place();
+                    }
+                }, 350);
+                setTimeout(() => checkEndOrNext(), 1100);
+            }
+        }
+
+        function spawnBurst(cellEl, emoji) {
+            const burst = document.createElement('div');
+            burst.className = 'burst-emoji';
+            burst.innerText = emoji;
+            burst.style.left = '50%';
+            burst.style.top = '30%';
+            burst.style.transform = 'translateX(-50%)';
+            cellEl.appendChild(burst);
+            setTimeout(() => burst.remove(), 1000);
+        }
+        function spawnSparkles(cellEl) {
+            const sparks = ['✨', '⭐', '✨'];
+            sparks.forEach((s, i) => {
+                const el = document.createElement('div');
+                el.className = 'sparkle';
+                el.innerText = s;
+                el.style.left = (15 + i * 30) + '%';
+                el.style.top = (40 + (i % 2) * 15) + '%';
+                el.style.animationDelay = (i * 0.1) + 's';
+                cellEl.appendChild(el);
+                setTimeout(() => el.remove(), 1500);
+            });
+        }
+
+        function playExplosion() {
+            const overlay = document.getElementById('explosion-overlay');
+            overlay.classList.remove('show');
+            void overlay.offsetWidth;
+            overlay.classList.add('show');
+            const container = document.getElementById('game-container');
+            container.classList.remove('shake');
+            void container.offsetWidth;
+            container.classList.add('shake');
+            setTimeout(() => container.classList.remove('shake'), 600);
+        }
+
+        /* ============================================================
+           PICK TIMER [2026-05-28] — 10 detik per turn.
+           Expire → auto-pick random non-own-bomb non-revealed cell.
+           ============================================================ */
+        function startPickTimer() {
+            game.pickTimerRemaining = game.pickTimerTotal;
+            updatePickTimerUI();
+            if (game.pickTimerInterval) clearInterval(game.pickTimerInterval);
+            game.pickTimerInterval = setInterval(() => {
+                game.pickTimerRemaining -= 0.1;
+                if (game.pickTimerRemaining <= 0) {
+                    game.pickTimerRemaining = 0;
+                    updatePickTimerUI();
+                    stopPickTimer();
+                    autoPickRandom();
+                    return;
+                }
+                updatePickTimerUI();
+            }, 100);
+        }
+        function stopPickTimer() {
+            if (game.pickTimerInterval) { clearInterval(game.pickTimerInterval); game.pickTimerInterval = null; }
+        }
+        function updatePickTimerUI() {
+            const fill = document.getElementById('pick-timer-fill');
+            const text = document.getElementById('pick-timer-text');
+            if (!fill || !text) return;
+            const pct = (game.pickTimerRemaining / game.pickTimerTotal) * 100;
+            fill.style.width = pct + '%';
+            text.innerText = Math.ceil(game.pickTimerRemaining) + 's';
+            fill.classList.remove('warning', 'danger');
+            if (game.pickTimerRemaining <= 3) fill.classList.add('danger');
+            else if (game.pickTimerRemaining <= 6) fill.classList.add('warning');
+        }
+        function autoPickRandom() {
+            // Pilih random cell yang BUKAN bom sendiri DAN belum revealed
+            const ownBombKey = game.currentPlayer === 1 ? 'p1Bomb' : 'p2Bomb';
+            const candidates = [];
+            game.cells.forEach((c, i) => {
+                if (!c.revealed && !c[ownBombKey]) candidates.push(i);
+            });
+            if (candidates.length === 0) {
+                // Edge case: ngga ada candidate (semua revealed atau semua own bombs). End game.
+                checkEndOrNext();
+                return;
+            }
+            const pick = candidates[Math.floor(Math.random() * candidates.length)];
+            showPopup("WAKTU HABIS · SISTEM AUTO PILIH", "#e67e22");
+            sfx.tick();
+            pickCell(pick);
+        }
+
+        function checkEndOrNext() {
+            // Cek nyawa = 0 → endGame
+            if (game.p1Lives <= 0 || game.p2Lives <= 0) {
+                endGame(game.p1Lives <= 0 ? 2 : 1);
+                return;
+            }
+            // Cek semua kotak ke-reveal (edge case)
+            const allRevealed = game.cells.every(c => c.revealed);
+            if (allRevealed) {
+                if (game.p1Lives === game.p2Lives) {
+                    // Draw
+                    game.isDraw = true;
+                    endGame(0);
+                } else {
+                    endGame(game.p1Lives > game.p2Lives ? 1 : 2);
+                }
+                return;
+            }
+            // Lanjut giliran lawan
+            nextTurn();
+        }
+
+        function nextTurn() {
+            game.currentPlayer = game.currentPlayer === 1 ? 2 : 1;
+            applyTurnTheme(game.currentPlayer);
+            renderGameUI();
+            renderGameGrid(); // [2026-05-28] re-render supaya own-bomb visibility update sesuai current player
+            game.inputLocked = false;
+            startPickTimer(); // [2026-05-28] reset 10s timer untuk new player
+        }
+
+        function surrenderGame() {
+            if (!confirm("Menyerah? Lawan otomatis menang.")) return;
+            const winner = game.currentPlayer === 1 ? 2 : 1;
+            endGame(winner);
+        }
+
+        /* ============================================================
+           9. END GAME + LB UPDATE
+           ============================================================ */
+        /* CHANGED [2026-05-28]: SERI flow di-pisah dari win/loss.
+           - Win/loss → langsung update LB + show result screen (+200/+50).
+           - SERI → JANGAN update LB, show screen-seri dengan pilihan MAIN LAGI / AKHIRI.
+             Update LB (+150 each) hanya kalau user pencet AKHIRI (via seriEnd). */
+        function endGame(winnerNum) {
+            game.phase = 'result';
+            game.inputLocked = true;
+            stopPickTimer();
+            if (game.countdownInterval) { clearInterval(game.countdownInterval); game.countdownInterval = null; }
+            clearTurnTheme();
+
+            if (game.isDraw) {
+                // Tampilkan SERI screen dulu — biar user pilih MAIN LAGI / AKHIRI
+                document.getElementById('seri-p1-name').innerText = game.p1Name.toUpperCase();
+                document.getElementById('seri-p2-name').innerText = game.p2Name.toUpperCase();
+                sfx.flip();
+                showScreen('screen-seri');
+                return;
+            }
+
+            // Non-draw: update LB langsung
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+
+            const winnerName = winnerNum === 1 ? game.p1Name : game.p2Name;
+            const loserName = winnerNum === 1 ? game.p2Name : game.p1Name;
+            game.lastWinner = winnerName;
+            game.lastLoser = loserName;
+            game.lastOldWinnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
+            game.lastOldLoserScore = (lb.find(e => e.name.toLowerCase() === loserName.toLowerCase()) || {}).score || 0;
+
+            [{ n: winnerName, p: 200 }, { n: loserName, p: 50 }].forEach(x => {
+                const i = lb.findIndex(e => e.name.toLowerCase() === x.n.toLowerCase());
+                if (i !== -1) lb[i].score += x.p;
+                else lb.push({ name: x.n, score: x.p });
+            });
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+
+            document.getElementById('winner-name').innerText = winnerName.toUpperCase();
+            document.getElementById('loser-name').innerText = loserName.toUpperCase();
+            document.querySelector('#screen-result .result-winner .result-badge').innerText = '🏆 PEMENANG';
+            document.querySelector('#screen-result .result-winner .result-pts').innerText = '+200 POIN';
+            document.getElementById('loser-badge').innerText = 'PERINGKAT 2';
+            document.getElementById('loser-pts').innerText = '+50 POIN';
+
+            sfx.win();
+            showScreen('screen-result');
+        }
+
+        /* SERI handlers [2026-05-28] —
+           seriPlayAgain: restart match dengan nama sama (skip register), NO point update.
+           seriEnd: kedua dapat +150 → masuk LB view. */
+        function seriPlayAgain() {
+            sfx.click();
+            restartMatch();
+        }
+        function seriEnd() {
+            sfx.win();
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            game.lastWinner = game.p1Name;
+            game.lastLoser = game.p2Name;
+            game.lastOldWinnerScore = (lb.find(e => e.name.toLowerCase() === game.p1Name.toLowerCase()) || {}).score || 0;
+            game.lastOldLoserScore = (lb.find(e => e.name.toLowerCase() === game.p2Name.toLowerCase()) || {}).score || 0;
+            [{ n: game.p1Name, p: 150 }, { n: game.p2Name, p: 150 }].forEach(x => {
+                const i = lb.findIndex(e => e.name.toLowerCase() === x.n.toLowerCase());
+                if (i !== -1) lb[i].score += x.p;
+                else lb.push({ name: x.n, score: x.p });
+            });
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+            // Render LB dengan reward 150/150 (handled via game.isDraw flag di renderLeaderboard)
+            viewLeaderboard();
+        }
+
+        /* Restart match (re-use nama, skip register) [2026-05-28] */
+        function restartMatch() {
+            game.p1Lives = 3; game.p2Lives = 3;
+            game.cells = Array.from({ length: 25 }, () => ({ p1Bomb: false, p2Bomb: false, revealed: false, content: null }));
+            game.placementPlayer = 1;
+            game.bombsPlaced = 0;
+            game.isDraw = false;
+            game.currentPlayer = 1;
+            game.inputLocked = false;
+            startTransition(`${game.p2Name.toUpperCase()} BERBALIK BADAN`, '🙈', 5, () => startPlacement(1));
+        }
+
+        /* ============================================================
+           10. LEADERBOARD VIEW (in-file, simplified throne battle)
+           ============================================================ */
+        function viewLeaderboard() {
+            sfx.flip();
+            showScreen('screen-leaderboard');
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const arena = document.getElementById('leaderboard-arena');
+            arena.innerHTML = '';
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+
+            const winnerName = game.lastWinner;
+            const loserName = game.lastLoser;
+            const oldWS = game.lastOldWinnerScore;
+            const oldLS = game.lastOldLoserScore;
+            // CHANGED [2026-05-28]: draw reward 100 → 150 (sesuai arahan Pradipta untuk AKHIRI di SERI)
+            const wReward = game.isDraw ? 150 : 200;
+            const lReward = game.isDraw ? 150 : 50;
+
+            // Build initial list dengan OLD scores
+            const initialList = lb.map(e => {
+                let score = e.score;
+                if (e.name.toLowerCase() === winnerName.toLowerCase()) score = oldWS;
+                else if (e.name.toLowerCase() === loserName.toLowerCase()) score = oldLS;
+                return { name: e.name, score };
+            }).sort((a, b) => b.score - a.score).slice(0, 30);
+
+            if (!initialList.find(e => e.name.toLowerCase() === winnerName.toLowerCase())) {
+                initialList.push({ name: winnerName, score: oldWS });
+            }
+            if (!initialList.find(e => e.name.toLowerCase() === loserName.toLowerCase())) {
+                initialList.push({ name: loserName, score: oldLS });
+            }
+
+            const ROW_H = 60;
+            initialList.forEach((entry, i) => {
+                const isWinner = entry.name.toLowerCase() === winnerName.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'rank-card';
+                div.id = `card-${entry.name.replace(/\s+/g, '-')}`;
+                div.style.top = `${i * ROW_H}px`;
+                if (isWinner) div.classList.add('player-focus');
+                div.innerHTML = `
+                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <div class="rank-pos">#${i + 1}</div>
+                    <div class="rank-info">${entry.name}</div>
+                    <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
+                `;
+                arena.appendChild(div);
+                if (i === 0) div.classList.add('gold-rank');
+                else if (i === 1) div.classList.add('silver-rank');
+                else if (i === 2) div.classList.add('bronze-rank');
+            });
+
+            const spacer = document.createElement('div');
+            spacer.style.height = `${initialList.length * ROW_H + 30}px`;
+            spacer.style.pointerEvents = 'none';
+            arena.appendChild(spacer);
+
+            // Scroll ke winner position
+            setTimeout(() => scrollToMyPosition(winnerName), 120);
+
+            // Count-up DUAL setelah 900ms
+            setTimeout(() => {
+                phaseCountUpDual(
+                    winnerName, oldWS, oldWS + wReward,
+                    loserName, oldLS, oldLS + lReward,
+                    () => phaseReshuffle(lb)
+                );
+            }, 900);
+        }
+
+        function phaseCountUpDual(wn, wStart, wEnd, ln, lStart, lEnd, done) {
+            const wCard = document.getElementById(`card-${wn.replace(/\s+/g, '-')}`);
+            const wPts  = document.getElementById(`pts-${wn.replace(/\s+/g, '-')}`);
+            const lCard = document.getElementById(`card-${ln.replace(/\s+/g, '-')}`);
+            const lPts  = document.getElementById(`pts-${ln.replace(/\s+/g, '-')}`);
+            if (!wPts || !lPts) { setTimeout(() => done && done(), 200); return; }
+
+            const wReward = wEnd - wStart;
+            const lReward = lEnd - lStart;
+            if (wCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.style.color = 'var(--gold)';
+                f.style.textShadow = '0 0 12px rgba(255,215,0,0.7)';
+                f.innerText = `+${wReward}`;
+                wCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+            if (lCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.innerText = `+${lReward}`;
+                lCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+
+            const duration = 1800;
+            const startT = Date.now();
+            let lastSfx = 0;
+            function step() {
+                const t = Math.min((Date.now() - startT) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                let wCur = Math.floor(wStart + wReward * eased);
+                let lCur = Math.floor(lStart + lReward * eased);
+                if (t >= 1) { wCur = wEnd; lCur = lEnd; }
+                wPts.innerText = wCur;
+                lPts.innerText = lCur;
+                if (Date.now() - lastSfx > 90) { sfx.tick(); lastSfx = Date.now(); }
+                if (t < 1) requestAnimationFrame(step);
+                else {
+                    wPts.innerText = wEnd;
+                    lPts.innerText = lEnd;
+                    setTimeout(() => done && done(), 350);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function phaseReshuffle(fullData) {
+            const ROW_H = 60;
+            const finalRanks = [...fullData].sort((a, b) => b.score - a.score).slice(0, 30);
+            finalRanks.forEach((entry, idx) => {
+                const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
+                if (!card) return;
+                card.style.top = `${idx * ROW_H}px`;
+                card.querySelector('.rank-pos').innerText = `#${idx + 1}`;
+                const medal = card.querySelector('.podium-medal');
+                if (medal) medal.innerText = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+                card.classList.remove('gold-rank', 'silver-rank', 'bronze-rank');
+                if (idx === 0) card.classList.add('gold-rank');
+                else if (idx === 1) card.classList.add('silver-rank');
+                else if (idx === 2) card.classList.add('bronze-rank');
+            });
+            setTimeout(() => scrollToMyPosition(game.lastWinner), 1300);
+        }
+
+        function scrollToMyPosition(myName) {
+            const arena = document.getElementById('leaderboard-arena');
+            const myCard = document.getElementById(`card-${myName.replace(/\s+/g, '-')}`);
+            if (!arena || !myCard) return;
+            const cardTop = parseInt(myCard.style.top) || 0;
+            const cardHeight = 52;
+            const target = Math.max(0, (cardTop + cardHeight / 2) - arena.clientHeight / 2);
+            arena.scrollTo({ top: target, behavior: 'smooth' });
+        }
+
+        /* ============================================================
+           11. NAVIGATION
+           ============================================================ */
+        /* CHANGED [2026-05-28]: was show register screen + prefill nama.
+           Sekarang LANGSUNG restart match (skip register) per arahan Pradipta —
+           pemain ngga perlu input nama ulang tiap rematch. */
+        function playAgain() {
+            sfx.click();
+            restartMatch();
+        }
+        function backToMenu() {
+            sfx.flip();
+            if (game.countdownInterval) clearInterval(game.countdownInterval);
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

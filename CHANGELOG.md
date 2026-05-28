@@ -1,5 +1,54 @@
 # Changelog - Guess Rush
 
+## [2026-05-28] - NEW GAME: Kaching atau Kaboom! (5×5 Bomb Battle) [AI / arahan Pradipta]
+### Added
+- **`bom.html`** (file baru, standalone — bisa dihapus tanpa break index.html). Game 1v1 dengan flow:
+  1. Register 2 nama (autosearch dari `guessRushLB` localStorage, sama mekanisme dengan Sambung Kata).
+  2. Transition 5 detik (P2 berbalik badan, countdown big gold).
+  3. P1 taro bom (1-5 bom bebas, flip animation tanah ↔ bom saat klik). Tombol SELESAI active dari 1 bom keatas.
+  4. Transition 5 detik (P1 berbalik badan) → P2 taro bom (1-5 bom).
+  5. Transition 5 detik (SIAP BERTANDING!) → mulai guessing phase.
+  6. Guessing: 5×5 grid, alternating turn, 10 detik pick timer per turn.
+     - Current player's own bombs **VISIBLE + LOCKED** (overlay "MILIKMU" badge, dim opacity) supaya ngga keklik sendiri.
+     - Pick bom lawan → flip reveal bom.png + **EXPLOSION** (full-screen radial flash + screen shake + "💥 BOOM! 💥" text + boom SFX) + -1 nyawa.
+     - Pick safe cell → flip reveal koin.png ATAU uang.png (random 50/50) + burst emoji float (🪙/💵) + sparkle ✨ + chime SFX.
+     - Pick timer expire → auto-pick random non-own-bomb non-revealed cell.
+  7. Game end conditions:
+     - Nyawa pemain habis (≤0) → lawan menang.
+     - Semua 25 kotak ke-reveal sebelum ada yang mati → cek sisa nyawa; sama = SERI, beda = pemain dengan nyawa terbanyak menang.
+     - Surrender tombol MENYERAH → lawan auto-menang.
+  8. Result handling:
+     - **Win/loss**: result screen dengan winner (+200 gold card) + loser (+50). LB di-update langsung.
+     - **SERI**: screen sendiri dengan 2 pilihan — MAIN LAGI (rematch, skip register, NO point update) atau AKHIRI (+150 each → masuk LB).
+  9. Leaderboard view (in-file simplified throne battle): top 30, podium gold/silver/bronze, count-up dual animation winner+loser, scroll-to-winner. Sumber data: `guessRushLB` (unified dengan Guess Rush + Sambung Kata).
+- **State `chain.isDraw`**: flag untuk routing SERI vs normal end. Set di `checkEndOrNext` saat semua cell revealed + lives sama.
+- **CSS sections**: orbs (red+cyan untuk match bomb theme), grid 5×5, cell variants (bomb-placed/own-bomb/show-bomb/show-coin/show-money), cell-flip keyframes, pick-timer bar (3 state: normal/warning/danger), explosion-overlay + screen-shake, burst-emoji + sparkle, transition countdown, lives-bar dengan heart system, result/SERI result rows, simplified leaderboard styles.
+- **Visual assets**: `assets/tanah.png` (unselect), `assets/bom.png` (bomb), `assets/koin.png` (coin reward), `assets/uang.png` (money reward), `assets/thumnailkachingataukaboom.png` (game card thumbnail), `assets/thumbnailsambungkata.png` (Sambung Kata thumbnail).
+
+### Changed
+- **`index.html`** Modal MODE LAINNYA view 1 (game grid):
+  - Card 1: SAMBUNG KATA — emoji 🔤 → `<img>` thumbnail (`assets/thumbnailsambungkata.png`), Roblox-style.
+  - Card 2: TEBAK GAMBAR (locked) → **KACHING ATAU KABOOM!** (unlocked, thumbnail image `assets/thumnailkachingataukaboom.png`, onclick → `openKaboom()` navigate to `bom.html`).
+  - Card 3 & 4: SCRAMBLE + SPEED QUIZ (tetap locked, emoji).
+- **CSS `.game-thumb`** baru: 1:1 aspect ratio + object-fit cover + border-radius 10px + shadow. Variant `.unlocked .game-thumb` (cyan border) dan `.locked .game-thumb` (grayscale brightness 0.5).
+- **`openKaboom()`** JS function baru di index.html: SFX flip + `window.location.href = 'bom.html'`.
+
+### Game Logic Details (sesuai jawaban Pradipta di question.md)
+- **Bomb count 1-5**: Bebas per pemain, validasi tombol SELESAI active dari 1 bom.
+- **Place undo**: Klik kotak bom → flip animation, kembali jadi tanah (same UX as place).
+- **Own bomb saat pick**: Di-block, ngga bisa klik. Visible sebagai placeholder "MILIKMU" badge.
+- **Auto-pick on timeout**: Sistem pilih random cell yang BUKAN bom sendiri (supaya pemain ngga ke-bom sendiri tanpa salahnya).
+- **MAIN LAGI**: Skip register, restart match dengan nama sama (baik dari result win/loss, LB, atau SERI screen).
+- **Unified LB**: All games (Guess Rush, Sambung Kata, Kaching atau Kaboom) share `localStorage.guessRushLB`.
+
+### Files
+- `bom.html` (NEW): self-contained game ~900 baris (CSS + HTML + JS).
+- `index.html`: CSS section 11B (`.game-thumb`), HTML modal view 1 (card 1 & 2 pakai thumbnail), JS Block 4 (`openKaboom` function).
+- `assets/`: 6 PNG baru (tanah, bom, koin, uang, thumnailkachingataukaboom, thumbnailsambungkata).
+- `question.md` (NEW): rekap pertanyaan + default + jawaban Pradipta.
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-28] - MODE LAINNYA: Layout Horizontal Row (Card Sejajar Kepinggir) [AI / arahan Pradipta]
 ### Changed
 - **`.game-grid`**: `flex-direction: column → row`. 4 card sekarang berjajar HORIZONTAL (sejajar ke samping), bukan vertikal ke bawah. Gap dikecilkan 10px → 8px supaya muat di modal 420px.

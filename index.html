@@ -334,6 +334,22 @@
             font-size: 1.9rem; line-height: 1;
             filter: drop-shadow(0 0 12px currentColor);
         }
+        /* NEW [2026-05-28]: thumbnail image (Roblox-style) — gantiin emoji icon untuk game yang punya artwork. */
+        .game-card .game-thumb {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: 10px;
+            display: block;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+        }
+        .game-card.unlocked .game-thumb {
+            border: 1px solid rgba(0,242,255,0.25);
+        }
+        .game-card.locked .game-thumb {
+            filter: grayscale(1) brightness(0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
         .game-card .game-text {
             width: 100%;
         }
@@ -984,42 +1000,37 @@
                 <h2 style="color:white; margin-bottom:4px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">PILIH GAME</h2>
                 <p style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 6px;">1 ARENA BUKA · 3 SEGERA</p>
                 <div class="game-grid">
-                    <!-- UNLOCKED: SAMBUNG KATA → buka view 2 (Casual/Chaos) -->
+                    <!-- UNLOCKED 1: SAMBUNG KATA — thumbnail image, klik → view 2 (Casual/Chaos) -->
                     <div class="game-card unlocked" onclick="showChainSubModes()">
-                        <div class="game-icon" style="color:var(--accent-color);">🔤</div>
+                        <img src="assets/thumbnailsambungkata.png" class="game-thumb" alt="Sambung Kata">
                         <div class="game-text">
                             <h3>SAMBUNG KATA</h3>
-                            <p>Duel 1v1 sambung huruf terakhir.</p>
                         </div>
-                        <span class="game-badge">PLAY NOW</span>
+                        <span class="game-badge">PLAY</span>
+                    </div>
+                    <!-- UNLOCKED 2: KACHING ATAU KABOOM! — thumbnail image, klik → navigate ke bom.html [NEW 2026-05-28] -->
+                    <div class="game-card unlocked" onclick="openKaboom()">
+                        <img src="assets/thumnailkachingataukaboom.png" class="game-thumb" alt="Kaching atau Kaboom">
+                        <div class="game-text">
+                            <h3>KACHING / KABOOM!</h3>
+                        </div>
+                        <span class="game-badge">PLAY</span>
                     </div>
                     <!-- LOCKED 1: no onclick, no hover -->
                     <div class="game-card locked">
                         <span class="game-lock-icon">🔒</span>
-                        <div class="game-icon">🖼️</div>
+                        <div class="game-icon">🎲</div>
                         <div class="game-text">
-                            <h3>TEBAK GAMBAR</h3>
-                            <p>Tebak alat dari ilustrasi visual.</p>
+                            <h3>SCRAMBLE</h3>
                         </div>
                         <span class="game-badge">COMING SOON</span>
                     </div>
                     <!-- LOCKED 2 -->
                     <div class="game-card locked">
                         <span class="game-lock-icon">🔒</span>
-                        <div class="game-icon">🎲</div>
-                        <div class="game-text">
-                            <h3>SCRAMBLE</h3>
-                            <p>Susun acak huruf jadi kata utuh.</p>
-                        </div>
-                        <span class="game-badge">COMING SOON</span>
-                    </div>
-                    <!-- LOCKED 3 -->
-                    <div class="game-card locked">
-                        <span class="game-lock-icon">🔒</span>
                         <div class="game-icon">⚡</div>
                         <div class="game-text">
                             <h3>SPEED QUIZ</h3>
-                            <p>Jawab kilat tanpa hint.</p>
                         </div>
                         <span class="game-badge">COMING SOON</span>
                     </div>
@@ -1281,6 +1292,12 @@
         function closeModesModal() {
             sfx.flip();
             document.getElementById('modal-modes').style.display = 'none';
+        }
+        // NEW [2026-05-28]: navigate ke bom.html (game terpisah, standalone file).
+        // Pakai window.location supaya state index.html ke-reset; bom.html share localStorage guessRushLB.
+        function openKaboom() {
+            sfx.flip();
+            window.location.href = 'bom.html';
         }
 
         function showPopup(t, c) {
