@@ -996,8 +996,11 @@
                 }
                 return;
             }
-            // Lanjut giliran lawan
-            nextTurn();
+            // CHANGED [2026-05-28]: tambah transition "balik badan" 5 detik antar pick (arahan Pradipta —
+            // sebelumnya langsung ganti turn, terlalu cepet susah gunta ganti). Pemain yang BARU SELESAI
+            // pick → berbalik supaya lawan bisa lanjut tanpa kepoin layar.
+            const currentName = game.currentPlayer === 1 ? game.p1Name : game.p2Name;
+            startTransition(`${currentName.toUpperCase()} BERBALIK BADAN`, '🙈', 5, () => nextTurn());
         }
 
         function nextTurn() {
@@ -1006,6 +1009,7 @@
             renderGameUI();
             renderGameGrid(); // [2026-05-28] re-render supaya own-bomb visibility update sesuai current player
             game.inputLocked = false;
+            showScreen('screen-game'); // [2026-05-28] balik dari screen-transition ke screen-game setelah countdown
             startPickTimer(); // [2026-05-28] reset 10s timer untuk new player
         }
 
