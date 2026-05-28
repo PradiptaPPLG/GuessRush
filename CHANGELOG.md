@@ -1,5 +1,104 @@
 # Changelog - Guess Rush
 
+## [2026-05-28] - Perfect Timer: Difficulty Selector NORMAL / HARD [AI / arahan Pradipta]
+### Added
+- **Screen `#screen-difficulty`** (baru, di antara `#screen-rounds` dan `#screen-vs`). 2 cards horizontal:
+  - **NORMAL** (green/cyan, icon 🟢): target detik **BULAT** (sentidetik = 00). Contoh `04.00 · 07.00 · 09.00`. Generator: `Math.floor(Math.random() * (TARGET_MAX - TARGET_MIN + 1)) + TARGET_MIN` → integer 3..10 inclusive.
+  - **HARD** (red/danger, icon 🔴): target dengan sentidetik **RANDOM** (step 0.01). Contoh `04.26 · 07.83 · 09.51`. Generator: tetap pakai logic awal `Math.round((TARGET_MIN + Math.random()*range) * 100) / 100`.
+- **CSS `.difficulty-row` + `.diff-card`** (variants `.normal` dan `.hard`): hover lift + colored border/box-shadow + selected state. Cards lebih tinggi dari round-card karena ada title + subtitle + example.
+- **State `game.difficulty`**: `'normal'` (default) atau `'hard'`. Di-reset ke `'normal'` saat MAIN LAGI.
+- **Functions baru** (JS Block 5):
+  - `goToDifficulty()`: sfx + sync selected state + show screen-difficulty.
+  - `selectDifficulty(diff)`: set `game.difficulty` + toggle selected class.
+- **Label updates**:
+  - VS screen subtitle: "PERFECT TIMER · 3 RONDE" → "PERFECT TIMER · 3 RONDE · **NORMAL/HARD**".
+  - Match result screen subtitle: sama format.
+
+### Changed
+- **Flow navigation**: `register → rounds → MULAI PERTANDINGAN` jadi `register → rounds → LANJUT PILIH MODE → difficulty → MULAI PERTANDINGAN`. Tombol di screen-rounds berubah label dari "MULAI PERTANDINGAN" → "LANJUT PILIH MODE", trigger `goToDifficulty()` (bukan `startMatch()` lagi).
+- **`startNextRound()` target generator**: branch berdasarkan `game.difficulty` — `'normal'` → integer detik, `'hard'` → step 0.01 (sama logic awal).
+- **`playAgain()`**: reset `game.difficulty = 'normal'` + sync selected card class di screen-difficulty (selain reset rounds yang sudah ada).
+
+### Files
+- `perfecttimer.html`:
+  - CSS section 7 (extended dengan `.difficulty-row` + `.diff-card` variants).
+  - HTML: screen-difficulty baru ditambah setelah screen-rounds. Tombol di screen-rounds rubah label + onclick. Label `<span id="vs-diff-label">` di VS subtitle + `<span id="final-diff-label">` di match-result subtitle.
+  - JS Block 2 (state `difficulty` field), Block 5 (`goToDifficulty`, `selectDifficulty`, modifikasi `startMatch` set label + `startNextRound` branching generator), Block 12 (`playAgain` reset difficulty).
+- `question.md`: tambah Q11 — difficulty selector NORMAL/HARD.
+- `CHANGELOG.md`: entri ini.
+
+### Preserved (NOT removed per rules.md)
+- Generator HARD (random step 0.01) tidak dihapus — dipindahkan ke branch `else` di `startNextRound`, masih jalan persis sama untuk HARD mode.
+- Round picker (1/3/5), VS animation, semua screen lain — unchanged.
+
+
+## [2026-05-28] - NEW GAME: Perfect Timer (Timing Accuracy Duel) [AI / arahan Pradipta]
+### Added
+- **`perfecttimer.html`** (file baru, standalone — sama pattern dengan `bom.html`). Game 1v1 ketepatan waktu klik dengan flow:
+  1. **Register** 2 nama (autosearch dari `guessRushLB`, sama UI pattern dengan Sambung Kata + Kaboom).
+  2. **Pilih jumlah ronde**: 1, 3, atau 5 (ganjil — minim seri). Default 3.
+  3. **VS animation** ("A vs B" cinematic slide-in + big VS pop).
+  4. **Per ronde**:
+     - Round intro: "RONDE X / Y" + target reveal (random 3.00-10.00 detik, format SS.HS).
+     - P1 countdown 5 detik (5→4→3→2→1→GO!) dengan SFX beep.
+     - P1 stopwatch jalan dari 00.00 naik (interval 10ms = 1 sentidetik per tick). Pemain klik tombol BIG STOP atau tekan SPASI untuk capture.
+     - Auto-stop di 15.00 detik (akurasi 0%) kalau pemain telat klik.
+     - P2 turn (countdown + stopwatch, **target sama** dengan P1 di ronde itu).
+     - Round result screen: 2 card (P1 & P2) tampilin time clicked + selisih + akurasi % + label (PERFECT/AMAZING/GREAT/GOOD/MISS) + pemenang ronde.
+  5. **Match result**:
+     - Pemenang match = **best-of-rounds** (siapa menang lebih banyak ronde). Bukan total akurasi.
+     - Round-by-round summary pills di bawah (R1: NAMA, R2: NAMA, dst).
+     - Winner +200, loser +50. Seri (rare, total wins sama) → +150 / +150.
+  6. **Leaderboard view** (same simplified throne battle pattern dari bom.html): top 30, podium gold/silver/bronze, count-up dual animasi winner+loser, scroll-to-winner.
+  7. **MAIN LAGI** → balik ke screen register dengan **input nama dikosongkan** (project publik / pameran — tiap pair stranger harus input ulang, bukan prefill seperti bom.html).
+  8. **MENYERAH** → lawan menang sisa ronde semua, langsung end-match.
+- **Konstanta**: `TARGET_MIN = 3.0`, `TARGET_MAX = 10.0`, `STOPWATCH_MAX = 15.0`, `TICK_MS = 10`.
+- **Formula akurasi**: `max(0, 100 - (|target - clicked| / target * 100))`, 2 desimal. PERFECT bila selisih ≤ 0.05s (5 sentidetik).
+- **Visual effects unique untuk Perfect Timer**:
+  - Round picker cards (1/3/5) dengan hover lift + selected gold border.
+  - VS stage cinematic intro (P1 slide kiri + P2 slide kanan + big "VS" pop).
+  - Round intro animasi (banner fade + num pop + target reveal dengan letter-spacing collapse).
+  - Stopwatch big display monospace 4.6rem dengan danger flash kalau ≥ 13s.
+  - Big STOP button (radius 22px, max-width 320px, :active translate 6px) — variant warna P1 (merah) / P2 (biru).
+  - **PEAK EFFECT** (100% accuracy / selisih ≤ 0.05s): full-viewport gold flash + shockwave ring (120vmax expand) + banner slam "⭐ PERFECT! ⭐" + 2 gelombang confetti + chord SFX (C-E-G-C-E rising).
+  - Accuracy label color escalation: PERFECT (gold) → AMAZING (cyan ≥95) → GREAT (green ≥85) → GOOD (yellow ≥70) → MISS (red).
+  - Round result cards (P1/P2 side-by-side) dengan warna border per-pemain.
+  - Round summary pills (R1: NAMA P1 / SERI / NAMA P2).
+- **Input handling** (sesuai arahan Pradipta — "dilarang efek berat yang dapat menyebabkan delay"):
+  - Stopwatch tick pakai `performance.now()` di first line setiap event handler → timestamp capture sebelum ada operasi visual.
+  - Tombol STOP onclick: hard guard + capture elapsed di first 2 lines, baru update UI.
+  - :active button transition pendek (0.05s ease-out) — efek tekan kerasa tanpa block JS.
+  - Spacebar listener global dengan `document.addEventListener('keydown')` — preventDefault + stopTimer langsung.
+  - Onclick di tombol = touchpad/mouse only (cursor wajib di tombol). Klik di area lain layar tidak register.
+- **SFX library**: `click`, `flip`, `tick`, `beep` (countdown), `go` (GO!), `stop`, `peak` (5-note chord rising), `amazing`, `great`, `good`, `miss`, `win`.
+
+### Changed
+- **`index.html`** Modal MODE LAINNYA view 1 (game grid):
+  - Card 3 (was SCRAMBLE locked, emoji 🎲) → **PERFECT TIMER** unlocked, thumbnail `assets/perfecttimer.png`, onclick → `openPerfectTimer()` navigate ke `perfecttimer.html`.
+  - Card 4 (was SPEED QUIZ locked, emoji ⚡) → **TEBAK GAMBAR** (tetap LOCKED), thumbnail `assets/thumbnailtebakgambar.png`, no onclick (sesuai pattern locked cards).
+  - Subtitle "1 ARENA BUKA · 3 SEGERA" → "**3 ARENA BUKA · 1 SEGERA**".
+- **`openPerfectTimer()`** JS function baru di index.html: SFX flip + `window.location.href = 'perfecttimer.html'`. Same pattern dengan `openKaboom`.
+
+### Game Logic Details (sesuai jawaban Pradipta di question.md)
+- **Format SS.HS**: detik (00-30) titik sentidetik (00-99). Selalu 2 digit kiri . 2 digit kanan. Helper `fmtTime(sec)`.
+- **Range target**: 3.00-10.00 detik random per ronde, step 0.01. P1 & P2 dapat target SAMA di ronde yang sama, tapi BEDA antar ronde.
+- **Stopwatch arah**: NAIK dari 00.00 → max 15.00. Lewat 15s = auto-stop dengan akurasi 0%.
+- **Pemenang ronde**: pemain dengan selisih `|target - clicked|` lebih kecil. Selisih sama persis (toleransi 0.0001s) → ronde tie (0 wins untuk dua-duanya).
+- **Pemenang match**: best-of-rounds (`game.p1Wins` vs `game.p2Wins`). Sama = SERI match.
+- **Surrender**: current player kalah, lawan dianggap menang semua ronde sisa (sampai `totalRounds`).
+- **Main Lagi**: full state reset + clear input + balik ke screen-register. JANGAN prefill nama (project publik).
+
+### Files
+- `perfecttimer.html` (NEW): self-contained ~1100 baris (CSS sections 1-17 + HTML 9 screens + JS 12 blocks).
+- `index.html`: HTML modal-modes view-1 (card 3 & 4 replaced dengan thumbnail images), JS Block 4 (`openPerfectTimer` function ditambah setelah `openKaboom`).
+- `question.md`: rekap pertanyaan + jawaban final Pradipta (10 nomor).
+- `CHANGELOG.md`: entri ini.
+
+### Preserved (NOT removed per rules.md)
+- Locked card pattern (lock icon corner + COMING SOON badge + no hover effects) — masih dipakai di card 4 (Tebak Gambar).
+- Emoji icon system (`.game-icon` class) di CSS — masih ada untuk backward-compat, cuma sekarang tidak di-pakai di view-1 (semua card pakai thumbnail image). Future locked games bisa pakai emoji lagi kalau belum punya artwork.
+
+
 ## [2026-05-28] - NEW GAME: Kaching atau Kaboom! (5×5 Bomb Battle) [AI / arahan Pradipta]
 ### Added
 - **`bom.html`** (file baru, standalone — bisa dihapus tanpa break index.html). Game 1v1 dengan flow:

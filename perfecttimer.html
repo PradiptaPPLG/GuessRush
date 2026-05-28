@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Timer - Guess Rush</title>
+    <style>
+        /* ============================================================
+           1. ROOT VARIABLES (sync dengan index.html & bom.html)
+           ============================================================ */
+        :root {
+            --gold: #ffd700;
+            --bg-color: #05070a;
+            --card-bg: #11141b;
+            --accent-color: #00f2ff;
+            --accent-hover: #00d1db;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --correct: #2ecc71;
+            --silver: #e0e0e0;
+            --bronze: #cd7f32;
+            --danger: #ff4d4d;
+            --p1: #ff4d6d;
+            --p2: #4dabff;
+        }
+
+        /* ============================================================
+           2. GLOBAL RESET & BASE
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; position: relative; }
+
+        /* ============================================================
+           3. AMBIENT ORBS (cyan/purple — timing theme)
+           ============================================================ */
+        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: 0; pointer-events: none; }
+        .orb-1 { width: 400px; height: 400px; background: rgba(0, 242, 255, 0.18); top: -100px; left: -100px; animation: moveOrb 15s infinite alternate ease-in-out; }
+        .orb-2 { width: 450px; height: 450px; background: rgba(123, 44, 255, 0.18); bottom: -150px; right: -150px; animation: moveOrb 20s infinite alternate-reverse ease-in-out; }
+        @keyframes moveOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(100px, 100px) scale(1.1); } }
+
+        /* ============================================================
+           4. CONTAINER & SCREEN TRANSITIONS
+           ============================================================ */
+        #game-container {
+            width: 95%; max-width: 500px;
+            background: rgba(17, 20, 27, 0.85);
+            padding: 1.8rem 1.5rem;
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0, 242, 255, 0.05);
+            text-align: center; position: relative; z-index: 1;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: box-shadow 0.6s, border-color 0.6s;
+        }
+        #game-container.turn-p1 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,77,109,0.22); border-color: rgba(255,77,109,0.35); }
+        #game-container.turn-p2 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(77,171,255,0.22); border-color: rgba(77,171,255,0.35); }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes screenIn { from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+
+        /* ============================================================
+           5. BUTTONS — base + ghost + danger-soft
+           CATATAN [2026-05-28]: button:active TRANSFORM dipertahankan ringan (translateY 3px)
+           supaya tombol "tekan" kerasa. Itu PURE CSS, ngga ngeblock JS — capture timestamp di
+           click handler tetap synchronous & instant. Untuk Perfect Timer, .btn-stop (tombol
+           STOP utama) bahkan punya :active scale yang sangat ringan supaya feedback ada tapi
+           ngga delay nentuin akurasi.
+           ============================================================ */
+        button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
+        button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #00b8c4; }
+        button:hover:not(:active):not(:disabled) { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.3); color: var(--accent-color); box-shadow: none; }
+        .btn-ghost:hover:not(:active) { background: rgba(0,242,255,0.1); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+        .btn-danger-soft { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3); padding: 10px 16px; margin-top: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; box-shadow: none; }
+        .btn-danger-soft:hover:not(:active) { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 15px rgba(255,77,77,0.3); }
+
+        /* ============================================================
+           6. REGISTER SCREEN (re-use pattern dari bom.html / index Sambung Kata)
+           ============================================================ */
+        .register-row { margin: 14px 0; text-align: left; }
+        .register-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 8px; }
+        .register-p1 .register-label { color: var(--p1); text-shadow: 0 0 10px rgba(255,77,109,0.3); }
+        .register-p2 .register-label { color: var(--p2); text-shadow: 0 0 10px rgba(77,171,255,0.3); }
+        .register-row input { width: 100%; padding: 14px 16px; border-radius: 14px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
+        .register-p1 input { border: 2px solid rgba(255,77,109,0.3); }
+        .register-p1 input:focus { border-color: var(--p1); box-shadow: 0 0 15px rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
+        .register-p2 input { border: 2px solid rgba(77,171,255,0.3); }
+        .register-p2 input:focus { border-color: var(--p2); box-shadow: 0 0 15px rgba(77,171,255,0.3); background: rgba(77,171,255,0.05); }
+        .vs-divider { text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--accent-color); margin: 6px 0; letter-spacing: 6px; text-shadow: 0 0 12px rgba(0,242,255,0.4); }
+        .register-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: rgba(28,33,40,0.98); border-radius: 12px; padding: 8px; border: 1px solid #333; z-index: 100; margin-top: 6px; text-align: left; max-height: 180px; overflow-y: auto; }
+
+        /* ============================================================
+           7. ROUNDS PICKER (1 / 3 / 5) + DIFFICULTY PICKER (NORMAL / HARD)
+           ============================================================ */
+        .rounds-row { display: flex; gap: 12px; margin: 20px 0 6px; justify-content: center; }
+        .round-card {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 18px 6px;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+        .round-card:hover {
+            border-color: var(--accent-color);
+            background: rgba(0,242,255,0.06);
+            transform: translateY(-4px) scale(1.04);
+            box-shadow: 0 6px 18px rgba(0,242,255,0.25);
+        }
+        .round-card.selected {
+            border-color: var(--gold) !important;
+            background: rgba(255,215,0,0.1);
+            box-shadow: 0 0 20px rgba(255,215,0,0.35);
+        }
+        .round-card .round-num { font-size: 2.4rem; font-weight: 900; color: var(--accent-color); line-height: 1; }
+        .round-card.selected .round-num { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.6); }
+        .round-card .round-lbl { font-size: 0.68rem; font-weight: 900; letter-spacing: 1.5px; color: var(--text-secondary); margin-top: 6px; }
+
+        /* DIFFICULTY PICKER [2026-05-28]: 2 cards (NORMAL / HARD), lebih tinggi karena ada subtitle+example.
+           Layout flex sama dengan rounds-row, tapi cards lebih lebar dengan content stacked vertical. */
+        .difficulty-row { display: flex; gap: 14px; margin: 22px 0 6px; justify-content: center; }
+        .diff-card {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            padding: 20px 12px 18px;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .diff-card:hover {
+            transform: translateY(-4px) scale(1.04);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+        }
+        /* NORMAL: green / cyan vibes */
+        .diff-card.normal:hover {
+            border-color: var(--correct);
+            background: rgba(46,204,113,0.08);
+            box-shadow: 0 8px 22px rgba(46,204,113,0.25);
+        }
+        .diff-card.normal.selected {
+            border-color: var(--correct) !important;
+            background: rgba(46,204,113,0.12);
+            box-shadow: 0 0 22px rgba(46,204,113,0.4);
+        }
+        /* HARD: red / gold vibes */
+        .diff-card.hard:hover {
+            border-color: var(--danger);
+            background: rgba(255,77,77,0.08);
+            box-shadow: 0 8px 22px rgba(255,77,77,0.25);
+        }
+        .diff-card.hard.selected {
+            border-color: var(--danger) !important;
+            background: rgba(255,77,77,0.12);
+            box-shadow: 0 0 22px rgba(255,77,77,0.4);
+        }
+        .diff-card .diff-icon {
+            font-size: 2.2rem;
+            line-height: 1;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 0 12px currentColor);
+        }
+        .diff-card.normal .diff-icon { color: var(--correct); }
+        .diff-card.hard .diff-icon { color: var(--danger); }
+        .diff-card .diff-title {
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            margin-bottom: 4px;
+        }
+        .diff-card.normal .diff-title { color: var(--correct); text-shadow: 0 0 10px rgba(46,204,113,0.4); }
+        .diff-card.hard .diff-title { color: var(--danger); text-shadow: 0 0 10px rgba(255,77,77,0.4); }
+        .diff-card .diff-sub {
+            font-size: 0.62rem;
+            letter-spacing: 1.2px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .diff-card .diff-example {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: 1.5px;
+            background: rgba(0,0,0,0.3);
+            padding: 6px 4px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+
+        /* ============================================================
+           8. VS ANIMATION (P1 vs P2 cinematic intro)
+           ============================================================ */
+        .vs-stage {
+            position: relative;
+            padding: 30px 0;
+            overflow: hidden;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vs-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: absolute;
+            top: 50%;
+            opacity: 0;
+        }
+        .vs-name-p1 {
+            left: 0;
+            color: var(--p1);
+            text-shadow: 0 0 18px rgba(255,77,109,0.6);
+            animation: vs-slide-left 0.7s 0.2s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards;
+        }
+        .vs-name-p2 {
+            right: 0;
+            color: var(--p2);
+            text-shadow: 0 0 18px rgba(77,171,255,0.6);
+            animation: vs-slide-right 0.7s 0.4s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards;
+        }
+        @keyframes vs-slide-left {
+            0% { opacity: 0; transform: translateY(-50%) translateX(-150px) skewX(-15deg); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(-50%) translateX(0) skewX(0); filter: blur(0); }
+        }
+        @keyframes vs-slide-right {
+            0% { opacity: 0; transform: translateY(-50%) translateX(150px) skewX(15deg); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(-50%) translateX(0) skewX(0); filter: blur(0); }
+        }
+        .vs-big-vs {
+            font-size: 3.2rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 28px rgba(255,215,0,0.7), 0 4px 0 #b8860b;
+            letter-spacing: 4px;
+            position: relative;
+            opacity: 0;
+            animation: vs-big-pop 0.55s 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            z-index: 5;
+        }
+        @keyframes vs-big-pop {
+            0% { opacity: 0; transform: scale(3) rotate(-15deg); filter: blur(15px); }
+            70% { opacity: 1; transform: scale(0.9) rotate(3deg); filter: blur(0); }
+            100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+        }
+
+        /* ============================================================
+           9. ROUND INTRO (RONDE X/Y + TARGET reveal)
+           ============================================================ */
+        .round-banner {
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--accent-color);
+            margin-bottom: 6px;
+            opacity: 0;
+            animation: ri-fade-in 0.6s 0.1s forwards;
+        }
+        @keyframes ri-fade-in { to { opacity: 1; } }
+        .round-num-big {
+            font-size: 4rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            margin: 6px 0 12px;
+            opacity: 0;
+            animation: ri-num-pop 0.6s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes ri-num-pop {
+            0% { opacity: 0; transform: scale(0.4); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .target-label {
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: var(--text-secondary);
+            margin-top: 18px;
+        }
+        .target-big {
+            font-size: 4.5rem;
+            font-weight: 900;
+            color: var(--gold);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            line-height: 1.1;
+            text-shadow: 0 0 28px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.25);
+            opacity: 0;
+            animation: target-reveal 0.7s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes target-reveal {
+            0% { opacity: 0; transform: scale(0.5) rotate(-8deg); letter-spacing: 12px; filter: blur(10px); }
+            70% { opacity: 1; transform: scale(1.1) rotate(2deg); filter: blur(0); }
+            100% { opacity: 1; transform: scale(1) rotate(0); letter-spacing: 2px; }
+        }
+
+        /* ============================================================
+           10. COUNTDOWN (5 → 1 → GO)
+           ============================================================ */
+        .turn-name {
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            margin-bottom: 4px;
+        }
+        .turn-name.p1 { color: var(--p1); text-shadow: 0 0 14px rgba(255,77,109,0.5); }
+        .turn-name.p2 { color: var(--p2); text-shadow: 0 0 14px rgba(77,171,255,0.5); }
+        .countdown-sub {
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+        .countdown-big {
+            font-size: 6.5rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.3);
+            line-height: 1;
+            margin: 12px 0;
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+        }
+        .countdown-big.go {
+            color: var(--correct);
+            text-shadow: 0 0 30px rgba(46,204,113,0.7), 0 0 60px rgba(46,204,113,0.3);
+        }
+        .countdown-big.pulse { animation: count-pulse 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes count-pulse {
+            0% { transform: scale(0.4); opacity: 0; }
+            40% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ============================================================
+           11. STOPWATCH (BIG counter + tap button)
+           ============================================================ */
+        .stopwatch-wrap {
+            margin: 14px auto 18px;
+            padding: 24px 16px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 22px;
+            border: 2px solid rgba(0,242,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .stopwatch-wrap.p1 { border-color: rgba(255,77,109,0.4); box-shadow: 0 0 22px rgba(255,77,109,0.18); }
+        .stopwatch-wrap.p2 { border-color: rgba(77,171,255,0.4); box-shadow: 0 0 22px rgba(77,171,255,0.18); }
+        .stopwatch-target-line {
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .stopwatch-target-val {
+            color: var(--gold);
+            text-shadow: 0 0 8px rgba(255,215,0,0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            letter-spacing: 1.5px;
+        }
+        .stopwatch-display {
+            font-size: 4.6rem;
+            font-weight: 900;
+            color: var(--accent-color);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            line-height: 1;
+            margin: 8px 0;
+            text-shadow: 0 0 18px rgba(0,242,255,0.4);
+            font-variant-numeric: tabular-nums;
+        }
+        .stopwatch-display.p1 { color: var(--p1); text-shadow: 0 0 18px rgba(255,77,109,0.5); }
+        .stopwatch-display.p2 { color: var(--p2); text-shadow: 0 0 18px rgba(77,171,255,0.5); }
+        .stopwatch-display.danger { color: var(--danger); text-shadow: 0 0 22px rgba(255,77,77,0.6); animation: sw-danger-flash 0.3s infinite alternate; }
+        @keyframes sw-danger-flash { from { opacity: 0.7; } to { opacity: 1; } }
+
+        /* BIG STOP BUTTON — minimal :active effect, instant click capture */
+        .btn-stop {
+            width: 100%;
+            max-width: 320px;
+            margin: 12px auto 0;
+            padding: 22px 14px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            border-radius: 22px;
+            color: white;
+            background: linear-gradient(135deg, var(--accent-color), #00d1db);
+            box-shadow: 0 8px 0 #007a82, 0 12px 28px rgba(0,242,255,0.35);
+            border: none;
+            cursor: pointer;
+            transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
+            display: block;
+            text-transform: uppercase;
+        }
+        .btn-stop.p1 { background: linear-gradient(135deg, var(--p1), #d63055); box-shadow: 0 8px 0 #7a1e2e, 0 12px 28px rgba(255,77,109,0.4); }
+        .btn-stop.p2 { background: linear-gradient(135deg, var(--p2), #2e8ad6); box-shadow: 0 8px 0 #1e4a7a, 0 12px 28px rgba(77,171,255,0.4); }
+        .btn-stop:hover { filter: brightness(1.08); }
+        .btn-stop:active { transform: translateY(6px); box-shadow: 0 2px 0 #007a82; }
+        .btn-stop.p1:active { box-shadow: 0 2px 0 #7a1e2e; }
+        .btn-stop.p2:active { box-shadow: 0 2px 0 #1e4a7a; }
+        .btn-stop:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .stop-hint {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .stop-hint kbd {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-bottom-width: 2px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            color: var(--accent-color);
+            font-size: 0.7rem;
+            font-weight: 900;
+        }
+
+        /* ============================================================
+           12. ROUND RESULT (per-pemain akurasi + label)
+           ============================================================ */
+        .result-row-perfect {
+            margin: 14px auto;
+            padding: 20px 18px;
+            border-radius: 18px;
+            background: rgba(0,0,0,0.35);
+            border: 2px solid rgba(255,255,255,0.08);
+            max-width: 380px;
+            text-align: center;
+        }
+        .result-row-perfect.p1 { border-color: rgba(255,77,109,0.4); background: linear-gradient(135deg, rgba(255,77,109,0.1), rgba(0,0,0,0.4)); }
+        .result-row-perfect.p2 { border-color: rgba(77,171,255,0.4); background: linear-gradient(135deg, rgba(77,171,255,0.1), rgba(0,0,0,0.4)); }
+        .result-row-perfect .rr-name {
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+        .result-row-perfect.p1 .rr-name { color: var(--p1); }
+        .result-row-perfect.p2 .rr-name { color: var(--p2); }
+        .result-row-perfect .rr-time {
+            font-family: 'Courier New', monospace;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: white;
+            letter-spacing: 2px;
+            line-height: 1;
+            margin: 6px 0;
+        }
+        .result-row-perfect .rr-meta {
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin: 4px 0;
+        }
+        .result-row-perfect .rr-acc {
+            font-size: 1.5rem;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            margin: 6px 0 2px;
+        }
+        .result-row-perfect .rr-label {
+            font-size: 0.85rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        .acc-perfect { color: var(--gold); text-shadow: 0 0 16px rgba(255,215,0,0.8); }
+        .acc-amazing { color: var(--accent-color); text-shadow: 0 0 12px rgba(0,242,255,0.6); }
+        .acc-great   { color: var(--correct); text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        .acc-good    { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .acc-miss    { color: var(--danger); text-shadow: 0 0 10px rgba(255,77,77,0.5); }
+
+        /* ============================================================
+           13. PEAK / PERFECT EFFECT (100% accuracy)
+           Full-viewport gold flash + shockwave + banner
+           ============================================================ */
+        .peak-banner {
+            position: fixed;
+            top: 22vh;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: var(--gold);
+            text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            white-space: nowrap;
+        }
+        .peak-banner.show {
+            animation: peak-slam 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                       peak-pulse 1.2s 0.7s 2 ease-in-out,
+                       peak-out 0.5s 3.1s forwards;
+        }
+        @keyframes peak-slam {
+            0% { opacity: 0; transform: translateX(-50%) scale(3) rotate(-15deg); filter: blur(20px); }
+            60% { opacity: 1; transform: translateX(-50%) scale(0.85) rotate(2deg); filter: blur(0); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); }
+        }
+        @keyframes peak-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50%      { transform: translateX(-50%) scale(1.08); }
+        }
+        @keyframes peak-out {
+            0% { opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(-40px); }
+        }
+
+        .peak-shockwave {
+            position: fixed; top: 50vh; left: 50vw;
+            width: 0; height: 0;
+            border-radius: 50%;
+            border: 4px solid var(--gold);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9997;
+            transform: translate(-50%, -50%);
+        }
+        .peak-shockwave.go { animation: peak-shockwave-anim 0.9s ease-out forwards; }
+        @keyframes peak-shockwave-anim {
+            0% { width: 0; height: 0; opacity: 0.85; border-width: 6px; }
+            100% { width: 120vmax; height: 120vmax; opacity: 0; border-width: 1px; }
+        }
+
+        .peak-flash {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle at center, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0.2) 30%, transparent 70%);
+            z-index: 9996;
+            pointer-events: none;
+            opacity: 0;
+        }
+        .peak-flash.go { animation: peak-flash-anim 0.7s ease-out forwards; }
+        @keyframes peak-flash-anim {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Confetti — re-use struktur dari bom.html */
+        .confetti-piece {
+            position: fixed;
+            width: 9px; height: 14px;
+            pointer-events: none;
+            opacity: 0;
+            top: 50vh; left: 50vw;
+            border-radius: 2px;
+            z-index: 9999;
+        }
+        .confetti-piece.fly { animation: confetti-fly 2s cubic-bezier(0.15, 0.6, 0.55, 0.95) forwards; }
+        @keyframes confetti-fly {
+            0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1.2); }
+            100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(900deg) scale(0.3); }
+        }
+
+        /* ============================================================
+           14. MATCH RESULT (winner card + rounds summary)
+           ============================================================ */
+        .match-result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
+        .match-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
+        .match-loser { background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.12); }
+        .match-result-row .mr-badge { font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+        .match-winner .mr-badge { color: var(--gold); }
+        .match-result-row .mr-name { font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: 1px; margin: 4px 0; }
+        .match-winner .mr-name { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.5); font-size: 1.7rem; }
+        .match-result-row .mr-stats { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1.2px; margin: 2px 0; }
+        .match-result-row .mr-pts { font-size: 0.85rem; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; margin-top: 6px; }
+
+        /* Round-by-round summary strip */
+        .rounds-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 14px 0;
+            justify-content: center;
+        }
+        .round-pill {
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-secondary);
+            min-width: 70px;
+            text-align: center;
+        }
+        .round-pill.win-p1 { color: var(--p1); border-color: rgba(255,77,109,0.5); background: rgba(255,77,109,0.08); }
+        .round-pill.win-p2 { color: var(--p2); border-color: rgba(77,171,255,0.5); background: rgba(77,171,255,0.08); }
+        .round-pill.tie { color: var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.06); }
+
+        /* Seri (match-level) — 2 card side-by-side */
+        .seri-row {
+            margin: 14px 0;
+            padding: 18px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(77,171,255,0.12));
+            border: 2px solid rgba(0,242,255,0.4);
+            text-align: center;
+        }
+        .seri-row .seri-label { font-size: 0.7rem; font-weight: 900; letter-spacing: 3px; color: var(--accent-color); margin-bottom: 8px; }
+        .seri-names { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .seri-side { flex: 1; text-align: center; }
+        .seri-side .seri-name { font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; }
+        .seri-side.p1 .seri-name { color: var(--p1); text-shadow: 0 0 12px rgba(255,77,109,0.4); }
+        .seri-side.p2 .seri-name { color: var(--p2); text-shadow: 0 0 12px rgba(77,171,255,0.4); }
+        .seri-side .seri-wins { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1.2px; margin-top: 4px; }
+        .seri-divider { color: var(--text-secondary); font-size: 0.7rem; letter-spacing: 3px; }
+
+        /* ============================================================
+           15. POPUP (untuk validation message)
+           ============================================================ */
+        #msg-popup { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; border-radius: 15px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #fff; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ============================================================
+           16. HEADINGS
+           ============================================================ */
+        h1, h2, h3 { color: white; font-weight: 900; letter-spacing: 1.5px; }
+        h1 { font-size: 1.5rem; margin-bottom: 4px; letter-spacing: 2.5px; }
+        h2 { font-size: 1.2rem; margin-bottom: 4px; }
+        .game-title { background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .game-subtitle { color: var(--text-secondary); font-size: 0.78rem; letter-spacing: 1.8px; margin-bottom: 18px; }
+
+        /* ============================================================
+           17. LEADERBOARD (in-file, simplified throne battle — copy from bom.html)
+           ============================================================ */
+        #leaderboard-arena { position: relative; margin-top: 15px; height: 350px; overflow-y: auto; padding: 30px 4px 20px; scroll-behavior: smooth; }
+        #leaderboard-arena::-webkit-scrollbar { width: 5px; }
+        #leaderboard-arena::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+        .rank-pos { width: 52px; padding-left: 28px; box-sizing: border-box; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; padding-left: 6px; }
+        .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
+        .podium-medal { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 1.25rem; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.35)); }
+        @keyframes throne-gold { 0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); } }
+        @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
+        @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
+        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; }
+        .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; }
+        .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; }
+        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; }
+        .player-focus .rank-info, .player-focus .rank-pts { color: var(--gold) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.3s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+    </style>
+</head>
+
+<body>
+    <!-- [BLOCK: GLOBAL OVERLAYS] -->
+    <div id="msg-popup"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div id="peak-flash" class="peak-flash"></div>
+    <div id="peak-shockwave" class="peak-shockwave"></div>
+    <div id="peak-banner" class="peak-banner">⭐ PERFECT! ⭐</div>
+
+    <div id="game-container">
+
+        <!-- [BLOCK: SCREEN REGISTER] -->
+        <div id="screen-register" class="screen active">
+            <h1 class="game-title">⏱️ PERFECT TIMER ⏱️</h1>
+            <p class="game-subtitle">UJI AKURASI · KETEPATAN KLIK</p>
+
+            <div class="register-row register-p1">
+                <div class="register-label">🟥 PEMAIN 1</div>
+                <div style="position: relative;">
+                    <input type="text" id="p1-name" placeholder="Nama Pemain 1..." oninput="handleNameInput(this.value, 1)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p1" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="register-row register-p2">
+                <div class="register-label">🟦 PEMAIN 2</div>
+                <div style="position: relative;">
+                    <input type="text" id="p2-name" placeholder="Nama Pemain 2..." oninput="handleNameInput(this.value, 2)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p2" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+
+            <button onclick="goToRoundsPicker()" style="margin-top: 18px;">LANJUT PILIH RONDE</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUNDS PICKER] -->
+        <div id="screen-rounds" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">PILIH JUMLAH RONDE</h2>
+            <p class="game-subtitle">Ronde ganjil — siapa menang lebih banyak ronde, dialah juara</p>
+
+            <div class="rounds-row">
+                <div class="round-card" data-rounds="1" onclick="selectRounds(1)">
+                    <div class="round-num">1</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+                <div class="round-card selected" data-rounds="3" onclick="selectRounds(3)">
+                    <div class="round-num">3</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+                <div class="round-card" data-rounds="5" onclick="selectRounds(5)">
+                    <div class="round-num">5</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+            </div>
+
+            <button onclick="goToDifficulty()" style="margin-top: 22px;">LANJUT PILIH MODE</button>
+            <button class="btn-ghost" onclick="showScreen('screen-register')">KEMBALI</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN DIFFICULTY PICKER] - NEW [2026-05-28]: NORMAL (target bulat .00) vs HARD (sentidetik random). -->
+        <div id="screen-difficulty" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">PILIH TINGKAT KESULITAN</h2>
+            <p class="game-subtitle">Pengaruhi cara sistem random angka target tiap ronde</p>
+
+            <div class="difficulty-row">
+                <div class="diff-card normal selected" data-diff="normal" onclick="selectDifficulty('normal')">
+                    <div class="diff-icon">🟢</div>
+                    <div class="diff-title">NORMAL</div>
+                    <div class="diff-sub">DETIK BULAT<br>(SENTIDETIK = 00)</div>
+                    <div class="diff-example">04.00 · 07.00 · 09.00</div>
+                </div>
+                <div class="diff-card hard" data-diff="hard" onclick="selectDifficulty('hard')">
+                    <div class="diff-icon">🔴</div>
+                    <div class="diff-title">HARD</div>
+                    <div class="diff-sub">SENTIDETIK<br>RANDOM</div>
+                    <div class="diff-example">04.26 · 07.83 · 09.51</div>
+                </div>
+            </div>
+
+            <button onclick="startMatch()" style="margin-top: 22px;">MULAI PERTANDINGAN</button>
+            <button class="btn-ghost" onclick="showScreen('screen-rounds')">KEMBALI</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN VS ANIMATION] -->
+        <div id="screen-vs" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">SIAP BERTANDING!</h2>
+            <p class="game-subtitle">PERFECT TIMER · <span id="vs-rounds-label">3 RONDE</span> · <span id="vs-diff-label">NORMAL</span></p>
+
+            <div class="vs-stage">
+                <div id="vs-name-p1" class="vs-name vs-name-p1"></div>
+                <div class="vs-big-vs">VS</div>
+                <div id="vs-name-p2" class="vs-name vs-name-p2"></div>
+            </div>
+
+            <p class="game-subtitle" style="margin-top: 16px; opacity: 0.7;">Pertandingan dimulai dalam beberapa saat...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUND INTRO] - tampil "RONDE X / Y" + target reveal -->
+        <div id="screen-round-intro" class="screen">
+            <div id="round-banner" class="round-banner">RONDE</div>
+            <div id="round-num-big" class="round-num-big">1 / 3</div>
+            <p class="game-subtitle" style="letter-spacing: 2.5px;">TARGET RONDE INI</p>
+            <div class="target-label">STOP DI</div>
+            <div id="target-big" class="target-big">00.00</div>
+            <p class="game-subtitle" style="margin-top: 22px; opacity: 0.75;">Bersiaplah...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN TURN COUNTDOWN] - 5..1..GO per pemain -->
+        <div id="screen-countdown" class="screen">
+            <div id="turn-name" class="turn-name p1">GILIRAN PEMAIN 1</div>
+            <p class="countdown-sub">STOP DI <span id="cd-target" class="stopwatch-target-val">00.00</span></p>
+            <div id="cd-num" class="countdown-big">5</div>
+            <p class="game-subtitle" style="opacity: 0.7;">Bersiap untuk klik...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN PLAY] - stopwatch jalan + tombol STOP -->
+        <div id="screen-play" class="screen">
+            <div id="play-turn-name" class="turn-name p1">GILIRAN PEMAIN 1</div>
+            <div id="stopwatch-wrap" class="stopwatch-wrap p1">
+                <div class="stopwatch-target-line">TARGET: <span id="play-target" class="stopwatch-target-val">00.00</span></div>
+                <div id="stopwatch-display" class="stopwatch-display p1">00.00</div>
+            </div>
+            <button id="btn-stop" class="btn-stop p1" onclick="stopTimer()">STOP</button>
+            <p class="stop-hint">Klik tombol atau tekan <kbd>SPASI</kbd></p>
+            <button class="btn-danger-soft" onclick="surrenderMatch()" style="margin-top: 18px;">MENYERAH</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUND RESULT] - hasil per pemain di ronde (P1 & P2 berurutan, atau hasil ronde lengkap) -->
+        <div id="screen-round-result" class="screen">
+            <div id="rr-banner" class="round-banner">HASIL RONDE</div>
+            <div id="rr-num" class="round-num-big" style="font-size: 2.2rem;">1 / 3</div>
+            <p class="game-subtitle">TARGET: <span id="rr-target" class="stopwatch-target-val">00.00</span></p>
+            <div id="rr-p1-row" class="result-row-perfect p1">
+                <div class="rr-name" id="rr-p1-name">PEMAIN 1</div>
+                <div class="rr-time" id="rr-p1-time">--.--</div>
+                <div class="rr-meta" id="rr-p1-meta">selisih --</div>
+                <div class="rr-acc" id="rr-p1-acc">--%</div>
+                <div class="rr-label" id="rr-p1-label">—</div>
+            </div>
+            <div id="rr-p2-row" class="result-row-perfect p2">
+                <div class="rr-name" id="rr-p2-name">PEMAIN 2</div>
+                <div class="rr-time" id="rr-p2-time">--.--</div>
+                <div class="rr-meta" id="rr-p2-meta">selisih --</div>
+                <div class="rr-acc" id="rr-p2-acc">--%</div>
+                <div class="rr-label" id="rr-p2-label">—</div>
+            </div>
+            <div id="rr-winner-text" style="margin-top: 12px; font-size: 0.95rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,0.5);">PEMENANG RONDE: —</div>
+            <button id="rr-next-btn" onclick="proceedAfterRoundResult()" style="margin-top: 18px;">LANJUT</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN MATCH RESULT] -->
+        <div id="screen-result" class="screen">
+            <h1 style="font-size: 1.5rem; letter-spacing: 2px;">🏆 HASIL DUEL!</h1>
+            <p class="game-subtitle">PERFECT TIMER · <span id="final-rounds-label">3 RONDE</span> · <span id="final-diff-label">NORMAL</span></p>
+
+            <!-- Win/Loss layout -->
+            <div id="result-winloss-block" style="display: block;">
+                <div class="match-result-row match-winner">
+                    <div class="mr-badge">🏆 PEMENANG</div>
+                    <div id="winner-name" class="mr-name"></div>
+                    <div class="mr-stats" id="winner-stats">RONDE DIMENANGKAN: 0</div>
+                    <div class="mr-pts">+200 POIN</div>
+                </div>
+                <div class="match-result-row match-loser">
+                    <div class="mr-badge">PERINGKAT 2</div>
+                    <div id="loser-name" class="mr-name"></div>
+                    <div class="mr-stats" id="loser-stats">RONDE DIMENANGKAN: 0</div>
+                    <div class="mr-pts">+50 POIN</div>
+                </div>
+            </div>
+
+            <!-- Seri layout -->
+            <div id="result-seri-block" style="display: none;">
+                <div class="seri-row">
+                    <div class="seri-label">🤝 SERI · IMBANG</div>
+                    <div class="seri-names">
+                        <div class="seri-side p1">
+                            <div class="seri-name" id="seri-p1-name"></div>
+                            <div class="seri-wins" id="seri-p1-wins">0 menang</div>
+                        </div>
+                        <div class="seri-divider">VS</div>
+                        <div class="seri-side p2">
+                            <div class="seri-name" id="seri-p2-name"></div>
+                            <div class="seri-wins" id="seri-p2-wins">0 menang</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; color: var(--accent-color); font-weight: 900; letter-spacing: 1.5px; font-size: 0.85rem;">+150 POIN MASING-MASING</div>
+                </div>
+            </div>
+
+            <!-- Round-by-round summary -->
+            <p class="game-subtitle" style="margin-top: 14px; letter-spacing: 2px;">RINGKASAN RONDE</p>
+            <div id="rounds-summary" class="rounds-summary"></div>
+
+            <button onclick="viewLeaderboard()" style="margin-top: 14px;">LIHAT LEADERBOARD</button>
+            <button onclick="playAgain()" class="btn-ghost">MAIN LAGI</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN LEADERBOARD] -->
+        <div id="screen-leaderboard" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 1.5px; margin-bottom: 6px;">SMK GLOBAL RANKING</h2>
+            <p class="game-subtitle">Update dari Perfect Timer</p>
+            <div id="leaderboard-arena"></div>
+            <button onclick="playAgain()" style="margin-top: 10px;">MAIN LAGI</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+    </div>
+
+    <script>
+        /* ============================================================
+           1. AUDIO ENGINE & SFX
+           ============================================================ */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, t, d, vol) {
+            try {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = t;
+                o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
+        }
+        const sfx = {
+            click: () => playSfx(800, 'sine', 0.08),
+            flip:  () => { playSfx(400, 'sine', 0.15); setTimeout(() => playSfx(700, 'sine', 0.18), 60); },
+            tick:  () => playSfx(1500, 'sine', 0.04),
+            beep:  () => playSfx(880, 'sine', 0.12, 0.18),
+            go:    () => { playSfx(660, 'sine', 0.12); setTimeout(() => playSfx(990, 'sine', 0.2), 80); },
+            stop:  () => { playSfx(600, 'square', 0.08); setTimeout(() => playSfx(440, 'sine', 0.12), 50); },
+            peak:  () => { playSfx(523, 'sine', 0.25); setTimeout(() => playSfx(659, 'sine', 0.25), 110); setTimeout(() => playSfx(784, 'sine', 0.3), 220); setTimeout(() => playSfx(1047, 'sine', 0.45), 330); setTimeout(() => playSfx(1319, 'sine', 0.55), 440); },
+            amazing:() => { playSfx(659, 'sine', 0.18); setTimeout(() => playSfx(880, 'sine', 0.22), 90); },
+            great: () => playSfx(587, 'sine', 0.2),
+            good:  () => playSfx(440, 'sine', 0.18),
+            miss:  () => { playSfx(196, 'sawtooth', 0.25, 0.14); setTimeout(() => playSfx(147, 'square', 0.2, 0.12), 80); },
+            win:   () => { playSfx(523, 'sine', 0.3); setTimeout(() => playSfx(659, 'sine', 0.3), 150); setTimeout(() => playSfx(784, 'sine', 0.5), 300); setTimeout(() => playSfx(1047, 'sine', 0.6), 450); },
+        };
+
+        /* ============================================================
+           2. GAME STATE
+           ============================================================ */
+        let game = {
+            p1Name: '',
+            p2Name: '',
+            totalRounds: 3,
+            // [2026-05-28] difficulty: 'normal' (target bulat .00) atau 'hard' (sentidetik random)
+            difficulty: 'normal',
+            currentRound: 0,        // 1-indexed saat ronde aktif
+            currentPlayer: 1,       // 1 atau 2 — siapa giliran sekarang
+            targetSec: 0,           // detik target ronde ini (e.g., 6.42)
+            // Stopwatch runtime
+            swStartTs: 0,
+            swInterval: null,
+            swElapsed: 0,           // detik, updated tiap tick
+            swStopped: false,
+            // Per-round captured clicks
+            p1ClickedSec: null,     // detik saat P1 klik (atau null kalau belum)
+            p2ClickedSec: null,
+            // Per-round results & accumulated wins
+            // roundResults[] = { round, target, p1Clicked, p2Clicked, p1Acc, p2Acc, winner: 1|2|0 (0=tie) }
+            roundResults: [],
+            p1Wins: 0,
+            p2Wins: 0,
+            // Countdown & timer handles
+            cdInterval: null,
+            // LB tracking
+            lastWinner: null,
+            lastLoser: null,
+            lastOldWinnerScore: 0,
+            lastOldLoserScore: 0,
+            matchSeri: false,
+            // Input lock — anti double-stop
+            inputLocked: false,
+        };
+
+        /* Konstanta */
+        const TARGET_MIN = 3.0;       // detik
+        const TARGET_MAX = 10.0;
+        const STOPWATCH_MAX = 15.0;   // kalau lewat ini, auto-stop dengan akurasi 0%
+        const TICK_MS = 10;           // 1 sentidetik per tick (10ms)
+
+        /* ============================================================
+           3. CORE UI HELPERS
+           ============================================================ */
+        function showPopup(t, c) {
+            const p = document.getElementById('msg-popup');
+            p.innerText = t; p.style.background = c; p.style.display = 'block';
+            setTimeout(() => p.style.display = 'none', 1600);
+        }
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function applyTurnTheme(player) {
+            const gc = document.getElementById('game-container');
+            gc.classList.remove('turn-p1', 'turn-p2');
+            gc.classList.add(player === 1 ? 'turn-p1' : 'turn-p2');
+        }
+        function clearTurnTheme() {
+            document.getElementById('game-container').classList.remove('turn-p1', 'turn-p2');
+        }
+        /* Format detik float → "SS.HS" (e.g., 6.42 → "06.42"). Selalu 2 digit kiri . 2 digit kanan. */
+        function fmtTime(sec) {
+            if (sec === null || sec === undefined || isNaN(sec)) return '--.--';
+            if (sec < 0) sec = 0;
+            const total = Math.floor(sec * 100);   // sentidetik total
+            const s = Math.floor(total / 100);
+            const hs = total % 100;
+            return `${String(s).padStart(2,'0')}.${String(hs).padStart(2,'0')}`;
+        }
+
+        /* ============================================================
+           4. AUTOSEARCH (shared dengan guessRushLB)
+           ============================================================ */
+        function handleNameInput(val, playerNum) {
+            const box = document.getElementById(`suggestions-p${playerNum}`);
+            if (!val) { box.style.display = 'none'; return; }
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6);
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(m => {
+                    const safe = m.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div onclick="selectName('${safe}', ${playerNum})" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--accent-color); font-weight:bold;">${m.name} <span style="color:var(--text-secondary); font-size:0.7rem;">(${m.score} Pts)</span></div>`;
+                }).join('');
+                box.style.display = 'block';
+            } else box.style.display = 'none';
+        }
+        function selectName(name, playerNum) {
+            document.getElementById(`p${playerNum}-name`).value = name;
+            document.getElementById(`suggestions-p${playerNum}`).style.display = 'none';
+        }
+
+        /* ============================================================
+           5. REGISTER → ROUNDS PICKER → VS → MATCH
+           ============================================================ */
+        function goToRoundsPicker() {
+            const p1 = document.getElementById('p1-name').value.trim();
+            const p2 = document.getElementById('p2-name').value.trim();
+            if (!p1 || !p2) { showPopup("ISI NAMA KEDUA PEMAIN!", "#e67e22"); return; }
+            if (p1.toLowerCase() === p2.toLowerCase()) { showPopup("NAMA P1 & P2 HARUS BEDA!", "#e67e22"); return; }
+            game.p1Name = p1;
+            game.p2Name = p2;
+            sfx.click();
+            showScreen('screen-rounds');
+        }
+
+        function selectRounds(n) {
+            game.totalRounds = n;
+            document.querySelectorAll('#screen-rounds .round-card').forEach(c => {
+                c.classList.toggle('selected', parseInt(c.dataset.rounds) === n);
+            });
+            sfx.click();
+        }
+
+        /* [2026-05-28] Navigasi rounds → difficulty (screen baru). */
+        function goToDifficulty() {
+            sfx.click();
+            // Sync selected state ke current game.difficulty (default 'normal')
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === game.difficulty);
+            });
+            showScreen('screen-difficulty');
+        }
+
+        /* [2026-05-28] Pilih NORMAL (target detik bulat .00) atau HARD (sentidetik random). */
+        function selectDifficulty(diff) {
+            game.difficulty = diff;
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === diff);
+            });
+            sfx.click();
+        }
+
+        function startMatch() {
+            // Reset match state
+            game.currentRound = 0;
+            game.roundResults = [];
+            game.p1Wins = 0;
+            game.p2Wins = 0;
+            game.matchSeri = false;
+            game.lastWinner = null;
+            game.lastLoser = null;
+
+            // VS animation
+            document.getElementById('vs-name-p1').innerText = game.p1Name.toUpperCase();
+            document.getElementById('vs-name-p2').innerText = game.p2Name.toUpperCase();
+            document.getElementById('vs-rounds-label').innerText = `${game.totalRounds} RONDE`;
+            document.getElementById('vs-diff-label').innerText = game.difficulty.toUpperCase();
+            // Force reflow → restart animasi keyframes
+            const stage = document.querySelector('.vs-stage');
+            if (stage) { void stage.offsetWidth; }
+            sfx.go();
+            showScreen('screen-vs');
+
+            // After VS animation finishes (~1.8s), kick off round 1
+            setTimeout(() => startNextRound(), 2200);
+        }
+
+        /* ============================================================
+           6. ROUND LIFECYCLE
+           startNextRound → round-intro (target reveal) → P1 countdown → P1 play → P2 countdown → P2 play → round-result
+           ============================================================ */
+        function startNextRound() {
+            game.currentRound++;
+            if (game.currentRound > game.totalRounds) {
+                endMatch();
+                return;
+            }
+            // [2026-05-28] Random target sesuai difficulty:
+            //   NORMAL → detik bulat (.00), range [TARGET_MIN, TARGET_MAX] inclusive int.
+            //   HARD   → sentidetik random, step 0.01, range [TARGET_MIN, TARGET_MAX].
+            if (game.difficulty === 'normal') {
+                // Math.floor(Math.random() * (max-min+1)) + min → bulat 3..10 inclusive
+                const intSec = Math.floor(Math.random() * (TARGET_MAX - TARGET_MIN + 1)) + TARGET_MIN;
+                game.targetSec = intSec;
+            } else {
+                const range = TARGET_MAX - TARGET_MIN;
+                const raw = TARGET_MIN + Math.random() * range;
+                game.targetSec = Math.round(raw * 100) / 100;
+            }
+            game.p1ClickedSec = null;
+            game.p2ClickedSec = null;
+            game.currentPlayer = 1;
+            clearTurnTheme();
+
+            // Update intro screen
+            document.getElementById('round-banner').innerText = 'RONDE';
+            document.getElementById('round-num-big').innerText = `${game.currentRound} / ${game.totalRounds}`;
+            document.getElementById('target-big').innerText = fmtTime(game.targetSec);
+            // Restart animation
+            ['round-num-big','target-big','round-banner'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cls = el.className;
+                el.className = '';
+                void el.offsetWidth;
+                el.className = cls;
+            });
+            sfx.flip();
+            showScreen('screen-round-intro');
+
+            // After 2.5s → P1 countdown
+            setTimeout(() => startTurnCountdown(1), 2500);
+        }
+
+        function startTurnCountdown(playerNum) {
+            game.currentPlayer = playerNum;
+            applyTurnTheme(playerNum);
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            const nameEl = document.getElementById('turn-name');
+            nameEl.innerText = `GILIRAN ${name.toUpperCase()}`;
+            nameEl.className = `turn-name p${playerNum}`;
+            document.getElementById('cd-target').innerText = fmtTime(game.targetSec);
+            const cdEl = document.getElementById('cd-num');
+            cdEl.innerText = '5';
+            cdEl.className = 'countdown-big';
+            void cdEl.offsetWidth;
+            cdEl.classList.add('pulse');
+            showScreen('screen-countdown');
+
+            let remaining = 5;
+            sfx.beep();
+            if (game.cdInterval) clearInterval(game.cdInterval);
+            game.cdInterval = setInterval(() => {
+                remaining--;
+                if (remaining > 0) {
+                    cdEl.innerText = remaining;
+                    cdEl.className = 'countdown-big';
+                    void cdEl.offsetWidth;
+                    cdEl.classList.add('pulse');
+                    sfx.beep();
+                } else {
+                    clearInterval(game.cdInterval);
+                    game.cdInterval = null;
+                    // Show "GO!" briefly, then start stopwatch
+                    cdEl.innerText = 'GO!';
+                    cdEl.className = 'countdown-big go';
+                    void cdEl.offsetWidth;
+                    cdEl.classList.add('pulse');
+                    sfx.go();
+                    setTimeout(() => startStopwatchScreen(playerNum), 600);
+                }
+            }, 1000);
+        }
+
+        function startStopwatchScreen(playerNum) {
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            const turnEl = document.getElementById('play-turn-name');
+            turnEl.innerText = `GILIRAN ${name.toUpperCase()}`;
+            turnEl.className = `turn-name p${playerNum}`;
+            document.getElementById('play-target').innerText = fmtTime(game.targetSec);
+            const swDisplay = document.getElementById('stopwatch-display');
+            swDisplay.innerText = fmtTime(0);
+            swDisplay.className = `stopwatch-display p${playerNum}`;
+            const swWrap = document.getElementById('stopwatch-wrap');
+            swWrap.className = `stopwatch-wrap p${playerNum}`;
+            const stopBtn = document.getElementById('btn-stop');
+            stopBtn.className = `btn-stop p${playerNum}`;
+            stopBtn.innerText = 'STOP';
+            stopBtn.disabled = false;
+            game.inputLocked = false;
+            game.swStopped = false;
+            showScreen('screen-play');
+
+            // Start stopwatch tick
+            game.swStartTs = performance.now();
+            game.swElapsed = 0;
+            if (game.swInterval) clearInterval(game.swInterval);
+            game.swInterval = setInterval(tickStopwatch, TICK_MS);
+        }
+
+        function tickStopwatch() {
+            if (game.swStopped) return;
+            const elapsed = (performance.now() - game.swStartTs) / 1000;
+            game.swElapsed = elapsed;
+            const display = document.getElementById('stopwatch-display');
+            display.innerText = fmtTime(elapsed);
+            // Danger flash kalau udah lewat dari STOPWATCH_MAX - 2s (e.g., > 13s)
+            if (elapsed >= STOPWATCH_MAX - 2 && !display.classList.contains('danger')) {
+                display.classList.add('danger');
+            }
+            // Auto-stop di STOPWATCH_MAX
+            if (elapsed >= STOPWATCH_MAX) {
+                // Auto-stop dengan clicked = STOPWATCH_MAX (akurasi otomatis 0%)
+                stopTimer(true);
+            }
+        }
+
+        /* ============================================================
+           7. STOP TIMER — CRITICAL PATH
+           Capture timestamp di FIRST LINE function. Tidak ada heavy
+           animation sebelum capture. Pure synchronous → no delay.
+           ============================================================ */
+        function stopTimer(autoStopped) {
+            // === HARD GUARD + INSTANT CAPTURE ===
+            if (game.swStopped || game.inputLocked) return;
+            const elapsedNow = (performance.now() - game.swStartTs) / 1000;
+            game.swStopped = true;
+            game.inputLocked = true;
+            // Clean up tick interval
+            if (game.swInterval) { clearInterval(game.swInterval); game.swInterval = null; }
+
+            // Clamp: kalau auto-stop, paksa = STOPWATCH_MAX (akurasi 0)
+            let clicked = autoStopped ? STOPWATCH_MAX : elapsedNow;
+            if (clicked > STOPWATCH_MAX) clicked = STOPWATCH_MAX;
+            if (clicked < 0) clicked = 0;
+
+            // Store
+            if (game.currentPlayer === 1) game.p1ClickedSec = clicked;
+            else game.p2ClickedSec = clicked;
+
+            // UI updates (boleh efek sekarang — capture sudah aman)
+            const display = document.getElementById('stopwatch-display');
+            display.innerText = fmtTime(clicked);
+            display.classList.remove('danger');
+            const stopBtn = document.getElementById('btn-stop');
+            stopBtn.disabled = true;
+            stopBtn.innerText = autoStopped ? 'WAKTU HABIS' : 'TERKUNCI';
+
+            sfx.stop();
+
+            // Wait 600ms supaya pemain lihat angka akhir, lalu lanjut
+            setTimeout(() => {
+                if (game.currentPlayer === 1) {
+                    // Lanjut ke P2
+                    startTurnCountdown(2);
+                } else {
+                    // P2 selesai → tampilkan hasil ronde
+                    showRoundResult();
+                }
+            }, 700);
+        }
+
+        /* Spacebar global handler — hanya aktif di screen-play */
+        document.addEventListener('keydown', (e) => {
+            if (e.code !== 'Space' && e.key !== ' ') return;
+            const playScreen = document.getElementById('screen-play');
+            if (!playScreen || !playScreen.classList.contains('active')) return;
+            e.preventDefault();
+            stopTimer(false);
+        });
+
+        /* ============================================================
+           8. ROUND RESULT
+           Hitung akurasi P1 & P2, tentukan pemenang ronde, animasikan,
+           lalu lanjut ke ronde berikutnya atau end-match.
+           ============================================================ */
+        function calcAccuracy(clicked, target) {
+            if (clicked === null || clicked === undefined || isNaN(clicked)) return 0;
+            const diff = Math.abs(target - clicked);
+            const acc = 100 - (diff / target * 100);
+            return Math.max(0, Math.round(acc * 100) / 100);  // 2 desimal
+        }
+
+        function accLabel(acc, diff) {
+            // PERFECT bila selisih ≤ 0.05s (5 sentidetik) — toleransi minim untuk peak
+            if (diff <= 0.05) return { txt: 'PERFECT!', cls: 'acc-perfect', peak: true };
+            if (acc >= 95)    return { txt: 'AMAZING',  cls: 'acc-amazing', peak: false };
+            if (acc >= 85)    return { txt: 'GREAT',    cls: 'acc-great',   peak: false };
+            if (acc >= 70)    return { txt: 'GOOD',     cls: 'acc-good',    peak: false };
+            return { txt: 'MISS', cls: 'acc-miss', peak: false };
+        }
+
+        function showRoundResult() {
+            clearTurnTheme();
+            const p1Click = game.p1ClickedSec;
+            const p2Click = game.p2ClickedSec;
+            const target = game.targetSec;
+            const p1Acc = calcAccuracy(p1Click, target);
+            const p2Acc = calcAccuracy(p2Click, target);
+            const p1Diff = Math.abs(target - p1Click);
+            const p2Diff = Math.abs(target - p2Click);
+
+            // Tentukan pemenang ronde
+            let winner;  // 1, 2, or 0 (tie)
+            if (Math.abs(p1Diff - p2Diff) < 0.0001) winner = 0;  // tie exact
+            else if (p1Diff < p2Diff) winner = 1;
+            else winner = 2;
+
+            // Catat hasil ronde
+            game.roundResults.push({
+                round: game.currentRound,
+                target,
+                p1Clicked: p1Click,
+                p2Clicked: p2Click,
+                p1Acc, p2Acc,
+                winner
+            });
+            if (winner === 1) game.p1Wins++;
+            else if (winner === 2) game.p2Wins++;
+
+            // Render screen
+            document.getElementById('rr-num').innerText = `${game.currentRound} / ${game.totalRounds}`;
+            document.getElementById('rr-target').innerText = fmtTime(target);
+            document.getElementById('rr-p1-name').innerText = game.p1Name.toUpperCase();
+            document.getElementById('rr-p2-name').innerText = game.p2Name.toUpperCase();
+            document.getElementById('rr-p1-time').innerText = fmtTime(p1Click);
+            document.getElementById('rr-p2-time').innerText = fmtTime(p2Click);
+            document.getElementById('rr-p1-meta').innerText = `Selisih ${fmtTime(p1Diff)} s`;
+            document.getElementById('rr-p2-meta').innerText = `Selisih ${fmtTime(p2Diff)} s`;
+            document.getElementById('rr-p1-acc').innerText = `${p1Acc.toFixed(2)}%`;
+            document.getElementById('rr-p2-acc').innerText = `${p2Acc.toFixed(2)}%`;
+            const p1Lbl = accLabel(p1Acc, p1Diff);
+            const p2Lbl = accLabel(p2Acc, p2Diff);
+            const p1AccEl = document.getElementById('rr-p1-acc');
+            const p2AccEl = document.getElementById('rr-p2-acc');
+            const p1LblEl = document.getElementById('rr-p1-label');
+            const p2LblEl = document.getElementById('rr-p2-label');
+            p1AccEl.className = `rr-acc ${p1Lbl.cls}`;
+            p2AccEl.className = `rr-acc ${p2Lbl.cls}`;
+            p1LblEl.className = `rr-label ${p1Lbl.cls}`;
+            p2LblEl.className = `rr-label ${p2Lbl.cls}`;
+            p1LblEl.innerText = p1Lbl.txt;
+            p2LblEl.innerText = p2Lbl.txt;
+
+            const winText = winner === 0
+                ? '🤝 SERI RONDE'
+                : `🏆 PEMENANG RONDE: ${(winner === 1 ? game.p1Name : game.p2Name).toUpperCase()}`;
+            document.getElementById('rr-winner-text').innerText = winText;
+
+            // SFX & peak effect
+            // Pakai peak untuk pemenang ronde kalau dia PERFECT, else SFX biasa
+            const anyPeak = p1Lbl.peak || p2Lbl.peak;
+            if (anyPeak) {
+                // Trigger peak effect 1x (banner + flash + shockwave + chord)
+                triggerPeakEffect();
+            } else {
+                // SFX sesuai pemenang ronde
+                const winnerAcc = winner === 1 ? p1Acc : (winner === 2 ? p2Acc : Math.max(p1Acc, p2Acc));
+                if (winnerAcc >= 95) sfx.amazing();
+                else if (winnerAcc >= 85) sfx.great();
+                else if (winnerAcc >= 70) sfx.good();
+                else sfx.miss();
+            }
+
+            showScreen('screen-round-result');
+        }
+
+        function proceedAfterRoundResult() {
+            sfx.click();
+            // Cek apakah ronde terakhir
+            if (game.currentRound >= game.totalRounds) {
+                endMatch();
+            } else {
+                startNextRound();
+            }
+        }
+
+        /* ============================================================
+           9. PEAK EFFECT (100% accuracy — full-viewport gold celebration)
+           ============================================================ */
+        function triggerPeakEffect() {
+            const banner = document.getElementById('peak-banner');
+            const flash = document.getElementById('peak-flash');
+            const shock = document.getElementById('peak-shockwave');
+            if (banner) { banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show'); }
+            if (flash)  { flash.classList.remove('go');   void flash.offsetWidth;  flash.classList.add('go'); }
+            if (shock)  { shock.classList.remove('go');   void shock.offsetWidth;  shock.classList.add('go'); }
+            sfx.peak();
+            spawnConfetti(0);
+            spawnConfetti(400);
+        }
+
+        function spawnConfetti(delay) {
+            const colors = ['#ffd700', '#00f2ff', '#ff4d6d', '#4dabff', '#2ecc71', '#f1c40f'];
+            setTimeout(() => {
+                for (let i = 0; i < 36; i++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'confetti-piece';
+                    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 300 + Math.random() * 400;
+                    piece.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+                    piece.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+                    piece.style.left = (45 + Math.random() * 10) + 'vw';
+                    piece.style.top = (40 + Math.random() * 20) + 'vh';
+                    piece.style.animationDelay = (Math.random() * 0.2) + 's';
+                    document.body.appendChild(piece);
+                    piece.classList.add('fly');
+                    setTimeout(() => piece.remove(), 2200);
+                }
+            }, delay);
+        }
+
+        /* ============================================================
+           10. END MATCH — tentukan winner overall, update LB
+           ============================================================ */
+        function endMatch() {
+            clearTurnTheme();
+            // Tentukan match winner berdasarkan p1Wins vs p2Wins
+            let matchSeri = false;
+            let winnerName, loserName;
+            if (game.p1Wins > game.p2Wins) {
+                winnerName = game.p1Name;
+                loserName = game.p2Name;
+            } else if (game.p2Wins > game.p1Wins) {
+                winnerName = game.p2Name;
+                loserName = game.p1Name;
+            } else {
+                matchSeri = true;
+                winnerName = game.p1Name;
+                loserName = game.p2Name;
+            }
+            game.matchSeri = matchSeri;
+            game.lastWinner = winnerName;
+            game.lastLoser = loserName;
+
+            // LB update
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            game.lastOldWinnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
+            game.lastOldLoserScore  = (lb.find(e => e.name.toLowerCase() === loserName.toLowerCase()) || {}).score || 0;
+
+            const wReward = matchSeri ? 150 : 200;
+            const lReward = matchSeri ? 150 : 50;
+            [{ n: winnerName, p: wReward }, { n: loserName, p: lReward }].forEach(x => {
+                const i = lb.findIndex(e => e.name.toLowerCase() === x.n.toLowerCase());
+                if (i !== -1) lb[i].score += x.p;
+                else lb.push({ name: x.n, score: x.p });
+            });
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+
+            // Render match result screen
+            document.getElementById('final-rounds-label').innerText = `${game.totalRounds} RONDE`;
+            document.getElementById('final-diff-label').innerText = game.difficulty.toUpperCase();
+            if (matchSeri) {
+                document.getElementById('result-winloss-block').style.display = 'none';
+                document.getElementById('result-seri-block').style.display = 'block';
+                document.getElementById('seri-p1-name').innerText = game.p1Name.toUpperCase();
+                document.getElementById('seri-p2-name').innerText = game.p2Name.toUpperCase();
+                document.getElementById('seri-p1-wins').innerText = `${game.p1Wins} ronde dimenangkan`;
+                document.getElementById('seri-p2-wins').innerText = `${game.p2Wins} ronde dimenangkan`;
+            } else {
+                document.getElementById('result-winloss-block').style.display = 'block';
+                document.getElementById('result-seri-block').style.display = 'none';
+                document.getElementById('winner-name').innerText = winnerName.toUpperCase();
+                document.getElementById('loser-name').innerText = loserName.toUpperCase();
+                const wWins = (winnerName === game.p1Name) ? game.p1Wins : game.p2Wins;
+                const lWins = (loserName === game.p1Name) ? game.p1Wins : game.p2Wins;
+                document.getElementById('winner-stats').innerText = `RONDE DIMENANGKAN: ${wWins} / ${game.totalRounds}`;
+                document.getElementById('loser-stats').innerText  = `RONDE DIMENANGKAN: ${lWins} / ${game.totalRounds}`;
+            }
+
+            // Render rounds summary pills
+            const summary = document.getElementById('rounds-summary');
+            summary.innerHTML = '';
+            game.roundResults.forEach((r, idx) => {
+                const pill = document.createElement('div');
+                let cls = 'tie';
+                let txt = `R${idx+1}: SERI`;
+                if (r.winner === 1) { cls = 'win-p1'; txt = `R${idx+1}: ${game.p1Name.toUpperCase()}`; }
+                else if (r.winner === 2) { cls = 'win-p2'; txt = `R${idx+1}: ${game.p2Name.toUpperCase()}`; }
+                pill.className = `round-pill ${cls}`;
+                pill.innerText = txt;
+                summary.appendChild(pill);
+            });
+
+            sfx.win();
+            showScreen('screen-result');
+        }
+
+        function surrenderMatch() {
+            if (!confirm("Menyerah? Lawan otomatis menang pertandingan.")) return;
+            // Stop interval kalau sedang jalan
+            if (game.swInterval) { clearInterval(game.swInterval); game.swInterval = null; }
+            if (game.cdInterval) { clearInterval(game.cdInterval); game.cdInterval = null; }
+            // Surrender = current player kalah, lawan menang otomatis.
+            // Catat sebagai 1 ronde "surrender" — beri winner ke lawan, isi placeholder hasil.
+            const opponentWins = game.currentPlayer === 1 ? 2 : 1;
+            // Force overwrite: lawan dianggap menang semua ronde sisa
+            const roundsRemaining = game.totalRounds - game.roundResults.length;
+            for (let i = 0; i < roundsRemaining; i++) {
+                game.roundResults.push({
+                    round: game.roundResults.length + 1,
+                    target: game.targetSec || 0,
+                    p1Clicked: null,
+                    p2Clicked: null,
+                    p1Acc: 0,
+                    p2Acc: 0,
+                    winner: opponentWins,
+                    surrender: true
+                });
+                if (opponentWins === 1) game.p1Wins++;
+                else game.p2Wins++;
+            }
+            endMatch();
+        }
+
+        /* ============================================================
+           11. LEADERBOARD (same pattern as bom.html)
+           ============================================================ */
+        function viewLeaderboard() {
+            sfx.flip();
+            showScreen('screen-leaderboard');
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const arena = document.getElementById('leaderboard-arena');
+            arena.innerHTML = '';
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+
+            const winnerName = game.lastWinner;
+            const loserName = game.lastLoser;
+            const oldWS = game.lastOldWinnerScore;
+            const oldLS = game.lastOldLoserScore;
+            const wReward = game.matchSeri ? 150 : 200;
+            const lReward = game.matchSeri ? 150 : 50;
+
+            const initialList = lb.map(e => {
+                let score = e.score;
+                if (e.name.toLowerCase() === winnerName.toLowerCase()) score = oldWS;
+                else if (e.name.toLowerCase() === loserName.toLowerCase()) score = oldLS;
+                return { name: e.name, score };
+            }).sort((a, b) => b.score - a.score).slice(0, 30);
+
+            if (!initialList.find(e => e.name.toLowerCase() === winnerName.toLowerCase())) {
+                initialList.push({ name: winnerName, score: oldWS });
+            }
+            if (!initialList.find(e => e.name.toLowerCase() === loserName.toLowerCase())) {
+                initialList.push({ name: loserName, score: oldLS });
+            }
+
+            const ROW_H = 60;
+            initialList.forEach((entry, i) => {
+                const isWinner = entry.name.toLowerCase() === winnerName.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'rank-card';
+                div.id = `card-${entry.name.replace(/\s+/g, '-')}`;
+                div.style.top = `${i * ROW_H}px`;
+                if (isWinner) div.classList.add('player-focus');
+                div.innerHTML = `
+                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <div class="rank-pos">#${i + 1}</div>
+                    <div class="rank-info">${entry.name}</div>
+                    <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
+                `;
+                arena.appendChild(div);
+                if (i === 0) div.classList.add('gold-rank');
+                else if (i === 1) div.classList.add('silver-rank');
+                else if (i === 2) div.classList.add('bronze-rank');
+            });
+
+            const spacer = document.createElement('div');
+            spacer.style.height = `${initialList.length * ROW_H + 30}px`;
+            spacer.style.pointerEvents = 'none';
+            arena.appendChild(spacer);
+
+            setTimeout(() => scrollToMyPosition(winnerName), 120);
+
+            setTimeout(() => {
+                phaseCountUpDual(
+                    winnerName, oldWS, oldWS + wReward,
+                    loserName, oldLS, oldLS + lReward,
+                    () => phaseReshuffle(lb)
+                );
+            }, 900);
+        }
+
+        function phaseCountUpDual(wn, wStart, wEnd, ln, lStart, lEnd, done) {
+            const wCard = document.getElementById(`card-${wn.replace(/\s+/g, '-')}`);
+            const wPts  = document.getElementById(`pts-${wn.replace(/\s+/g, '-')}`);
+            const lCard = document.getElementById(`card-${ln.replace(/\s+/g, '-')}`);
+            const lPts  = document.getElementById(`pts-${ln.replace(/\s+/g, '-')}`);
+            if (!wPts || !lPts) { setTimeout(() => done && done(), 200); return; }
+
+            const wReward = wEnd - wStart;
+            const lReward = lEnd - lStart;
+            if (wCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.style.color = 'var(--gold)';
+                f.style.textShadow = '0 0 12px rgba(255,215,0,0.7)';
+                f.innerText = `+${wReward}`;
+                wCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+            if (lCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.innerText = `+${lReward}`;
+                lCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+
+            const duration = 1800;
+            const startT = Date.now();
+            let lastSfx = 0;
+            function step() {
+                const t = Math.min((Date.now() - startT) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                let wCur = Math.floor(wStart + wReward * eased);
+                let lCur = Math.floor(lStart + lReward * eased);
+                if (t >= 1) { wCur = wEnd; lCur = lEnd; }
+                wPts.innerText = wCur;
+                lPts.innerText = lCur;
+                if (Date.now() - lastSfx > 90) { sfx.tick(); lastSfx = Date.now(); }
+                if (t < 1) requestAnimationFrame(step);
+                else {
+                    wPts.innerText = wEnd;
+                    lPts.innerText = lEnd;
+                    setTimeout(() => done && done(), 350);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+
+        function phaseReshuffle(fullData) {
+            const ROW_H = 60;
+            const finalRanks = [...fullData].sort((a, b) => b.score - a.score).slice(0, 30);
+            finalRanks.forEach((entry, idx) => {
+                const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
+                if (!card) return;
+                card.style.top = `${idx * ROW_H}px`;
+                card.querySelector('.rank-pos').innerText = `#${idx + 1}`;
+                const medal = card.querySelector('.podium-medal');
+                if (medal) medal.innerText = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+                card.classList.remove('gold-rank', 'silver-rank', 'bronze-rank');
+                if (idx === 0) card.classList.add('gold-rank');
+                else if (idx === 1) card.classList.add('silver-rank');
+                else if (idx === 2) card.classList.add('bronze-rank');
+            });
+            setTimeout(() => scrollToMyPosition(game.lastWinner), 1300);
+        }
+
+        function scrollToMyPosition(myName) {
+            const arena = document.getElementById('leaderboard-arena');
+            const myCard = document.getElementById(`card-${myName.replace(/\s+/g, '-')}`);
+            if (!arena || !myCard) return;
+            const cardTop = parseInt(myCard.style.top) || 0;
+            const cardHeight = 52;
+            const target = Math.max(0, (cardTop + cardHeight / 2) - arena.clientHeight / 2);
+            arena.scrollTo({ top: target, behavior: 'smooth' });
+        }
+
+        /* ============================================================
+           12. NAVIGATION
+           Main Lagi → reset state penuh, balik ke register (input nama lagi).
+           Sesuai arahan Pradipta: project publik / pameran, tiap pair stranger
+           harus input nama dari awal — JANGAN prefill / skip register.
+           ============================================================ */
+        function playAgain() {
+            sfx.click();
+            // Reset state penuh
+            game.p1Name = '';
+            game.p2Name = '';
+            game.currentRound = 0;
+            game.roundResults = [];
+            game.p1Wins = 0;
+            game.p2Wins = 0;
+            game.matchSeri = false;
+            game.lastWinner = null;
+            game.lastLoser = null;
+            game.p1ClickedSec = null;
+            game.p2ClickedSec = null;
+            game.targetSec = 0;
+            game.inputLocked = false;
+            game.swStopped = false;
+            if (game.swInterval) { clearInterval(game.swInterval); game.swInterval = null; }
+            if (game.cdInterval) { clearInterval(game.cdInterval); game.cdInterval = null; }
+            clearTurnTheme();
+            // Clear input
+            document.getElementById('p1-name').value = '';
+            document.getElementById('p2-name').value = '';
+            // Pilih default 3 ronde + NORMAL difficulty lagi
+            game.totalRounds = 3;
+            game.difficulty = 'normal';
+            document.querySelectorAll('#screen-rounds .round-card').forEach(c => {
+                c.classList.toggle('selected', parseInt(c.dataset.rounds) === 3);
+            });
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === 'normal');
+            });
+            showScreen('screen-register');
+        }
+
+        function backToMenu() {
+            sfx.flip();
+            if (game.swInterval) clearInterval(game.swInterval);
+            if (game.cdInterval) clearInterval(game.cdInterval);
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
