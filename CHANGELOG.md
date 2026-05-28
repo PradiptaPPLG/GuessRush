@@ -1,5 +1,54 @@
 # Changelog - Guess Rush
 
+## [2026-05-28] - Welcome Subtitle: Speed up Glitch Transition (3000ms → 1200ms) [AI / arahan Pradipta]
+### Changed
+- **`SUBTITLE_GLITCH_MS`**: `3000` → `1200`. Glitch transition kerasa snappy (~1.2s) bukan kelamaan (~3s). Arahan Pradipta: "glitch nya kelamaan, aga cepet glitch nya".
+- **`frameMs` scramble loop**: `55ms` → `35ms` (~18fps → ~28fps). Scramble char swap lebih cepat supaya tetep chaotic walau window di-shorten ke 1.2s.
+- **Total siklus per phrase**: was `4500 + 3000 = 7500ms`, sekarang `4500 + 1200 = 5700ms`.
+
+### Files
+- `index.html`: JS Block 12 — `SUBTITLE_GLITCH_MS` const + `frameMs` local di `_glitchTransitionSubtitle`.
+- `CHANGELOG.md`: entri ini.
+
+
+## [2026-05-28] - Welcome Subtitle: Random Phrase Cycler + Glitch Transition [AI / arahan Pradipta]
+### Changed
+- **Subtitle welcome screen** (was: static "ARENA TAKLUKAN ALAT TEKNIK SMK") → random phrase cycler dengan 6 cyberpunk phrases:
+  1. "RUN THE CODE: RUN YOUR BRAIN"
+  2. "DECRYPT THE SYNTAX, WIN THE GAME!"
+  3. "PUSH YOUR LOGIC TO THE MAXIMUM"
+  4. "FAST THINKING, ZERO ERROR"
+  5. "MASTER THE LOGIC, CONQUER THE CODE"
+  6. "WHERE LOGIC MEETS SPEED"
+- **Siklus**: tampil 4.5 detik tenang → 3 detik glitch transition → next random phrase (tidak repeat berurutan).
+
+### Added
+- **CSS Section 5B** baru (di antara section 5 INTRO dan section 6 BUTTONS) — `.welcome-subtitle` + `.glitch-active` variant. Komponen efek glitch:
+  - **RGB split text-shadow**: cyan offset -2px + magenta offset +2px → typical chromatic aberration look.
+  - **Position jitter** (`@keyframes subtitle-jitter`, 0.12s steps(1) infinite): translate(-2px to 2px, -1px to 1px) random 7 keyframes.
+  - **Pseudo ::before clip-path tear (top band)**: red layer dengan `clip-path: inset(0 0 70% 0)` shifting horizontally → simulasi "scan line tear" atas.
+  - **Pseudo ::after clip-path tear (bottom band)**: cyan layer dengan `clip-path: inset(70% 0 0 0)` → tear bawah. Background card-bg supaya overlay nutup base text di area tear.
+  - Pseudo pakai `attr(data-text)` — di-keep in sync oleh JS tiap frame scramble.
+- **JS Block 12 (Welcome Subtitle Cycler)**:
+  - `SUBTITLE_PHRASES[]` array 6 phrases.
+  - `SUBTITLE_GLITCH_MS = 3000`, `SUBTITLE_VISIBLE_MS = 4500`.
+  - `_pickNextSubtitlePhrase()`: random non-repeat (do-while loop sampai dapat index beda dari current).
+  - `_glitchTransitionSubtitle(newText)`: scramble loop ~18fps (frameMs 55). Progressive lock dari kiri — character index < `floor(newText.length * t)` di-lock ke final char, sisanya random dari `SUBTITLE_SCRAMBLE_CHARS` (`!<>-_/\\[]{}=+*^?#&%@$01`). Spaces / punctuation (`,:!`) selalu skip scramble untuk readability. Saat t=1, lock final + remove `.glitch-active` class.
+  - `_startSubtitleCycle()`: pertama tunggu 4.5s (initial visible phase), lalu trigger transition pertama, lalu setInterval setiap `visible + glitch = 7500ms`.
+  - **Guard**: cycle function cek `#screen-welcome.active` — kalau user udah navigate ke screen lain, skip animation (ngga waste compute).
+
+### Files
+- `index.html`:
+  - CSS section 5B baru (sebelum section 6).
+  - HTML: `<p>` subtitle ditambahin `id="welcome-subtitle"` + `class="welcome-subtitle"`, initial text diganti ke phrase #0.
+  - JS block 12 baru (sebelum `</script>` close), auto-kick via `_startSubtitleCycle()` di end-of-script.
+- `CHANGELOG.md`: entri ini.
+
+### Preserved (NOT removed per rules.md)
+- Welcome screen layout, intro-title (GUESS RUSH banner), intro-underline, semua tombol (MASUK ARENA / MODE LAINNYA / PENGATURAN) — unchanged.
+- Subtitle `<p>` margin / font-size / letter-spacing / font-weight inline style tetap, cuma color overridden saat glitch-active (cyan→white).
+
+
 ## [2026-05-28] - Perfect Timer: Difficulty Selector NORMAL / HARD [AI / arahan Pradipta]
 ### Added
 - **Screen `#screen-difficulty`** (baru, di antara `#screen-rounds` dan `#screen-vs`). 2 cards horizontal:

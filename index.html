@@ -71,6 +71,77 @@
         @keyframes intro-underline { to { transform: scaleX(1); } }
 
         /* ============================================================
+           5B. WELCOME SUBTITLE — RANDOM PHRASE CYCLER + GLITCH TRANSITION [2026-05-28]
+           Subtitle yang dulu static ("ARENA TAKLUKAN ALAT TEKNIK SMK") sekarang cycle
+           random dari 6 cyberpunk phrases. Tiap transisi 3 detik dengan efek:
+             - RGB split (cyan + magenta text-shadow offset)
+             - Position jitter (translateX bouncing)
+             - Character scramble (di-handle JS, swap random chars sampai locked)
+             - Brief clip-path tear lines (CSS only)
+           Default state (non-glitch): plain text, color text-secondary (sama dengan sebelumnya).
+           ============================================================ */
+        .welcome-subtitle {
+            position: relative;
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            transition: color 0.3s;
+        }
+        .welcome-subtitle.glitch-active {
+            color: #f0f6fc;
+            animation: subtitle-jitter 0.12s infinite steps(1);
+            text-shadow:
+                2px 0 rgba(255,77,109,0.85),
+                -2px 0 rgba(0,242,255,0.85),
+                0 0 8px rgba(255,255,255,0.25);
+        }
+        @keyframes subtitle-jitter {
+            0%   { transform: translate(0, 0); }
+            15%  { transform: translate(-2px, 1px); }
+            30%  { transform: translate(2px, -1px); }
+            45%  { transform: translate(-1px, 0); }
+            60%  { transform: translate(1px, 1px); }
+            75%  { transform: translate(-2px, -1px); }
+            90%  { transform: translate(1px, 0); }
+            100% { transform: translate(0, 0); }
+        }
+        /* Optional clip-path "scan tear" overlays via pseudo (uses data-text attr kept in sync by JS) */
+        .welcome-subtitle.glitch-active::before,
+        .welcome-subtitle.glitch-active::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            pointer-events: none;
+            background: var(--card-bg);
+        }
+        .welcome-subtitle.glitch-active::before {
+            color: #ff4d6d;
+            animation: subtitle-tear-top 0.42s infinite linear;
+            clip-path: inset(0 0 70% 0);
+            text-shadow: 2px 0 rgba(255,77,109,0.9);
+        }
+        .welcome-subtitle.glitch-active::after {
+            color: #00f2ff;
+            animation: subtitle-tear-bot 0.55s infinite linear;
+            clip-path: inset(70% 0 0 0);
+            text-shadow: -2px 0 rgba(0,242,255,0.9);
+        }
+        @keyframes subtitle-tear-top {
+            0%   { transform: translateX(0); clip-path: inset(0 0 70% 0); }
+            25%  { transform: translateX(-4px); clip-path: inset(10% 0 60% 0); }
+            50%  { transform: translateX(3px); clip-path: inset(5% 0 65% 0); }
+            75%  { transform: translateX(-2px); clip-path: inset(15% 0 70% 0); }
+            100% { transform: translateX(0); clip-path: inset(0 0 70% 0); }
+        }
+        @keyframes subtitle-tear-bot {
+            0%   { transform: translateX(0); clip-path: inset(70% 0 0 0); }
+            25%  { transform: translateX(3px); clip-path: inset(75% 0 5% 0); }
+            50%  { transform: translateX(-4px); clip-path: inset(65% 0 10% 0); }
+            75%  { transform: translateX(2px); clip-path: inset(80% 0 0 0); }
+            100% { transform: translateX(0); clip-path: inset(70% 0 0 0); }
+        }
+
+        /* ============================================================
            6. UI COMPONENTS: BUTTONS & INPUTS
            ============================================================ */
         button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
@@ -2443,6 +2514,99 @@
             });
         }
         document.getElementById('player-name').addEventListener('keypress', (e) => { if(e.key === 'Enter') finalizeScore(); });
+
+        /* ============================================================
+           [JS BLOCK 12] WELCOME SUBTITLE GLITCH CYCLER [2026-05-28]
+           Cycle 6 cyberpunk phrases di subtitle welcome screen.
+           Flow: tampil ~4.5s → glitch transition 3s (RGB split + jitter + char scramble) → next phrase.
+           Total siklus per phrase: 7.5s. Phrase berikutnya random (tidak repeat berurutan).
+           ============================================================ */
+        const SUBTITLE_PHRASES = [
+            "RUN THE CODE: RUN YOUR BRAIN",
+            "DECRYPT THE SYNTAX, WIN THE GAME!",
+            "PUSH YOUR LOGIC TO THE MAXIMUM",
+            "FAST THINKING, ZERO ERROR",
+            "MASTER THE LOGIC, CONQUER THE CODE",
+            "WHERE LOGIC MEETS SPEED"
+        ];
+        // CHANGED [2026-05-28]: glitch dipercepat dari 3000ms → 1200ms (arahan Pradipta — "kelamaan").
+        // Scramble frame juga dipercepat (55ms → 35ms) supaya tetep chaotic di window yang lebih pendek.
+        const SUBTITLE_GLITCH_MS = 1200;     // durasi transisi glitch (was 3000)
+        const SUBTITLE_VISIBLE_MS = 4500;    // durasi tampil tenang
+        const SUBTITLE_SCRAMBLE_CHARS = "!<>-_/\\[]{}=+*^?#&%@$01";
+        let _subtitleIdx = 0;
+        let _subtitleCycleTimer = null;
+        let _subtitleScrambleTimer = null;
+
+        function _pickNextSubtitlePhrase() {
+            // Pilih random index yang BUKAN current — pastikan ngga ngulang phrase yang sama
+            let next;
+            do {
+                next = Math.floor(Math.random() * SUBTITLE_PHRASES.length);
+            } while (next === _subtitleIdx && SUBTITLE_PHRASES.length > 1);
+            _subtitleIdx = next;
+            return SUBTITLE_PHRASES[next];
+        }
+
+        function _glitchTransitionSubtitle(newText) {
+            const el = document.getElementById('welcome-subtitle');
+            if (!el) return;
+            // Pastikan welcome screen masih active — kalau user udah navigate, skip animasi
+            const welcome = document.getElementById('screen-welcome');
+            if (!welcome || !welcome.classList.contains('active')) return;
+
+            const currentText = el.innerText;
+            // Target panjang character sama dengan newText. Kalau current < new, pad dengan space.
+            const padLen = Math.max(currentText.length, newText.length);
+            el.dataset.text = newText;        // dipakai oleh pseudo ::before/::after
+            el.classList.add('glitch-active');
+
+            const startT = performance.now();
+            const frameMs = 35;               // ~28 fps scramble (was 55ms) — lebih chaotic di window 1.2s
+
+            function step() {
+                const t = Math.min((performance.now() - startT) / SUBTITLE_GLITCH_MS, 1);
+                if (t >= 1) {
+                    el.innerText = newText;
+                    el.dataset.text = newText;
+                    el.classList.remove('glitch-active');
+                    _subtitleScrambleTimer = null;
+                    return;
+                }
+                // Progressive lock: dari kiri, character lock satu per satu seiring t naik
+                const lockedCount = Math.floor(newText.length * t);
+                let out = '';
+                for (let i = 0; i < newText.length; i++) {
+                    if (i < lockedCount || newText[i] === ' ' || newText[i] === ',' || newText[i] === ':' || newText[i] === '!') {
+                        out += newText[i];
+                    } else {
+                        out += SUBTITLE_SCRAMBLE_CHARS[Math.floor(Math.random() * SUBTITLE_SCRAMBLE_CHARS.length)];
+                    }
+                }
+                el.innerText = out;
+                el.dataset.text = out;
+                _subtitleScrambleTimer = setTimeout(step, frameMs);
+            }
+            step();
+        }
+
+        function _startSubtitleCycle() {
+            const el = document.getElementById('welcome-subtitle');
+            if (!el) return;
+            // Set initial phrase (current text di HTML adalah phrase #0 — sync index)
+            _subtitleIdx = 0;
+            const cycleFn = () => {
+                _glitchTransitionSubtitle(_pickNextSubtitlePhrase());
+            };
+            // Pertama kali tunggu SUBTITLE_VISIBLE_MS, lalu setInterval per (visible + glitch)
+            setTimeout(() => {
+                cycleFn();
+                _subtitleCycleTimer = setInterval(cycleFn, SUBTITLE_VISIBLE_MS + SUBTITLE_GLITCH_MS);
+            }, SUBTITLE_VISIBLE_MS);
+        }
+
+        // Kick off saat DOM ready (kalau script ini sudah di body bottom, DOM sudah parsed)
+        _startSubtitleCycle();
     </script>
 </body>
 </html>
