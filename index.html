@@ -291,68 +291,71 @@
             to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
         }
 
-        /* CHANGED [2026-05-27]: grid 2×2 → vertical stack (flex column). Card layout horizontal:
-           [icon | text(h3+p) | badge] supaya tetap compact walaupun lebar penuh. */
+        /* CHANGED [2026-05-28]: vertical list → horizontal row (4 card sejajar kepinggir).
+           Grid: flex-direction row, card: flex-direction column (icon atas | nama | badge bawah).
+           Description p disembunyikan karena card jadi lebih sempit (~90-95px width per card di modal 420px). */
         .game-grid {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
+            flex-direction: row;
+            gap: 8px;
             margin-top: 14px;
         }
 
         .game-card {
             position: relative;
+            flex: 1;
+            min-width: 0;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 14px 16px;
+            border-radius: 14px;
+            padding: 14px 6px 12px;
             cursor: pointer;
-            text-align: left;
+            text-align: center;
             transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.3s, background 0.3s;
             overflow: hidden;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 14px;
+            justify-content: space-between;
+            gap: 8px;
             opacity: 0;
-            transform: translateX(-20px);
-            animation: game-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform: translateY(18px) scale(0.92);
+            animation: game-card-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .modes-view.active .game-card:nth-child(1) { animation-delay: 0.08s; }
         .modes-view.active .game-card:nth-child(2) { animation-delay: 0.16s; }
         .modes-view.active .game-card:nth-child(3) { animation-delay: 0.24s; }
         .modes-view.active .game-card:nth-child(4) { animation-delay: 0.32s; }
         @keyframes game-card-in {
-            to { opacity: 1; transform: translateX(0); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .game-card .game-icon {
-            font-size: 2rem; line-height: 1;
-            flex-shrink: 0;
+            font-size: 1.9rem; line-height: 1;
             filter: drop-shadow(0 0 12px currentColor);
         }
         .game-card .game-text {
-            flex: 1; min-width: 0;
+            width: 100%;
         }
         .game-card h3 {
-            font-size: 0.85rem; font-weight: 900;
-            letter-spacing: 1.2px;
-            margin: 0 0 3px;
+            font-size: 0.65rem; font-weight: 900;
+            letter-spacing: 0.5px;
+            margin: 0;
             text-transform: uppercase;
+            line-height: 1.15;
+            word-break: break-word;
         }
-        .game-card p {
-            font-size: 0.65rem; color: var(--text-secondary);
-            line-height: 1.4; margin: 0;
-        }
+        /* Description disembunyikan di layout horizontal compact (terlalu sempit untuk text body) */
+        .game-card p { display: none; }
         .game-card .game-badge {
-            flex-shrink: 0;
-            font-size: 0.55rem; font-weight: 900;
-            letter-spacing: 1.5px;
-            padding: 4px 10px;
-            border-radius: 8px;
+            font-size: 0.48rem; font-weight: 900;
+            letter-spacing: 1px;
+            padding: 3px 7px;
+            border-radius: 7px;
             white-space: nowrap;
         }
 
-        /* UNLOCKED — cyan glow + shimmer + slide-right pada hover (untuk list layout) */
+        /* UNLOCKED — cyan glow + shimmer + lift up pada hover (cocok untuk row layout) */
         .game-card.unlocked { border-color: rgba(0,242,255,0.3); }
         .game-card.unlocked h3 { color: var(--accent-color); }
         .game-card.unlocked .game-badge {
@@ -361,9 +364,9 @@
             border: 1px solid rgba(0,242,255,0.4);
         }
         .game-card.unlocked:hover {
-            transform: translateX(4px);
+            transform: translateY(-6px) scale(1.04);
             border-color: var(--accent-color);
-            box-shadow: 0 6px 24px rgba(0,242,255,0.28), inset 0 0 25px rgba(0,242,255,0.06);
+            box-shadow: 0 10px 24px rgba(0,242,255,0.32), inset 0 0 25px rgba(0,242,255,0.06);
             background: rgba(0,242,255,0.06);
         }
         /* Shimmer sweep saat hover (diagonal sweep cyan) */

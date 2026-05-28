@@ -1,5 +1,24 @@
 # Changelog - Guess Rush
 
+## [2026-05-28] - MODE LAINNYA: Layout Horizontal Row (Card Sejajar Kepinggir) [AI / arahan Pradipta]
+### Changed
+- **`.game-grid`**: `flex-direction: column → row`. 4 card sekarang berjajar HORIZONTAL (sejajar ke samping), bukan vertikal ke bawah. Gap dikecilkan 10px → 8px supaya muat di modal 420px.
+- **`.game-card`**: layout internal di-flip — `flex-direction: row → column`, `align-items: center`, `justify-content: space-between`, `text-align: center`. Konten sekarang stack: ICON (atas) → NAMA (tengah) → BADGE (bawah). `flex: 1; min-width: 0` supaya 4 card share equal width (~90-95px tiap card).
+- **Entrance animation**: `translateX(-20px) → 0` (slide dari kiri) diganti `translateY(18px) scale(0.92) → 0` (pop dari bawah dengan elastic scale). Lebih cocok untuk row layout — cards "naik" ke posisi.
+- **Hover unlocked**: `translateX(4px)` (slide kanan) → `translateY(-6px) scale(1.04)` (lift atas + scale). Standard "card pop" feel.
+- **Font sizing diperkecil**: h3 `0.85rem → 0.65rem` (letter-spacing 1.2 → 0.5), badge `0.55rem → 0.48rem` padding `4px 10px → 3px 7px`, icon `2rem → 1.9rem`. Word-break: break-word ditambah ke h3 supaya nama panjang ("SAMBUNG KATA") wrap clean.
+- **`.game-card p`** (description): `display: none`. Terlalu sempit di card ~90px lebar untuk text body — info description dihilangkan, tinggal icon + nama + badge.
+- **Border-radius**: 16px → 14px (proporsional dengan card lebih kecil).
+
+### Preserved (NOT removed per rules.md)
+- `.game-text` wrapper di HTML masih ada (cuma sekarang container untuk h3 saja, p di-hide via CSS).
+- View 2 (Casual/Chaos), tombol KEMBALI di view 1 & 2, semua locked state styling — unchanged.
+
+### Files
+- `index.html`: CSS section 11B (`.game-grid` direction, `.game-card` layout + animation + sizing, `.game-card p` hide).
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - MODE LAINNYA: Polish Game Gallery Layout [AI / arahan Pradipta]
 ### Changed
 - **`.game-grid`**: grid 2×2 → vertical list (`display: flex; flex-direction: column; gap: 10px`). 4 game card berjejer ke bawah, bukan 2-kolom.
