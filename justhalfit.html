@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Just Half It! - Guess Rush</title>
+    <style>
+        /* ============================================================
+           JUST HALF IT! — Guess Rush minigame [2026-05-28]
+           Pemain bertanding belah objek tepat 50/50. Mekanik:
+             - Cut via clip-path inset 0 (100-cut)% 0 0 (left) & inset 0 0 0 cut% (right)
+             - Akurasi = max(0, 100 - |50 - cut|*2), display rounded ke kelipatan 5
+             - NORMAL: drag pisau manual, klik untuk lock posisi
+             - HARD: pisau auto-slide L-R, player klik SELESAI untuk lock
+             - 20s timer per cut → auto 0% kalau habis
+             - Setelah cut → animasi timbangan, weigh halves, reveal akurasi
+           ============================================================ */
+
+        /* ============================================================
+           1. ROOT VARIABLES (sync dengan index.html / bom.html / perfecttimer.html)
+           ============================================================ */
+        :root {
+            --gold: #ffd700;
+            --bg-color: #05070a;
+            --card-bg: #11141b;
+            --accent-color: #00f2ff;
+            --accent-hover: #00d1db;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --correct: #2ecc71;
+            --silver: #e0e0e0;
+            --bronze: #cd7f32;
+            --danger: #ff4d4d;
+            --p1: #ff4d6d;
+            --p2: #4dabff;
+            --wood-light: #c08755;
+            --wood-mid: #8b5a2b;
+            --wood-dark: #5e3a1a;
+        }
+
+        /* ============================================================
+           2. GLOBAL RESET & BASE
+           ============================================================ */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; position: relative; }
+
+        /* ============================================================
+           3. AMBIENT ORBS (cyan/orange — kitchen / blade theme)
+           ============================================================ */
+        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: 0; pointer-events: none; }
+        .orb-1 { width: 400px; height: 400px; background: rgba(0, 242, 255, 0.18); top: -100px; left: -100px; animation: moveOrb 15s infinite alternate ease-in-out; }
+        .orb-2 { width: 450px; height: 450px; background: rgba(255, 149, 0, 0.18); bottom: -150px; right: -150px; animation: moveOrb 20s infinite alternate-reverse ease-in-out; }
+        @keyframes moveOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(100px, 100px) scale(1.1); } }
+
+        /* ============================================================
+           4. CONTAINER & SCREEN TRANSITIONS
+           ============================================================ */
+        #game-container {
+            width: 95%; max-width: 500px;
+            background: rgba(17, 20, 27, 0.85);
+            padding: 1.8rem 1.5rem;
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0, 242, 255, 0.05);
+            text-align: center; position: relative; z-index: 1;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: box-shadow 0.6s, border-color 0.6s;
+        }
+        #game-container.turn-p1 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,77,109,0.22); border-color: rgba(255,77,109,0.35); }
+        #game-container.turn-p2 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(77,171,255,0.22); border-color: rgba(77,171,255,0.35); }
+
+        .screen { display: none; }
+        .screen.active { display: block; animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes screenIn { from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+
+        /* ============================================================
+           5. BUTTONS — base + ghost + danger-soft
+           ============================================================ */
+        button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
+        button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #00b8c4; }
+        button:hover:not(:active):not(:disabled) { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.3); color: var(--accent-color); box-shadow: none; }
+        .btn-ghost:hover:not(:active) { background: rgba(0,242,255,0.1); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+        .btn-danger-soft { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3); padding: 10px 16px; margin-top: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; box-shadow: none; }
+        .btn-danger-soft:hover:not(:active) { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 15px rgba(255,77,77,0.3); }
+
+        /* ============================================================
+           6. REGISTER SCREEN
+           ============================================================ */
+        .register-row { margin: 14px 0; text-align: left; }
+        .register-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 8px; }
+        .register-p1 .register-label { color: var(--p1); text-shadow: 0 0 10px rgba(255,77,109,0.3); }
+        .register-p2 .register-label { color: var(--p2); text-shadow: 0 0 10px rgba(77,171,255,0.3); }
+        .register-row input { width: 100%; padding: 14px 16px; border-radius: 14px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
+        .register-p1 input { border: 2px solid rgba(255,77,109,0.3); }
+        .register-p1 input:focus { border-color: var(--p1); box-shadow: 0 0 15px rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
+        .register-p2 input { border: 2px solid rgba(77,171,255,0.3); }
+        .register-p2 input:focus { border-color: var(--p2); box-shadow: 0 0 15px rgba(77,171,255,0.3); background: rgba(77,171,255,0.05); }
+        .vs-divider { text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--accent-color); margin: 6px 0; letter-spacing: 6px; text-shadow: 0 0 12px rgba(0,242,255,0.4); }
+        .register-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: rgba(28,33,40,0.98); border-radius: 12px; padding: 8px; border: 1px solid #333; z-index: 100; margin-top: 6px; text-align: left; max-height: 180px; overflow-y: auto; }
+
+        /* ============================================================
+           7. ROUNDS PICKER + DIFFICULTY PICKER (mirror perfecttimer)
+           ============================================================ */
+        .rounds-row { display: flex; gap: 12px; margin: 20px 0 6px; justify-content: center; }
+        .round-card { flex: 1; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 18px 6px; cursor: pointer; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; }
+        .round-card:hover { border-color: var(--accent-color); background: rgba(0,242,255,0.06); transform: translateY(-4px) scale(1.04); box-shadow: 0 6px 18px rgba(0,242,255,0.25); }
+        .round-card.selected { border-color: var(--gold) !important; background: rgba(255,215,0,0.1); box-shadow: 0 0 20px rgba(255,215,0,0.35); }
+        .round-card .round-num { font-size: 2.4rem; font-weight: 900; color: var(--accent-color); line-height: 1; }
+        .round-card.selected .round-num { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.6); }
+        .round-card .round-lbl { font-size: 0.68rem; font-weight: 900; letter-spacing: 1.5px; color: var(--text-secondary); margin-top: 6px; }
+
+        .difficulty-row { display: flex; gap: 14px; margin: 22px 0 6px; justify-content: center; }
+        .diff-card { flex: 1; background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 20px 12px 18px; cursor: pointer; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; position: relative; overflow: hidden; }
+        .diff-card:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 8px 22px rgba(0,0,0,0.4); }
+        .diff-card.normal:hover { border-color: var(--correct); background: rgba(46,204,113,0.08); box-shadow: 0 8px 22px rgba(46,204,113,0.25); }
+        .diff-card.normal.selected { border-color: var(--correct) !important; background: rgba(46,204,113,0.12); box-shadow: 0 0 22px rgba(46,204,113,0.4); }
+        .diff-card.hard:hover { border-color: var(--danger); background: rgba(255,77,77,0.08); box-shadow: 0 8px 22px rgba(255,77,77,0.25); }
+        .diff-card.hard.selected { border-color: var(--danger) !important; background: rgba(255,77,77,0.12); box-shadow: 0 0 22px rgba(255,77,77,0.4); }
+        .diff-card .diff-icon { font-size: 2.2rem; line-height: 1; margin-bottom: 6px; filter: drop-shadow(0 0 12px currentColor); }
+        .diff-card.normal .diff-icon { color: var(--correct); }
+        .diff-card.hard .diff-icon { color: var(--danger); }
+        .diff-card .diff-title { font-size: 1rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 4px; }
+        .diff-card.normal .diff-title { color: var(--correct); text-shadow: 0 0 10px rgba(46,204,113,0.4); }
+        .diff-card.hard .diff-title { color: var(--danger); text-shadow: 0 0 10px rgba(255,77,77,0.4); }
+        .diff-card .diff-sub { font-size: 0.62rem; letter-spacing: 1.2px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.4; }
+        .diff-card .diff-example { font-family: 'Courier New', monospace; font-size: 0.8rem; font-weight: 900; color: var(--gold); letter-spacing: 1.2px; background: rgba(0,0,0,0.3); padding: 6px 4px; border-radius: 8px; border: 1px solid rgba(255,215,0,0.2); }
+
+        /* ============================================================
+           8. VS ANIMATION
+           ============================================================ */
+        .vs-stage { position: relative; padding: 30px 0; overflow: hidden; min-height: 220px; display: flex; align-items: center; justify-content: center; }
+        .vs-name { font-size: 1.8rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; position: absolute; top: 50%; opacity: 0; }
+        .vs-name-p1 { left: 0; color: var(--p1); text-shadow: 0 0 18px rgba(255,77,109,0.6); animation: vs-slide-left 0.7s 0.2s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; }
+        .vs-name-p2 { right: 0; color: var(--p2); text-shadow: 0 0 18px rgba(77,171,255,0.6); animation: vs-slide-right 0.7s 0.4s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; }
+        @keyframes vs-slide-left { 0% { opacity: 0; transform: translateY(-50%) translateX(-150px) skewX(-15deg); filter: blur(8px); } 100% { opacity: 1; transform: translateY(-50%) translateX(0) skewX(0); filter: blur(0); } }
+        @keyframes vs-slide-right { 0% { opacity: 0; transform: translateY(-50%) translateX(150px) skewX(15deg); filter: blur(8px); } 100% { opacity: 1; transform: translateY(-50%) translateX(0) skewX(0); filter: blur(0); } }
+        .vs-big-vs { font-size: 3.2rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 28px rgba(255,215,0,0.7), 0 4px 0 #b8860b; letter-spacing: 4px; position: relative; opacity: 0; animation: vs-big-pop 0.55s 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; z-index: 5; }
+        @keyframes vs-big-pop { 0% { opacity: 0; transform: scale(3) rotate(-15deg); filter: blur(15px); } 70% { opacity: 1; transform: scale(0.9) rotate(3deg); filter: blur(0); } 100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); } }
+
+        /* ============================================================
+           9. ROUND INTRO (RONDE X/Y + objek preview)
+           ============================================================ */
+        .round-banner { font-size: 1.1rem; font-weight: 900; letter-spacing: 4px; color: var(--accent-color); margin-bottom: 6px; opacity: 0; animation: ri-fade-in 0.6s 0.1s forwards; }
+        @keyframes ri-fade-in { to { opacity: 1; } }
+        .round-num-big { font-size: 4rem; font-weight: 900; color: white; line-height: 1; margin: 6px 0 12px; opacity: 0; animation: ri-num-pop 0.6s 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes ri-num-pop { 0% { opacity: 0; transform: scale(0.4); } 100% { opacity: 1; transform: scale(1); } }
+        .object-preview-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 3px; color: var(--text-secondary); margin-top: 18px; }
+        .object-preview-wrap { width: 140px; height: 140px; margin: 12px auto; position: relative; opacity: 0; animation: obj-reveal 0.7s 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .object-preview-wrap img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 18px rgba(255,215,0,0.4)); }
+        @keyframes obj-reveal {
+            0% { opacity: 0; transform: scale(0.4) rotate(-15deg); filter: blur(8px); }
+            70% { opacity: 1; transform: scale(1.1) rotate(3deg); filter: blur(0); }
+            100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+        .object-name { font-size: 1.1rem; font-weight: 900; color: var(--gold); letter-spacing: 2.5px; text-shadow: 0 0 14px rgba(255,215,0,0.5); margin-top: 4px; opacity: 0; animation: ri-fade-in 0.6s 0.9s forwards; }
+
+        /* ============================================================
+           10. COUNTDOWN (3 → 2 → 1 → GO)
+           ============================================================ */
+        .turn-name { font-size: 1.1rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 4px; }
+        .turn-name.p1 { color: var(--p1); text-shadow: 0 0 14px rgba(255,77,109,0.5); }
+        .turn-name.p2 { color: var(--p2); text-shadow: 0 0 14px rgba(77,171,255,0.5); }
+        .countdown-sub { font-size: 0.75rem; letter-spacing: 2px; color: var(--text-secondary); margin-bottom: 14px; }
+        .countdown-big { font-size: 6.5rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 30px rgba(255,215,0,0.6), 0 0 60px rgba(255,215,0,0.3); line-height: 1; margin: 12px 0; display: inline-block; font-family: 'Courier New', monospace; }
+        .countdown-big.go { color: var(--correct); text-shadow: 0 0 30px rgba(46,204,113,0.7), 0 0 60px rgba(46,204,113,0.3); }
+        .countdown-big.pulse { animation: count-pulse 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes count-pulse { 0% { transform: scale(0.4); opacity: 0; } 40% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* ============================================================
+           11. PLAY ARENA — cutting board + object + pisau states
+           ============================================================ */
+        .play-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 4px; }
+        .play-timer {
+            font-family: 'Courier New', monospace; font-size: 1rem; font-weight: 900;
+            color: var(--accent-color); letter-spacing: 1.5px;
+            padding: 4px 10px; background: rgba(0,0,0,0.4); border-radius: 8px;
+            border: 1px solid rgba(0,242,255,0.3);
+        }
+        .play-timer.warning { color: #f1c40f; border-color: rgba(241,196,15,0.5); animation: timer-blink 0.5s infinite alternate; }
+        .play-timer.danger { color: var(--danger); border-color: rgba(255,77,77,0.6); animation: timer-blink 0.25s infinite alternate; }
+        @keyframes timer-blink { from { opacity: 0.6; } to { opacity: 1; } }
+        .play-hint { font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 1.5px; font-weight: 900; }
+
+        /* ARENA — area utama tempat cut. [revisi 2026-05-28] diperbesar 380→440, object 140→200
+           supaya sweet spot RELATIF lebih kecil (2px / 200px = 1%) tapi visual tetap besar & enak dipandang. */
+        .cut-arena {
+            position: relative;
+            width: 100%; max-width: 440px;
+            height: 420px;
+            margin: 14px auto 6px;
+            display: flex; align-items: center; justify-content: center;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* CUTTING BOARD (talenan kayu) — diperbesar proportional, responsive (90% of arena, max 400px) */
+        .cutting-board {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; max-width: 400px; height: 240px;
+            background: linear-gradient(135deg, var(--wood-light) 0%, var(--wood-mid) 45%, var(--wood-light) 60%, var(--wood-mid) 100%);
+            border-radius: 14px;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.5), inset 0 2px 6px rgba(255,255,255,0.15), inset 0 -3px 8px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 1;
+        }
+        /* Wood grain stripes overlay */
+        .cutting-board::before {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 18px,
+                rgba(94, 58, 26, 0.25) 19px,
+                transparent 22px
+            );
+            pointer-events: none;
+        }
+        .cutting-board::after {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                85deg,
+                transparent 0px,
+                transparent 38px,
+                rgba(255, 255, 255, 0.05) 40px,
+                transparent 43px
+            );
+            pointer-events: none;
+        }
+
+        /* OBJECT — di tengah cutting board. Diperbesar 140→200px supaya sweet spot 1% jadi ~2px (susah). */
+        .object-stage {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px; height: 200px;
+            z-index: 5;
+        }
+        /* HARD mode: object slide L-R otomatis. Range diperluas 70→90px karena arena bigger. */
+        .object-stage.slide {
+            animation: obj-slide 3.2s ease-in-out infinite alternate;
+        }
+        @keyframes obj-slide {
+            0%   { transform: translate(calc(-50% - 90px), -50%); }
+            100% { transform: translate(calc(-50% + 90px), -50%); }
+        }
+        .object-stage.slide.paused { animation-play-state: paused; }
+
+        .object-half {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+            will-change: transform, clip-path;
+        }
+        .object-half img {
+            width: 100%; height: 100%; object-fit: contain;
+            pointer-events: none;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+        /* Cut edge dark gradient overlay — mitigasi "no cross-section" */
+        .object-half.left::after {
+            content: ''; position: absolute; top: 0; bottom: 0;
+            right: 0; width: 6px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.7));
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .object-half.right::after {
+            content: ''; position: absolute; top: 0; bottom: 0;
+            left: 0; width: 6px;
+            background: linear-gradient(90deg, rgba(0,0,0,0.7), rgba(0,0,0,0.55) 30%, transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .object-stage.cut .object-half::after { opacity: 1; }
+        .object-stage.cut .object-half.left { transform: translateX(-80px) rotate(-4deg); }
+        .object-stage.cut .object-half.right { transform: translateX(80px) rotate(4deg); }
+
+        /* Ghost line at 50% (revealed after cut) */
+        .ghost-line {
+            position: absolute;
+            top: -10px; bottom: -10px;
+            left: 50%;
+            width: 0;
+            border-left: 2px dashed rgba(255, 215, 0, 0.45);
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.4s;
+            pointer-events: none;
+            z-index: 7;
+        }
+        .object-stage.cut .ghost-line { opacity: 1; }
+
+        /* PISAU — [revisi 2026-05-28 v3] diperbesar (38→60 w, 360→300 h) & posisinya lebih dekat object.
+           Arena 420 tinggi, object top Y=110. Pisau top:-200 + height 300 → bottom edge Y=100
+           (tip cuma 10px di atas object top — visual "siap menebas", tidak floating jauh di atas).
+           Cutting anim translateY(140) → tip menusuk ke Y=240 (deep into object center 210, past it).
+           Image asset ratio asli ~1:8 — di-render 60×300 (ratio 1:5) jadi sedikit lebih chunky/proper kitchen knife. */
+        .pisau-drag {
+            position: absolute;
+            top: -200px;
+            left: 50%;
+            width: 60px;
+            height: 300px;
+            transform: translateX(-50%) rotate(180deg);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+        }
+        .pisau-drag img { width: 100%; height: 100%; object-fit: contain; }
+        .pisau-drag.visible { opacity: 1; }
+        .pisau-drag.cutting { animation: pisau-strike 0.45s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        @keyframes pisau-strike {
+            0%   { transform: translateX(-50%) rotate(180deg) translateY(0); }
+            25%  { transform: translateX(-50%) rotate(180deg) translateY(-40px); }
+            60%  { transform: translateX(-50%) rotate(180deg) translateY(140px); }
+            100% { transform: translateX(-50%) rotate(180deg) translateY(120px); opacity: 0.5; }
+        }
+
+        /* Cut indicator (hologram biru vertical line) DIHAPUS [2026-05-28 revisi]
+           Arahan Pradipta: terlalu mempermudah aim, ngga ada cue artifisial — pemain harus baca posisi
+           pisau secara visual. Sweet spot di kelipatan 2 sudah ketat (1% range). */
+
+        /* PISAU PARKING — bottom area with label */
+        .pisau-parking {
+            position: absolute;
+            bottom: 6px; left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            padding: 8px 10px;
+            background: linear-gradient(135deg, rgba(20, 22, 30, 0.92), rgba(40, 44, 56, 0.92));
+            border: 2px solid rgba(0, 242, 255, 0.35);
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 3px rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.25s;
+            z-index: 6;
+        }
+        .pisau-parking:hover { border-color: var(--accent-color); box-shadow: 0 6px 22px rgba(0, 242, 255, 0.4); transform: translateX(-50%) translateY(-3px); }
+        .pisau-parking.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+        .pisau-parking img { width: 28px; height: 28px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .pisau-parking-label { font-size: 0.78rem; font-weight: 900; color: var(--accent-color); letter-spacing: 2px; }
+        .pisau-parking .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--correct); box-shadow: 0 0 10px var(--correct); animation: pulse-dot 1.2s infinite; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 0.4; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+
+        /* SELESAI / POTONG button — appears when knife is locked */
+        .btn-cut {
+            width: 100%; max-width: 320px;
+            margin: 8px auto 0;
+            padding: 18px 14px;
+            font-size: 1.2rem; font-weight: 900;
+            letter-spacing: 4px;
+            border-radius: 18px;
+            color: white;
+            background: linear-gradient(135deg, var(--danger), #d93030);
+            box-shadow: 0 7px 0 #7a1e1e, 0 12px 26px rgba(255, 77, 77, 0.4);
+            border: none; cursor: pointer;
+            transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
+            display: block; text-transform: uppercase;
+        }
+        .btn-cut:hover { filter: brightness(1.08); }
+        .btn-cut:active { transform: translateY(5px); box-shadow: 0 2px 0 #7a1e1e; }
+        .btn-cut:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* SELESAI variant (HARD mode — green, "stop the slide") */
+        .btn-cut.btn-selesai {
+            background: linear-gradient(135deg, var(--correct), #25a85a);
+            box-shadow: 0 7px 0 #1c7a3e, 0 12px 26px rgba(46, 204, 113, 0.4);
+        }
+        .btn-cut.btn-selesai:active { box-shadow: 0 2px 0 #1c7a3e; }
+
+        /* ============================================================
+           12. TIMBANGAN (WEIGHING SCENE) — REBUILT [revisi 2026-05-28]
+           Bug sebelumnya: absolute positioning bowls dengan `left: calc(50% - 175px)` jadi negatif
+           di container narrow → bowls bertumpuk di tengah. Fix: nested structure — arms hang dari
+           beam ends sebagai children, otomatis ikut rotasi beam tanpa absolute-positioning gymnastics.
+           ============================================================ */
+        .scale-stage {
+            position: relative;
+            width: 100%;
+            height: 340px;
+            margin: 16px auto 4px;
+        }
+        /* Rig: fixed-width inner container, centered. Semua child position relative ke rig ini. */
+        .scale-rig {
+            position: relative;
+            width: 360px;
+            max-width: 100%;
+            height: 100%;
+            margin: 0 auto;
+        }
+        /* Pole vertikal (tiang penyangga timbangan) */
+        .scale-pole {
+            position: absolute;
+            top: 10px; left: 50%;
+            transform: translateX(-50%);
+            width: 8px; height: 56px;
+            background: linear-gradient(180deg, #777, #2a2a2a);
+            border-radius: 3px;
+            z-index: 2;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.3);
+        }
+        /* Pivot bulat (titik tumpu beam, kuning emas) */
+        .scale-pivot {
+            position: absolute;
+            top: 58px; left: 50%;
+            transform: translateX(-50%);
+            width: 18px; height: 18px;
+            background: radial-gradient(circle at 35% 35%, #ffd700, #b8860b);
+            border-radius: 50%;
+            z-index: 5;
+            box-shadow: 0 0 12px rgba(255,215,0,0.7), inset -2px -2px 4px rgba(0,0,0,0.3);
+        }
+        /* Beam horizontal — pivot di tengah. Anchor untuk dua arm. */
+        .scale-beam {
+            position: absolute;
+            top: 66px;
+            left: 50%;
+            width: 300px;
+            height: 14px;
+            background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood-mid) 60%, var(--wood-dark) 100%);
+            border-radius: 7px;
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: 50% 50%;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.2);
+            z-index: 3;
+        }
+        /* Wood grain di beam */
+        .scale-beam::after {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                90deg, transparent 0, transparent 14px,
+                rgba(94, 58, 26, 0.25) 15px, transparent 18px
+            );
+            border-radius: 7px;
+            pointer-events: none;
+        }
+        /* ARM kiri & kanan — children dari beam. Anchor 8px dari masing-masing ujung beam.
+           Karena children, mereka otomatis ikut rotate dengan beam (no manual drop class). */
+        .scale-arm {
+            position: absolute;
+            top: 14px;        /* langsung di bawah beam (beam tinggi 14px) */
+            width: 4px;
+            height: 70px;
+            background: linear-gradient(180deg, #999, #555);
+            border-radius: 2px;
+            z-index: 2;
+        }
+        .scale-arm.left  { left: 8px; }
+        .scale-arm.right { right: 8px; }
+
+        /* BOWL — children dari arm, hang di bawah. [revisi v3] Bowl SHAPE pindah ke ::after pseudo,
+           image (.scale-bowl img) z-index LEBIH RENDAH supaya image RENDER DI BELAKANG bowl front.
+           Visual: half-element "duduk dalam bowl" — bottom half di-cover bowl crescent, top half visible.
+           Counter-rotation tetap via tilt class (bowl upright meski beam tilt). */
+        .scale-bowl {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: 50% 0%;     /* swing dari atas (titik gantung) */
+            width: 96px;
+            height: 60px;
+            background: transparent;       /* tidak ada bg di element utama — shape pindah ke ::after */
+            z-index: 4;
+            overflow: visible;
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        /* Bowl shape (wood crescent) — ::after, z-index 2 di atas image */
+        .scale-bowl::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, var(--wood-mid) 0%, var(--wood-dark) 80%);
+            border-radius: 0 0 48px 48px / 0 0 60px 60px;
+            border: 2px solid var(--wood-dark);
+            border-top: none;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.55), inset 0 -10px 14px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+        /* Top rim highlight — ::before di atas semuanya untuk catchlight */
+        .scale-bowl::before {
+            content: '';
+            position: absolute;
+            top: -3px; left: -2px; right: -2px;
+            height: 5px;
+            background: linear-gradient(180deg, var(--wood-light), transparent);
+            border-radius: 50%;
+            z-index: 3;
+        }
+        /* Image (potongan objek) — z-index 1: DI BELAKANG bowl ::after.
+           Image extends ABOVE bowl rim (top region visible), bottom half hidden by bowl shape.
+           Visual: objek "duduk dalam" bowl, mostly nongol di atas rim. */
+        .scale-bowl img {
+            width: 84px; height: 84px;
+            object-fit: contain;
+            position: absolute;
+            left: 50%;
+            bottom: 6px;                /* sit deeper in bowl (was 14px) */
+            transform: translateX(-50%);
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.4));
+            z-index: 1;                  /* DI BELAKANG ::after */
+        }
+
+        /* Weight labels — di luar beam structure, position relative ke rig.
+           Saat beam tilt, labels TETAP di posisi bawah (mereka indikator stabil). */
+        .scale-weights {
+            position: absolute;
+            bottom: 16px; left: 0; right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 18px;
+            z-index: 6;
+        }
+        .scale-weight-label {
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            color: white;
+            font-size: 1rem;
+            letter-spacing: 1.5px;
+            background: rgba(0,0,0,0.65);
+            padding: 5px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.18);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Accuracy reveal — positioned BELOW weights, full-width centered. Tidak lagi overlap bowls. */
+        .scale-accuracy-center {
+            position: absolute;
+            top: 96px;            /* di area sela antara beam dan bowls — center stage visual */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 8;
+            opacity: 0;
+            background: rgba(0, 0, 0, 0.78);
+            padding: 8px 24px;
+            border-radius: 16px;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 24px rgba(255, 215, 0, 0.55);
+            transition: opacity 0.5s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .scale-accuracy-center.visible {
+            opacity: 1;
+            animation: acc-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes acc-pop {
+            0% { transform: translateX(-50%) scale(0.4); opacity: 0; }
+            70% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
+        }
+        .scale-acc-value {
+            font-family: 'Courier New', monospace;
+            font-size: 2.4rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+        .scale-acc-label {
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            font-weight: 900;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* Beam tilt classes — 4 levels. Bowls counter-rotate supaya tetap upright (realistis gantung). */
+        .scale-beam.tilt-left      { transform: translateX(-50%) rotate(-13deg); }
+        .scale-beam.tilt-l-small   { transform: translateX(-50%) rotate(-6deg); }
+        .scale-beam.tilt-right     { transform: translateX(-50%) rotate(13deg); }
+        .scale-beam.tilt-r-small   { transform: translateX(-50%) rotate(6deg); }
+
+        /* Counter-rotate bowl untuk menjaga orientasi upright — bowl tetap "vertikal" meski beam tilt.
+           Arms tetap ikut tilt (rope-like), bowls swing balik. Visual: mangkok diisi berat, jatuh
+           lebih rendah tapi mulutnya tetap menghadap atas (realistis untuk hanging scale). */
+        .scale-beam.tilt-left .scale-bowl      { transform: translateX(-50%) rotate(13deg); }
+        .scale-beam.tilt-l-small .scale-bowl   { transform: translateX(-50%) rotate(6deg); }
+        .scale-beam.tilt-right .scale-bowl     { transform: translateX(-50%) rotate(-13deg); }
+        .scale-beam.tilt-r-small .scale-bowl   { transform: translateX(-50%) rotate(-6deg); }
+
+        /* ============================================================
+           13. ROUND RESULT (P1 & P2 side-by-side dengan akurasi)
+           ============================================================ */
+        .result-row-half { margin: 12px auto; padding: 18px 16px; border-radius: 18px; background: rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.08); max-width: 380px; text-align: center; }
+        .result-row-half.p1 { border-color: rgba(255,77,109,0.4); background: linear-gradient(135deg, rgba(255,77,109,0.1), rgba(0,0,0,0.4)); }
+        .result-row-half.p2 { border-color: rgba(77,171,255,0.4); background: linear-gradient(135deg, rgba(77,171,255,0.1), rgba(0,0,0,0.4)); }
+        .result-row-half .rr-name { font-size: 1rem; font-weight: 900; letter-spacing: 1.5px; margin-bottom: 4px; }
+        .result-row-half.p1 .rr-name { color: var(--p1); }
+        .result-row-half.p2 .rr-name { color: var(--p2); }
+        .result-row-half .rr-acc { font-size: 2.4rem; font-weight: 900; font-family: 'Courier New', monospace; letter-spacing: 2px; line-height: 1; margin: 6px 0; }
+        .result-row-half .rr-meta { font-size: 0.7rem; letter-spacing: 1.5px; color: var(--text-secondary); margin: 4px 0; }
+        .result-row-half .rr-label { font-size: 0.85rem; font-weight: 900; letter-spacing: 3px; margin-top: 6px; text-transform: uppercase; }
+        .acc-perfect { color: var(--gold); text-shadow: 0 0 16px rgba(255,215,0,0.8); }
+        .acc-amazing { color: var(--accent-color); text-shadow: 0 0 12px rgba(0,242,255,0.6); }
+        .acc-clean   { color: var(--correct); text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        .acc-ok      { color: white; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+        .acc-wonky   { color: #ff9500; text-shadow: 0 0 10px rgba(255,149,0,0.5); }
+        .acc-butchered{ color: var(--danger); text-shadow: 0 0 10px rgba(255,77,77,0.6); animation: butchered-shake 0.4s; }
+        @keyframes butchered-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* ============================================================
+           14. PEAK EFFECT (100% accuracy)
+           ============================================================ */
+        .peak-banner { position: fixed; top: 22vh; left: 50%; transform: translateX(-50%) scale(0); font-size: 3rem; font-weight: 900; letter-spacing: 6px; color: var(--gold); text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b; pointer-events: none; z-index: 9998; opacity: 0; white-space: nowrap; }
+        .peak-banner.show { animation: peak-slam 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, peak-pulse 1.2s 0.7s 2 ease-in-out, peak-out 0.5s 3.1s forwards; }
+        @keyframes peak-slam { 0% { opacity: 0; transform: translateX(-50%) scale(3) rotate(-15deg); filter: blur(20px); } 60% { opacity: 1; transform: translateX(-50%) scale(0.85) rotate(2deg); filter: blur(0); } 100% { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); } }
+        @keyframes peak-pulse { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.08); } }
+        @keyframes peak-out { 0% { opacity: 1; transform: translateX(-50%) scale(1); } 100% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(-40px); } }
+
+        .peak-shockwave { position: fixed; top: 50vh; left: 50vw; width: 0; height: 0; border-radius: 50%; border: 4px solid var(--gold); opacity: 0; pointer-events: none; z-index: 9997; transform: translate(-50%, -50%); }
+        .peak-shockwave.go { animation: peak-shockwave-anim 0.9s ease-out forwards; }
+        @keyframes peak-shockwave-anim { 0% { width: 0; height: 0; opacity: 0.85; border-width: 6px; } 100% { width: 120vmax; height: 120vmax; opacity: 0; border-width: 1px; } }
+
+        .peak-flash { position: fixed; inset: 0; background: radial-gradient(circle at center, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0.2) 30%, transparent 70%); z-index: 9996; pointer-events: none; opacity: 0; }
+        .peak-flash.go { animation: peak-flash-anim 0.7s ease-out forwards; }
+        @keyframes peak-flash-anim { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+
+        .confetti-piece { position: fixed; width: 9px; height: 14px; pointer-events: none; opacity: 0; top: 50vh; left: 50vw; border-radius: 2px; z-index: 9999; }
+        .confetti-piece.fly { animation: confetti-fly 2s cubic-bezier(0.15, 0.6, 0.55, 0.95) forwards; }
+        @keyframes confetti-fly { 0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1.2); } 100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(900deg) scale(0.3); } }
+
+        /* ============================================================
+           15. MATCH RESULT
+           ============================================================ */
+        .match-result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
+        .match-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
+        .match-loser { background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.12); }
+        .match-result-row .mr-badge { font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+        .match-winner .mr-badge { color: var(--gold); }
+        .match-result-row .mr-name { font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: 1px; margin: 4px 0; }
+        .match-winner .mr-name { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.5); font-size: 1.7rem; }
+        .match-result-row .mr-stats { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1.2px; margin: 2px 0; }
+        .match-result-row .mr-pts { font-size: 0.85rem; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; margin-top: 6px; }
+
+        .rounds-summary { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; justify-content: center; }
+        .round-pill { padding: 6px 10px; border-radius: 10px; font-size: 0.65rem; font-weight: 900; letter-spacing: 1.2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); min-width: 70px; text-align: center; }
+        .round-pill.win-p1 { color: var(--p1); border-color: rgba(255,77,109,0.5); background: rgba(255,77,109,0.08); }
+        .round-pill.win-p2 { color: var(--p2); border-color: rgba(77,171,255,0.5); background: rgba(77,171,255,0.08); }
+        .round-pill.tie { color: var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.06); }
+
+        .seri-row { margin: 14px 0; padding: 18px; border-radius: 18px; background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(77,171,255,0.12)); border: 2px solid rgba(0,242,255,0.4); text-align: center; }
+        .seri-row .seri-label { font-size: 0.7rem; font-weight: 900; letter-spacing: 3px; color: var(--accent-color); margin-bottom: 8px; }
+        .seri-names { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .seri-side { flex: 1; text-align: center; }
+        .seri-side .seri-name { font-size: 1.2rem; font-weight: 900; letter-spacing: 1px; }
+        .seri-side.p1 .seri-name { color: var(--p1); text-shadow: 0 0 12px rgba(255,77,109,0.4); }
+        .seri-side.p2 .seri-name { color: var(--p2); text-shadow: 0 0 12px rgba(77,171,255,0.4); }
+        .seri-side .seri-wins { font-size: 0.75rem; color: var(--text-secondary); letter-spacing: 1.2px; margin-top: 4px; }
+        .seri-divider { color: var(--text-secondary); font-size: 0.7rem; letter-spacing: 3px; }
+
+        /* ============================================================
+           16. POPUP
+           ============================================================ */
+        #msg-popup { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; border-radius: 15px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #fff; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* ============================================================
+           17. HEADINGS
+           ============================================================ */
+        h1, h2, h3 { color: white; font-weight: 900; letter-spacing: 1.5px; }
+        h1 { font-size: 1.5rem; margin-bottom: 4px; letter-spacing: 2.5px; }
+        h2 { font-size: 1.2rem; margin-bottom: 4px; }
+        .game-title { background: linear-gradient(180deg, #fff, var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .game-subtitle { color: var(--text-secondary); font-size: 0.78rem; letter-spacing: 1.8px; margin-bottom: 18px; }
+
+        /* ============================================================
+           18. LEADERBOARD (in-file, throne battle pattern)
+           ============================================================ */
+        #leaderboard-arena { position: relative; margin-top: 15px; height: 350px; overflow-y: auto; padding: 30px 4px 20px; scroll-behavior: smooth; }
+        #leaderboard-arena::-webkit-scrollbar { width: 5px; }
+        #leaderboard-arena::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+        .rank-pos { width: 52px; padding-left: 28px; box-sizing: border-box; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; padding-left: 6px; }
+        .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
+        .podium-medal { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 1.25rem; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.35)); }
+        @keyframes throne-gold { 0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); } }
+        @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
+        @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
+        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; }
+        .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; }
+        .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; }
+        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; }
+        .player-focus .rank-info, .player-focus .rank-pts { color: var(--gold) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.3s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
+        @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+
+        /* ============================================================
+           19. LIGHT MODE OVERRIDE [2026-05-28] — mirror dari index.html
+           ============================================================ */
+        body.light {
+            --bg-color: #eef2f7;
+            --card-bg: #ffffff;
+            --text-primary: #11141b;
+            --text-secondary: #5a6473;
+            --accent-color: #00a8b5;
+            --accent-hover: #008f9b;
+        }
+        body.light .orb { opacity: 0.22; }
+        body.light .orb-1 { background: rgba(0, 168, 181, 0.28); }
+        body.light .orb-2 { background: rgba(255, 149, 0, 0.18); }
+        body.light #game-container { background: rgba(255, 255, 255, 0.94); border-color: rgba(0, 0, 0, 0.08); box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 0 40px rgba(0, 168, 181, 0.1); }
+        body.light button { color: #ffffff; box-shadow: 0 4px 0 #006b75; }
+        body.light button:active:not(:disabled) { box-shadow: 0 1px 0 #006b75; }
+        body.light .btn-ghost { background: rgba(0, 0, 0, 0.03); color: var(--accent-color); border-color: rgba(0, 168, 181, 0.35); }
+        body.light .btn-ghost:hover:not(:active) { background: rgba(0, 168, 181, 0.08); }
+        body.light .btn-danger-soft { color: var(--danger); border-color: rgba(255, 77, 77, 0.4); }
+        body.light .register-row input { background: rgba(0, 0, 0, 0.04); color: #11141b; }
+        body.light .register-suggestions { background: #ffffff; border-color: rgba(0, 0, 0, 0.15); }
+        body.light .register-suggestions div { color: var(--accent-color); }
+        body.light .round-card { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.1); }
+        body.light .round-card .round-lbl { color: #5a6473; }
+        body.light .diff-card { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.1); }
+        body.light .diff-card .diff-sub { color: #5a6473; }
+        body.light .diff-card .diff-example { background: rgba(0, 0, 0, 0.05); border-color: rgba(255, 215, 0, 0.4); }
+        body.light .play-timer { background: rgba(0, 0, 0, 0.06); border-color: rgba(0, 168, 181, 0.4); }
+        body.light .play-hint { color: #5a6473; }
+        body.light .pisau-parking { background: linear-gradient(135deg, rgba(255,255,255,0.94), rgba(230,230,230,0.94)); border-color: rgba(0, 168, 181, 0.4); }
+        body.light .pisau-parking-label { color: #00a8b5; }
+        body.light .result-row-half { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.1); }
+        body.light .result-row-half .rr-meta { color: #5a6473; }
+        body.light .round-pill { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.1); color: #5a6473; }
+        body.light .match-loser { background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)); border-color: rgba(0, 0, 0, 0.12); }
+        body.light .match-result-row .mr-badge { color: rgba(0,0,0,0.55); }
+        body.light .match-result-row .mr-name { color: #11141b; }
+        body.light .match-result-row .mr-stats { color: #5a6473; }
+        body.light .rank-card { background: rgba(255, 255, 255, 0.92); border-color: rgba(0, 0, 0, 0.08); }
+        body.light .rank-pos { color: #6a7480; }
+        body.light .game-title { background: linear-gradient(180deg, #11141b, #b8860b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        body.light .scale-weight-label { background: rgba(0,0,0,0.7); color: #fff; border-color: rgba(0,0,0,0.2); }
+        body.light .scale-acc-label { color: #5a6473; }
+    </style>
+</head>
+
+<body>
+    <!-- [BLOCK: GLOBAL OVERLAYS] -->
+    <div id="msg-popup"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div id="peak-flash" class="peak-flash"></div>
+    <div id="peak-shockwave" class="peak-shockwave"></div>
+    <div id="peak-banner" class="peak-banner">🔪 PERFECT HALF! 🔪</div>
+
+    <div id="game-container">
+
+        <!-- [BLOCK: SCREEN REGISTER] -->
+        <div id="screen-register" class="screen active">
+            <h1 class="game-title">🔪 JUST HALF IT! 🔪</h1>
+            <p class="game-subtitle">UJI KETEPATAN · BELAH 50/50</p>
+
+            <div class="register-row register-p1">
+                <div class="register-label">🟥 PEMAIN 1</div>
+                <div style="position: relative;">
+                    <input type="text" id="p1-name" placeholder="Nama Pemain 1..." oninput="handleNameInput(this.value, 1)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p1" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="register-row register-p2">
+                <div class="register-label">🟦 PEMAIN 2</div>
+                <div style="position: relative;">
+                    <input type="text" id="p2-name" placeholder="Nama Pemain 2..." oninput="handleNameInput(this.value, 2)" maxlength="15" autocomplete="off">
+                    <div id="suggestions-p2" class="register-suggestions" style="display:none;"></div>
+                </div>
+            </div>
+
+            <button onclick="goToRoundsPicker()" style="margin-top: 18px;">LANJUT PILIH RONDE</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUNDS PICKER] -->
+        <div id="screen-rounds" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">PILIH JUMLAH RONDE</h2>
+            <p class="game-subtitle">Ronde ganjil — siapa menang lebih banyak ronde, dialah juara</p>
+
+            <div class="rounds-row">
+                <div class="round-card" data-rounds="1" onclick="selectRounds(1)">
+                    <div class="round-num">1</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+                <div class="round-card selected" data-rounds="3" onclick="selectRounds(3)">
+                    <div class="round-num">3</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+                <div class="round-card" data-rounds="5" onclick="selectRounds(5)">
+                    <div class="round-num">5</div>
+                    <div class="round-lbl">RONDE</div>
+                </div>
+            </div>
+
+            <button onclick="goToDifficulty()" style="margin-top: 22px;">LANJUT PILIH MODE</button>
+            <button class="btn-ghost" onclick="showScreen('screen-register')">KEMBALI</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN DIFFICULTY PICKER] - NORMAL (drag manual) vs HARD (object slide) -->
+        <div id="screen-difficulty" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">PILIH TINGKAT KESULITAN</h2>
+            <p class="game-subtitle">Pengaruhi cara pisau dikontrol</p>
+
+            <div class="difficulty-row">
+                <div class="diff-card normal selected" data-diff="normal" onclick="selectDifficulty('normal')">
+                    <div class="diff-icon">🟢</div>
+                    <div class="diff-title">NORMAL</div>
+                    <div class="diff-sub">DRAG PISAU<br>MANUAL</div>
+                    <div class="diff-example">FREE AIM</div>
+                </div>
+                <div class="diff-card hard" data-diff="hard" onclick="selectDifficulty('hard')">
+                    <div class="diff-icon">🔴</div>
+                    <div class="diff-title">HARD</div>
+                    <div class="diff-sub">OBJEK GESER<br>OTOMATIS</div>
+                    <div class="diff-example">TIMING ONLY</div>
+                </div>
+            </div>
+
+            <button onclick="startMatch()" style="margin-top: 22px;">MULAI PERTANDINGAN</button>
+            <button class="btn-ghost" onclick="showScreen('screen-rounds')">KEMBALI</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN VS ANIMATION] -->
+        <div id="screen-vs" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 2px;">SIAP BERTANDING!</h2>
+            <p class="game-subtitle">JUST HALF IT · <span id="vs-rounds-label">3 RONDE</span> · <span id="vs-diff-label">NORMAL</span></p>
+
+            <div class="vs-stage">
+                <div id="vs-name-p1" class="vs-name vs-name-p1"></div>
+                <div class="vs-big-vs">VS</div>
+                <div id="vs-name-p2" class="vs-name vs-name-p2"></div>
+            </div>
+
+            <p class="game-subtitle" style="margin-top: 16px; opacity: 0.7;">Pertandingan dimulai dalam beberapa saat...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUND INTRO] - tampil "RONDE X / Y" + objek yang akan dibelah -->
+        <div id="screen-round-intro" class="screen">
+            <div id="round-banner" class="round-banner">RONDE</div>
+            <div id="round-num-big" class="round-num-big">1 / 3</div>
+            <p class="object-preview-label">BELAH OBJEK INI 50/50</p>
+            <div id="object-preview-wrap" class="object-preview-wrap">
+                <img id="object-preview-img" src="" alt="">
+            </div>
+            <div id="object-name" class="object-name">OBJEK</div>
+            <p class="game-subtitle" style="margin-top: 16px; opacity: 0.75;">Bersiaplah...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN TURN COUNTDOWN] - 3..2..1..GO per pemain -->
+        <div id="screen-countdown" class="screen">
+            <div id="turn-name" class="turn-name p1">GILIRAN PEMAIN 1</div>
+            <p class="countdown-sub">SIAP-SIAP MEMOTONG</p>
+            <div id="cd-num" class="countdown-big">3</div>
+            <p class="game-subtitle" style="opacity: 0.7;">Bersiap untuk memotong...</p>
+        </div>
+
+        <!-- [BLOCK: SCREEN PLAY] - cutting board + object + pisau states -->
+        <div id="screen-play" class="screen">
+            <div class="play-header">
+                <div id="play-turn-name" class="turn-name p1" style="font-size: 0.95rem; margin: 0;">GILIRAN P1</div>
+                <div id="play-timer" class="play-timer">20.0s</div>
+            </div>
+            <div id="play-hint" class="play-hint">KLIK PISAU UNTUK MULAI</div>
+
+            <div id="cut-arena" class="cut-arena">
+                <!-- Cutting board (talenan kayu) -->
+                <div class="cutting-board"></div>
+
+                <!-- Object stage (2 halves + ghost line) -->
+                <div id="object-stage" class="object-stage">
+                    <div class="object-half left" id="object-half-left">
+                        <img id="object-img-left" src="" alt="">
+                    </div>
+                    <div class="object-half right" id="object-half-right">
+                        <img id="object-img-right" src="" alt="">
+                    </div>
+                    <div class="ghost-line"></div>
+                </div>
+
+                <!-- Cut indicator dihapus [revisi 2026-05-28] — arahan Pradipta, no hologram cheat. -->
+
+                <!-- Pisau drag (tall vertical knife, follows mouse X) -->
+                <div id="pisau-drag" class="pisau-drag">
+                    <img src="assets/halfcut/pisaudrag.png" alt="">
+                </div>
+
+                <!-- Pisau parking (bottom — click to grab) -->
+                <div id="pisau-parking" class="pisau-parking" onclick="grabPisau()">
+                    <img src="assets/halfcut/pisauicon.png" alt="">
+                    <span class="pisau-parking-label">PISAU</span>
+                    <span class="pulse-dot"></span>
+                </div>
+            </div>
+
+            <button id="btn-cut" class="btn-cut" style="display: none;" onclick="executeCut()">POTONG!</button>
+            <button class="btn-danger-soft" onclick="surrenderMatch()" style="margin-top: 14px;">MENYERAH</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN WEIGHING] - timbangan animation, weigh halves, reveal accuracy -->
+        <div id="screen-weighing" class="screen">
+            <div id="weighing-turn-name" class="turn-name p1" style="font-size: 0.95rem;">MENIMBANG: PEMAIN 1</div>
+            <p class="game-subtitle" style="margin-top: 4px;">Hasil belahan ditimbang...</p>
+
+            <!-- [revisi 2026-05-28] Rebuilt timbangan dengan nested structure.
+                 Bowls/arms = children dari beam, otomatis rotate bareng beam.
+                 Weight labels di bawah (fixed position, ngga ikut tilt). -->
+            <div class="scale-stage">
+                <div class="scale-rig">
+                    <div class="scale-pole"></div>
+                    <div class="scale-pivot"></div>
+                    <div id="scale-beam" class="scale-beam">
+                        <div class="scale-arm left">
+                            <div id="scale-bowl-left" class="scale-bowl">
+                                <img id="weigh-img-left" src="" alt="">
+                            </div>
+                        </div>
+                        <div class="scale-arm right">
+                            <div id="scale-bowl-right" class="scale-bowl">
+                                <img id="weigh-img-right" src="" alt="">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="scale-accuracy-center" class="scale-accuracy-center">
+                        <div id="scale-acc-value" class="scale-acc-value">0%</div>
+                        <div class="scale-acc-label">AKURASI</div>
+                    </div>
+                    <div class="scale-weights">
+                        <div id="scale-weight-left" class="scale-weight-label">0.00 pon</div>
+                        <div id="scale-weight-right" class="scale-weight-label">0.00 pon</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- [BLOCK: SCREEN ROUND RESULT] - P1 & P2 result side-by-side -->
+        <div id="screen-round-result" class="screen">
+            <div id="rr-banner" class="round-banner">HASIL RONDE</div>
+            <div id="rr-num" class="round-num-big" style="font-size: 2.2rem;">1 / 3</div>
+            <p class="game-subtitle">OBJEK: <span id="rr-object" style="color: var(--gold);">—</span></p>
+            <div id="rr-p1-row" class="result-row-half p1">
+                <div class="rr-name" id="rr-p1-name">PEMAIN 1</div>
+                <div class="rr-acc" id="rr-p1-acc">--%</div>
+                <div class="rr-meta" id="rr-p1-meta">potong di --%</div>
+                <div class="rr-label" id="rr-p1-label">—</div>
+            </div>
+            <div id="rr-p2-row" class="result-row-half p2">
+                <div class="rr-name" id="rr-p2-name">PEMAIN 2</div>
+                <div class="rr-acc" id="rr-p2-acc">--%</div>
+                <div class="rr-meta" id="rr-p2-meta">potong di --%</div>
+                <div class="rr-label" id="rr-p2-label">—</div>
+            </div>
+            <div id="rr-winner-text" style="margin-top: 12px; font-size: 0.95rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,0.5);">PEMENANG RONDE: —</div>
+            <button id="rr-next-btn" onclick="proceedAfterRoundResult()" style="margin-top: 18px;">LANJUT</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN MATCH RESULT] -->
+        <div id="screen-result" class="screen">
+            <h1 style="font-size: 1.5rem; letter-spacing: 2px;">🏆 HASIL DUEL!</h1>
+            <p class="game-subtitle">JUST HALF IT · <span id="final-rounds-label">3 RONDE</span> · <span id="final-diff-label">NORMAL</span></p>
+
+            <div id="result-winloss-block" style="display: block;">
+                <div class="match-result-row match-winner">
+                    <div class="mr-badge">🏆 PEMENANG</div>
+                    <div id="winner-name" class="mr-name"></div>
+                    <div class="mr-stats" id="winner-stats">RONDE DIMENANGKAN: 0</div>
+                    <div class="mr-pts">+200 POIN</div>
+                </div>
+                <div class="match-result-row match-loser">
+                    <div class="mr-badge">PERINGKAT 2</div>
+                    <div id="loser-name" class="mr-name"></div>
+                    <div class="mr-stats" id="loser-stats">RONDE DIMENANGKAN: 0</div>
+                    <div class="mr-pts">+50 POIN</div>
+                </div>
+            </div>
+
+            <div id="result-seri-block" style="display: none;">
+                <div class="seri-row">
+                    <div class="seri-label">🤝 SERI · IMBANG</div>
+                    <div class="seri-names">
+                        <div class="seri-side p1">
+                            <div class="seri-name" id="seri-p1-name"></div>
+                            <div class="seri-wins" id="seri-p1-wins">0 menang</div>
+                        </div>
+                        <div class="seri-divider">VS</div>
+                        <div class="seri-side p2">
+                            <div class="seri-name" id="seri-p2-name"></div>
+                            <div class="seri-wins" id="seri-p2-wins">0 menang</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; color: var(--accent-color); font-weight: 900; letter-spacing: 1.5px; font-size: 0.85rem;">+150 POIN MASING-MASING</div>
+                </div>
+            </div>
+
+            <p class="game-subtitle" style="margin-top: 14px; letter-spacing: 2px;">RINGKASAN RONDE</p>
+            <div id="rounds-summary" class="rounds-summary"></div>
+
+            <button onclick="viewLeaderboard()" style="margin-top: 14px;">LIHAT LEADERBOARD</button>
+            <button onclick="playAgain()" class="btn-ghost">MAIN LAGI</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+        <!-- [BLOCK: SCREEN LEADERBOARD] -->
+        <div id="screen-leaderboard" class="screen">
+            <h2 style="color: var(--accent-color); letter-spacing: 1.5px; margin-bottom: 6px;">SMK GLOBAL RANKING</h2>
+            <p class="game-subtitle">Update dari Just Half It!</p>
+            <div id="leaderboard-arena"></div>
+            <button onclick="playAgain()" style="margin-top: 10px;">MAIN LAGI</button>
+            <button class="btn-ghost" onclick="backToMenu()">KEMBALI KE MENU</button>
+        </div>
+
+    </div>
+
+    <script>
+        /* ============================================================
+           0. THEME BOOTSTRAP [2026-05-28] — apply dark/light dari localStorage
+           ============================================================ */
+        (function bootstrapTheme() {
+            try {
+                const t = localStorage.getItem('guessRushTheme');
+                if (t === 'light') document.body.classList.add('light');
+            } catch(e) {}
+        })();
+
+        /* ============================================================
+           1. AUDIO ENGINE & SFX
+           ============================================================ */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(f, t, d, vol) {
+            try {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = t;
+                o.frequency.setValueAtTime(f, audioCtx.currentTime);
+                g.gain.setValueAtTime(vol || 0.1, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
+        }
+        const sfx = {
+            click: () => playSfx(800, 'sine', 0.08),
+            flip:  () => { playSfx(400, 'sine', 0.15); setTimeout(() => playSfx(700, 'sine', 0.18), 60); },
+            tick:  () => playSfx(1500, 'sine', 0.04),
+            beep:  () => playSfx(880, 'sine', 0.12, 0.18),
+            go:    () => { playSfx(660, 'sine', 0.12); setTimeout(() => playSfx(990, 'sine', 0.2), 80); },
+            grab:  () => { playSfx(500, 'sine', 0.1); setTimeout(() => playSfx(800, 'sine', 0.1), 50); },
+            lock:  () => { playSfx(900, 'square', 0.06); setTimeout(() => playSfx(700, 'sine', 0.1), 40); },
+            slice: () => { playSfx(2400, 'sawtooth', 0.05, 0.2); setTimeout(() => playSfx(1800, 'sawtooth', 0.08, 0.18), 30); setTimeout(() => playSfx(600, 'square', 0.18, 0.15), 80); },
+            scale: () => { playSfx(440, 'sine', 0.15); setTimeout(() => playSfx(330, 'sine', 0.15), 80); setTimeout(() => playSfx(440, 'sine', 0.15), 160); },
+            peak:  () => { playSfx(523, 'sine', 0.25); setTimeout(() => playSfx(659, 'sine', 0.25), 110); setTimeout(() => playSfx(784, 'sine', 0.3), 220); setTimeout(() => playSfx(1047, 'sine', 0.45), 330); setTimeout(() => playSfx(1319, 'sine', 0.55), 440); },
+            amazing:() => { playSfx(659, 'sine', 0.18); setTimeout(() => playSfx(880, 'sine', 0.22), 90); },
+            great: () => playSfx(587, 'sine', 0.2),
+            good:  () => playSfx(440, 'sine', 0.18),
+            miss:  () => { playSfx(196, 'sawtooth', 0.25, 0.14); setTimeout(() => playSfx(147, 'square', 0.2, 0.12), 80); },
+            win:   () => { playSfx(523, 'sine', 0.3); setTimeout(() => playSfx(659, 'sine', 0.3), 150); setTimeout(() => playSfx(784, 'sine', 0.5), 300); setTimeout(() => playSfx(1047, 'sine', 0.6), 450); },
+        };
+
+        /* ============================================================
+           2. GAME STATE & POOL OF OBJECTS
+           ============================================================ */
+        // Pool 11 objek dari assets/halfcut/. Setiap entry: { id, name, file, weight (pon) }.
+        // Weight = total berat objek imajiner — dipakai saat timbang halves.
+        const OBJECT_POOL = [
+            { id: 'semangka', name: 'SEMANGKA',  file: 'assets/halfcut/semangka.png', weight: 5.0 },
+            { id: 'bola',     name: 'BOLA',      file: 'assets/halfcut/bola.png',     weight: 1.2 },
+            { id: 'burger',   name: 'BURGER',    file: 'assets/halfcut/burger.png',   weight: 0.8 },
+            { id: 'coklat',   name: 'COKLAT',    file: 'assets/halfcut/coklat.png',   weight: 1.5 },
+            { id: 'cupcake',  name: 'CUPCAKE',   file: 'assets/halfcut/cupcake.png',  weight: 0.4 },
+            { id: 'eskrim',   name: 'ES KRIM',   file: 'assets/halfcut/eskrim.png',   weight: 0.5 },
+            { id: 'kue',      name: 'KUE',       file: 'assets/halfcut/kue.png',      weight: 1.0 },
+            { id: 'nanas',    name: 'NANAS',     file: 'assets/halfcut/nanas.png',    weight: 2.2 },
+            { id: 'pepsi',    name: 'PEPSI',     file: 'assets/halfcut/pepsi.png',    weight: 0.9 },
+            { id: 'pizza',    name: 'PIZZA',     file: 'assets/halfcut/pizza.png',    weight: 1.8 },
+            { id: 'pretzel',  name: 'PRETZEL',   file: 'assets/halfcut/pretzel.png',  weight: 0.35 },
+        ];
+
+        let game = {
+            p1Name: '',
+            p2Name: '',
+            totalRounds: 3,
+            difficulty: 'normal',       // 'normal' atau 'hard'
+            currentRound: 0,
+            currentPlayer: 1,
+            // Shuffle pool per match (no-repeat)
+            shuffledPool: [],
+            currentObject: null,        // entry dari OBJECT_POOL untuk ronde ini
+            // Per-round captured cuts
+            p1CutPercent: null,         // 0-100, posisi cut (50 = perfect)
+            p1CutRaw: null,             // raw akurasi sebelum dibulatkan ke kelipatan 5
+            p1Accuracy: null,           // displayed akurasi (kelipatan 5)
+            p2CutPercent: null,
+            p2CutRaw: null,
+            p2Accuracy: null,
+            // Per-round results & accumulated wins
+            roundResults: [],
+            p1Wins: 0,
+            p2Wins: 0,
+            // Countdown handle
+            cdInterval: null,
+            // Cut timer (20s)
+            cutTimerInterval: null,
+            cutTimeRemaining: 0,
+            // Cut state machine: 'parked' | 'grabbed' | 'locked' | 'cutting' | 'done'
+            cutState: 'parked',
+            // HARD mode auto-slide
+            slideRafId: null,
+            slideStartTs: 0,
+            // LB tracking
+            lastWinner: null,
+            lastLoser: null,
+            lastOldWinnerScore: 0,
+            lastOldLoserScore: 0,
+            matchSeri: false,
+            inputLocked: false,
+        };
+
+        const CUT_TIME_LIMIT = 20.0;    // detik
+        const ARENA_HALF_WIDTH = 70;    // px — half range for HARD slide & manual drag bounds
+        const SLIDE_PERIOD_MS = 3200;   // periode 1 cycle slide (HARD mode)
+
+        /* ============================================================
+           3. CORE UI HELPERS
+           ============================================================ */
+        function showPopup(t, c) {
+            const p = document.getElementById('msg-popup');
+            p.innerText = t; p.style.background = c; p.style.display = 'block';
+            setTimeout(() => p.style.display = 'none', 1600);
+        }
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function applyTurnTheme(player) {
+            const gc = document.getElementById('game-container');
+            gc.classList.remove('turn-p1', 'turn-p2');
+            gc.classList.add(player === 1 ? 'turn-p1' : 'turn-p2');
+        }
+        function clearTurnTheme() {
+            document.getElementById('game-container').classList.remove('turn-p1', 'turn-p2');
+        }
+
+        /* Shuffle helper — Fisher-Yates */
+        function shuffle(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        /* ============================================================
+           4. AUTOSEARCH (shared dengan guessRushLB)
+           ============================================================ */
+        function handleNameInput(val, playerNum) {
+            const box = document.getElementById(`suggestions-p${playerNum}`);
+            if (!val) { box.style.display = 'none'; return; }
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6);
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(m => {
+                    const safe = m.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `<div onclick="selectName('${safe}', ${playerNum})" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--accent-color); font-weight:bold;">${m.name} <span style="color:var(--text-secondary); font-size:0.7rem;">(${m.score} Pts)</span></div>`;
+                }).join('');
+                box.style.display = 'block';
+            } else box.style.display = 'none';
+        }
+        function selectName(name, playerNum) {
+            document.getElementById(`p${playerNum}-name`).value = name;
+            document.getElementById(`suggestions-p${playerNum}`).style.display = 'none';
+        }
+
+        /* ============================================================
+           5. REGISTER → ROUNDS → DIFFICULTY → VS → MATCH
+           ============================================================ */
+        function goToRoundsPicker() {
+            const p1 = document.getElementById('p1-name').value.trim();
+            const p2 = document.getElementById('p2-name').value.trim();
+            if (!p1 || !p2) { showPopup("ISI NAMA KEDUA PEMAIN!", "#e67e22"); return; }
+            if (p1.toLowerCase() === p2.toLowerCase()) { showPopup("NAMA P1 & P2 HARUS BEDA!", "#e67e22"); return; }
+            game.p1Name = p1;
+            game.p2Name = p2;
+            sfx.click();
+            showScreen('screen-rounds');
+        }
+
+        function selectRounds(n) {
+            game.totalRounds = n;
+            document.querySelectorAll('#screen-rounds .round-card').forEach(c => {
+                c.classList.toggle('selected', parseInt(c.dataset.rounds) === n);
+            });
+            sfx.click();
+        }
+
+        function goToDifficulty() {
+            sfx.click();
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === game.difficulty);
+            });
+            showScreen('screen-difficulty');
+        }
+
+        function selectDifficulty(diff) {
+            game.difficulty = diff;
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === diff);
+            });
+            sfx.click();
+        }
+
+        function startMatch() {
+            // Reset match state
+            game.currentRound = 0;
+            game.roundResults = [];
+            game.p1Wins = 0;
+            game.p2Wins = 0;
+            game.matchSeri = false;
+            game.lastWinner = null;
+            game.lastLoser = null;
+
+            // Shuffle pool — no-repeat untuk match ini
+            game.shuffledPool = shuffle(OBJECT_POOL);
+
+            // VS animation
+            document.getElementById('vs-name-p1').innerText = game.p1Name.toUpperCase();
+            document.getElementById('vs-name-p2').innerText = game.p2Name.toUpperCase();
+            document.getElementById('vs-rounds-label').innerText = `${game.totalRounds} RONDE`;
+            document.getElementById('vs-diff-label').innerText = game.difficulty.toUpperCase();
+            const stage = document.querySelector('.vs-stage');
+            if (stage) { void stage.offsetWidth; }
+            sfx.go();
+            showScreen('screen-vs');
+
+            setTimeout(() => startNextRound(), 2200);
+        }
+
+        /* ============================================================
+           6. ROUND LIFECYCLE
+           startNextRound → round-intro (objek reveal) → P1 countdown → P1 play → P1 weigh → P2 countdown → P2 play → P2 weigh → round-result
+           ============================================================ */
+        function startNextRound() {
+            game.currentRound++;
+            if (game.currentRound > game.totalRounds) {
+                endMatch();
+                return;
+            }
+            // Pick object dari shuffled pool (cycle kalau habis — biasanya cukup untuk 5 ronde)
+            const poolIdx = (game.currentRound - 1) % game.shuffledPool.length;
+            game.currentObject = game.shuffledPool[poolIdx];
+
+            game.p1CutPercent = null;
+            game.p1CutRaw = null;
+            game.p1Accuracy = null;
+            game.p2CutPercent = null;
+            game.p2CutRaw = null;
+            game.p2Accuracy = null;
+            game.currentPlayer = 1;
+            clearTurnTheme();
+
+            // Update round-intro screen
+            document.getElementById('round-banner').innerText = 'RONDE';
+            document.getElementById('round-num-big').innerText = `${game.currentRound} / ${game.totalRounds}`;
+            document.getElementById('object-preview-img').src = game.currentObject.file;
+            document.getElementById('object-preview-img').alt = game.currentObject.name;
+            document.getElementById('object-name').innerText = game.currentObject.name;
+
+            // Restart animations
+            ['round-num-big', 'round-banner', 'object-name'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cls = el.className;
+                el.className = '';
+                void el.offsetWidth;
+                el.className = cls;
+            });
+            const objWrap = document.getElementById('object-preview-wrap');
+            if (objWrap) {
+                objWrap.style.animation = 'none';
+                void objWrap.offsetWidth;
+                objWrap.style.animation = '';
+            }
+            sfx.flip();
+            showScreen('screen-round-intro');
+
+            // After 2.5s → P1 countdown
+            setTimeout(() => startTurnCountdown(1), 2500);
+        }
+
+        function startTurnCountdown(playerNum) {
+            game.currentPlayer = playerNum;
+            applyTurnTheme(playerNum);
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            const nameEl = document.getElementById('turn-name');
+            nameEl.innerText = `GILIRAN ${name.toUpperCase()}`;
+            nameEl.className = `turn-name p${playerNum}`;
+            const cdEl = document.getElementById('cd-num');
+            cdEl.innerText = '3';
+            cdEl.className = 'countdown-big';
+            void cdEl.offsetWidth;
+            cdEl.classList.add('pulse');
+            showScreen('screen-countdown');
+
+            let remaining = 3;
+            sfx.beep();
+            if (game.cdInterval) clearInterval(game.cdInterval);
+            game.cdInterval = setInterval(() => {
+                remaining--;
+                if (remaining > 0) {
+                    cdEl.innerText = remaining;
+                    cdEl.className = 'countdown-big';
+                    void cdEl.offsetWidth;
+                    cdEl.classList.add('pulse');
+                    sfx.beep();
+                } else {
+                    clearInterval(game.cdInterval);
+                    game.cdInterval = null;
+                    cdEl.innerText = 'GO!';
+                    cdEl.className = 'countdown-big go';
+                    void cdEl.offsetWidth;
+                    cdEl.classList.add('pulse');
+                    sfx.go();
+                    setTimeout(() => startPlayScreen(playerNum), 600);
+                }
+            }, 1000);
+        }
+
+        /* ============================================================
+           7. PLAY SCREEN — pisau state machine
+           States:
+             - parked: pisauicon visible di bottom parking, klik → grab
+             - grabbed: pisaudrag follow mouse X (NORMAL) atau auto-slide (HARD)
+             - locked: pisau diam di posisi, btn-cut muncul
+             - cutting: animasi slice, halves separate
+           ============================================================ */
+        function startPlayScreen(playerNum) {
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            const turnEl = document.getElementById('play-turn-name');
+            turnEl.innerText = `GILIRAN ${name.toUpperCase()}`;
+            turnEl.className = `turn-name p${playerNum}`;
+            turnEl.style.fontSize = '0.95rem';
+            turnEl.style.margin = '0';
+
+            // Set object images (both halves use same PNG)
+            document.getElementById('object-img-left').src = game.currentObject.file;
+            document.getElementById('object-img-right').src = game.currentObject.file;
+
+            // Reset object stage state
+            const stage = document.getElementById('object-stage');
+            stage.classList.remove('cut');
+            // Reset clip-path ke 50/50 (preview belum dicut)
+            applyClipPath(50);
+            // Reset transforms (in case dari ronde sebelumnya — inline transform dari HARD lock harus bersih)
+            document.getElementById('object-half-left').style.transform = '';
+            document.getElementById('object-half-right').style.transform = '';
+            stage.style.transform = '';
+
+            // HARD: object slide otomatis. NORMAL: object static.
+            if (game.difficulty === 'hard') {
+                // Restart animation supaya fresh setiap ronde
+                stage.classList.remove('slide', 'paused');
+                void stage.offsetWidth;
+                stage.classList.add('slide');
+            } else {
+                stage.classList.remove('slide', 'paused');
+            }
+
+            // Reset pisau state ke 'parked'
+            game.cutState = 'parked';
+            game.inputLocked = false;
+            const parking = document.getElementById('pisau-parking');
+            parking.classList.remove('hidden');
+            const pisau = document.getElementById('pisau-drag');
+            pisau.classList.remove('visible', 'cutting');
+            pisau.style.left = '50%';
+            pisau.style.transform = 'translateX(-50%) rotate(180deg)';
+            // [revisi 2026-05-28] cut-indicator dihapus — no hologram cue.
+
+            // Update hint
+            updateHint();
+
+            // Hide btn-cut sampai locked
+            const btnCut = document.getElementById('btn-cut');
+            btnCut.style.display = 'none';
+            btnCut.disabled = false;
+
+            showScreen('screen-play');
+
+            // Start 20s cut timer
+            startCutTimer();
+        }
+
+        function updateHint() {
+            const hint = document.getElementById('play-hint');
+            if (game.cutState === 'parked') {
+                hint.innerText = 'KLIK PISAU UNTUK MULAI';
+            } else if (game.cutState === 'grabbed') {
+                if (game.difficulty === 'hard') {
+                    hint.innerText = 'KLIK ARENA UNTUK HENTIKAN GERAKAN';
+                } else {
+                    hint.innerText = 'GERAKKAN PISAU · KLIK UNTUK KUNCI POSISI';
+                }
+            } else if (game.cutState === 'locked') {
+                hint.innerText = 'KLIK POTONG! UNTUK MEMOTONG';
+            }
+        }
+
+        function grabPisau() {
+            if (game.cutState !== 'parked' || game.inputLocked) return;
+            game.cutState = 'grabbed';
+            sfx.grab();
+            // Sembunyikan parking, tampilkan pisau drag (cut-indicator dihapus — no hologram)
+            document.getElementById('pisau-parking').classList.add('hidden');
+            document.getElementById('pisau-drag').classList.add('visible');
+            updateHint();
+            // Listen to pointer move on arena for NORMAL drag, or click for HARD lock
+            // (handlers di-attach saat DOMContentLoaded — cek state di dalam handler)
+        }
+
+        /* Konversi pointer X (relative to arena) → percent 0-100 of object container.
+           Object stage is 140px wide, centered di arena 380px (max).
+           Tapi clip-path persentase relatif terhadap object-stage container itself.
+           Strategy: kalau pointer di luar object-stage left edge → 0%; di luar right edge → 100%.
+           Di antara: ratio (pointerX - stageLeft) / stageWidth * 100. */
+        function pointerToCutPercent(pointerXInArena) {
+            const arena = document.getElementById('cut-arena');
+            const stage = document.getElementById('object-stage');
+            const arenaRect = arena.getBoundingClientRect();
+            const stageRect = stage.getBoundingClientRect();
+            // Convert pointerXInArena (already arena-relative) ke absolute viewport X
+            const absX = arenaRect.left + pointerXInArena;
+            // Now relative to stage
+            const relX = absX - stageRect.left;
+            const stageW = stageRect.width;
+            if (relX <= 0) return 0;
+            if (relX >= stageW) return 100;
+            return (relX / stageW) * 100;
+        }
+
+        /* Update pisau visual position based on pointer X (arena-relative). */
+        function updatePisauPosition(arenaX) {
+            const arena = document.getElementById('cut-arena');
+            const arenaW = arena.clientWidth;
+            // Clamp pisau position di area tengah ± 140px (arena 440, object 200 → range cukup buat aim+miss).
+            const pisau = document.getElementById('pisau-drag');
+            const minX = arenaW / 2 - 140;
+            const maxX = arenaW / 2 + 140;
+            const clampedX = Math.max(minX, Math.min(maxX, arenaX));
+            pisau.style.left = `${clampedX}px`;
+        }
+
+        /* Get current pisau X position (arena-relative). */
+        function getPisauArenaX() {
+            const pisau = document.getElementById('pisau-drag');
+            const arena = document.getElementById('cut-arena');
+            const pisauRect = pisau.getBoundingClientRect();
+            const arenaRect = arena.getBoundingClientRect();
+            // Center of pisau in arena coords
+            return (pisauRect.left + pisauRect.width / 2) - arenaRect.left;
+        }
+
+        function lockPisau() {
+            if (game.cutState !== 'grabbed' || game.inputLocked) return;
+            game.cutState = 'locked';
+            sfx.lock();
+
+            // HARD: stop slide animation
+            if (game.difficulty === 'hard') {
+                const stage = document.getElementById('object-stage');
+                // Freeze transform di posisi sekarang — pakai computed style
+                const computed = window.getComputedStyle(stage);
+                const matrix = computed.transform;
+                stage.classList.add('paused');
+                // Lock: simpan transform value supaya tidak ke-reset
+                stage.style.transform = matrix === 'none' ? '' : matrix;
+            }
+
+            // Show POTONG button
+            const btnCut = document.getElementById('btn-cut');
+            btnCut.style.display = 'block';
+            btnCut.classList.toggle('btn-selesai', game.difficulty === 'hard');
+            btnCut.innerText = game.difficulty === 'hard' ? 'POTONG!' : 'POTONG!';
+            updateHint();
+        }
+
+        function applyClipPath(cutPercent) {
+            // Left half shows [0..cutPercent] of original. Right half shows [cutPercent..100].
+            // clip-path inset: top right bottom left
+            const left = document.getElementById('object-half-left');
+            const right = document.getElementById('object-half-right');
+            const rightInset = 100 - cutPercent;
+            left.style.clipPath = `inset(0 ${rightInset}% 0 0)`;
+            right.style.clipPath = `inset(0 0 0 ${cutPercent}%)`;
+        }
+
+        function executeCut() {
+            if (game.cutState !== 'locked' || game.inputLocked) return;
+            game.inputLocked = true;
+            game.cutState = 'cutting';
+            stopCutTimer();
+
+            // Determine cut percent based on pisau position vs object stage
+            // Pisau X in arena → convert to percent of object stage width
+            const pisauX = getPisauArenaX();
+            let cutPercent = pointerToCutPercent(pisauX);
+            // Apply clip-path (will be revealed in animation)
+            applyClipPath(cutPercent);
+
+            // Animate pisau strike DOWN
+            const pisau = document.getElementById('pisau-drag');
+            pisau.classList.add('cutting');
+            sfx.slice();
+
+            // After pisau strike (~250ms), trigger object separation
+            setTimeout(() => {
+                const stage = document.getElementById('object-stage');
+                stage.classList.add('cut');
+                // Halves slide apart (CSS handles transform)
+            }, 250);
+
+            // Calculate accuracy. Snap displayed ke kelipatan 2 (was 5 — terlalu lenient: 47.5-52.5% = 100%).
+            // Kelipatan 2: hanya raw >= 99 jadi 100% → cut harus di [49.5%, 50.5%] (1% range, ~2px di object 200px).
+            const raw = Math.max(0, 100 - Math.abs(50 - cutPercent) * 2);
+            const displayed = Math.round(raw / 2) * 2;   // kelipatan 2 — lebih ketat
+
+            // Store per-player
+            if (game.currentPlayer === 1) {
+                game.p1CutPercent = cutPercent;
+                game.p1CutRaw = raw;
+                game.p1Accuracy = displayed;
+            } else {
+                game.p2CutPercent = cutPercent;
+                game.p2CutRaw = raw;
+                game.p2Accuracy = displayed;
+            }
+
+            // After cut animation (~1.1s) → show weighing screen
+            setTimeout(() => showWeighing(), 1200);
+        }
+
+        /* Cut timer (20s, auto 0% pada habis). */
+        function startCutTimer() {
+            game.cutTimeRemaining = CUT_TIME_LIMIT;
+            updateTimerDisplay();
+            if (game.cutTimerInterval) clearInterval(game.cutTimerInterval);
+            game.cutTimerInterval = setInterval(() => {
+                game.cutTimeRemaining -= 0.1;
+                if (game.cutTimeRemaining <= 0) {
+                    game.cutTimeRemaining = 0;
+                    updateTimerDisplay();
+                    timeoutCut();
+                } else {
+                    updateTimerDisplay();
+                }
+            }, 100);
+        }
+        function stopCutTimer() {
+            if (game.cutTimerInterval) { clearInterval(game.cutTimerInterval); game.cutTimerInterval = null; }
+        }
+        function updateTimerDisplay() {
+            const el = document.getElementById('play-timer');
+            el.innerText = `${game.cutTimeRemaining.toFixed(1)}s`;
+            el.classList.remove('warning', 'danger');
+            if (game.cutTimeRemaining <= 5) el.classList.add('danger');
+            else if (game.cutTimeRemaining <= 10) el.classList.add('warning');
+        }
+        function timeoutCut() {
+            // Time habis → auto 0% (no cut)
+            if (game.inputLocked) return;
+            game.inputLocked = true;
+            game.cutState = 'cutting';
+            stopCutTimer();
+
+            // Store 0% for current player, mark sebagai timeout
+            if (game.currentPlayer === 1) {
+                game.p1CutPercent = null;       // null = no cut
+                game.p1CutRaw = 0;
+                game.p1Accuracy = 0;
+            } else {
+                game.p2CutPercent = null;
+                game.p2CutRaw = 0;
+                game.p2Accuracy = 0;
+            }
+
+            sfx.miss();
+            showPopup("WAKTU HABIS! 0% AKURASI", "#ff4d6d");
+
+            // Skip ke weighing setelah short delay
+            setTimeout(() => showWeighing(), 1000);
+        }
+
+        /* ============================================================
+           8. WEIGHING SCENE
+           ============================================================ */
+        function showWeighing() {
+            const playerNum = game.currentPlayer;
+            const name = playerNum === 1 ? game.p1Name : game.p2Name;
+            const nameEl = document.getElementById('weighing-turn-name');
+            nameEl.innerText = `MENIMBANG: ${name.toUpperCase()}`;
+            nameEl.className = `turn-name p${playerNum}`;
+            nameEl.style.fontSize = '0.95rem';
+
+            const cutPercent = playerNum === 1 ? game.p1CutPercent : game.p2CutPercent;
+            const accuracy = playerNum === 1 ? game.p1Accuracy : game.p2Accuracy;
+            const isTimeout = cutPercent === null;
+
+            // Set images & clip-path untuk halves di bowls
+            const imgL = document.getElementById('weigh-img-left');
+            const imgR = document.getElementById('weigh-img-right');
+            imgL.src = game.currentObject.file;
+            imgR.src = game.currentObject.file;
+            if (isTimeout) {
+                // Timeout: ngga ada potongan, tampilkan objek penuh di salah satu bowl
+                imgL.style.clipPath = 'inset(0 0 0 0)';
+                imgR.style.clipPath = 'inset(0 100% 0 0)';   // hide right
+            } else {
+                const rightInset = 100 - cutPercent;
+                imgL.style.clipPath = `inset(0 ${rightInset}% 0 0)`;
+                imgR.style.clipPath = `inset(0 0 0 ${cutPercent}%)`;
+            }
+
+            // Calculate weight per side. KONSISTENSI: kalau accuracy displayed = 100, paksa weights = 50/50.
+            // Reason: di kelipatan 2, raw 99-100 keduanya display 100%, tapi raw 99 berarti cut at 49.5/50.5%
+            // yang akan show diff weight kecil. Visual bug-like di mata user. Snap ke equal di 100%.
+            const totalW = game.currentObject.weight;
+            let leftW, rightW;
+            if (isTimeout) {
+                leftW = totalW; rightW = 0;
+            } else if (accuracy === 100) {
+                leftW = rightW = totalW / 2;
+            } else {
+                leftW = (cutPercent / 100) * totalW;
+                rightW = ((100 - cutPercent) / 100) * totalW;
+            }
+            document.getElementById('scale-weight-left').innerText = `${leftW.toFixed(2)} pon`;
+            document.getElementById('scale-weight-right').innerText = `${rightW.toFixed(2)} pon`;
+
+            // Reset scale ke neutral. Bowls/arms = children dari beam → otomatis ikut rotate.
+            // Tidak ada lagi drop/lift class (was bug source — separate transforms collide).
+            const beam = document.getElementById('scale-beam');
+            beam.className = 'scale-beam';
+            const accCenter = document.getElementById('scale-accuracy-center');
+            accCenter.classList.remove('visible');
+
+            showScreen('screen-weighing');
+            sfx.scale();
+
+            // Animate scale tilt based on weight diff. Threshold: 0.4 pon untuk big tilt, < 0.4 untuk small.
+            setTimeout(() => {
+                const diff = leftW - rightW;
+                if (Math.abs(diff) < 0.02) {
+                    // Balanced — no tilt
+                } else if (diff > 0.4) {
+                    beam.classList.add('tilt-left');
+                } else if (diff > 0) {
+                    beam.classList.add('tilt-l-small');
+                } else if (diff < -0.4) {
+                    beam.classList.add('tilt-right');
+                } else {
+                    beam.classList.add('tilt-r-small');
+                }
+            }, 400);
+
+            // Reveal accuracy setelah scale settle (~1.4s)
+            setTimeout(() => {
+                const accVal = document.getElementById('scale-acc-value');
+                accVal.innerText = `${accuracy}%`;
+                accVal.className = 'scale-acc-value ' + accClass(accuracy);
+                accCenter.classList.add('visible');
+
+                // Trigger peak effect kalau 100%. Threshold disesuaikan kelipatan 2.
+                if (accuracy === 100) {
+                    triggerPeakEffect();
+                } else if (accuracy >= 96) sfx.amazing();
+                else if (accuracy >= 86) sfx.great();
+                else if (accuracy >= 70) sfx.good();
+                else if (accuracy < 50) sfx.miss();
+                else sfx.tick();
+            }, 1700);
+
+            // Lanjut ke pemain berikutnya atau ke round result
+            setTimeout(() => {
+                if (game.currentPlayer === 1) {
+                    startTurnCountdown(2);
+                } else {
+                    showRoundResult();
+                }
+            }, 3800);
+        }
+
+        /* ============================================================
+           9. ACCURACY HELPERS
+           ============================================================ */
+        // Tier thresholds disesuaikan untuk akurasi kelipatan 2.
+        // 100 = PERFECT (raw ≥ 99 → cut di [49.5%, 50.5%], ~1% range = sweet spot ~2px di object 200px).
+        // 96-98 = AMAZING (cut di [49%, 51%] luar perfect)
+        // 86-94 = CLEAN CUT
+        // 70-84 = OK CUT
+        // 50-68 = WONKY
+        // <50 = BUTCHERED
+        function accClass(acc) {
+            if (acc === 100) return 'acc-perfect';
+            if (acc >= 96) return 'acc-amazing';
+            if (acc >= 86) return 'acc-clean';
+            if (acc >= 70) return 'acc-ok';
+            if (acc >= 50) return 'acc-wonky';
+            return 'acc-butchered';
+        }
+        function accLabelText(acc) {
+            if (acc === 100) return 'PERFECT HALF!';
+            if (acc >= 96) return 'AMAZING SLICE';
+            if (acc >= 86) return 'CLEAN CUT';
+            if (acc >= 70) return 'OK CUT';
+            if (acc >= 50) return 'WONKY';
+            return 'BUTCHERED';
+        }
+
+        /* ============================================================
+           10. ROUND RESULT
+           ============================================================ */
+        function showRoundResult() {
+            clearTurnTheme();
+            const p1Acc = game.p1Accuracy ?? 0;
+            const p2Acc = game.p2Accuracy ?? 0;
+            const p1Cut = game.p1CutPercent;
+            const p2Cut = game.p2CutPercent;
+
+            // Pemenang ronde
+            let winner;
+            if (p1Acc === p2Acc) winner = 0;
+            else if (p1Acc > p2Acc) winner = 1;
+            else winner = 2;
+
+            game.roundResults.push({
+                round: game.currentRound,
+                object: game.currentObject.name,
+                p1CutPercent: p1Cut,
+                p2CutPercent: p2Cut,
+                p1Acc, p2Acc,
+                winner
+            });
+            if (winner === 1) game.p1Wins++;
+            else if (winner === 2) game.p2Wins++;
+
+            // Render
+            document.getElementById('rr-num').innerText = `${game.currentRound} / ${game.totalRounds}`;
+            document.getElementById('rr-object').innerText = game.currentObject.name;
+            document.getElementById('rr-p1-name').innerText = game.p1Name.toUpperCase();
+            document.getElementById('rr-p2-name').innerText = game.p2Name.toUpperCase();
+            document.getElementById('rr-p1-acc').innerText = `${p1Acc}%`;
+            document.getElementById('rr-p2-acc').innerText = `${p2Acc}%`;
+            document.getElementById('rr-p1-meta').innerText = p1Cut === null ? 'WAKTU HABIS' : `Potong di ${p1Cut.toFixed(1)}% (target 50%)`;
+            document.getElementById('rr-p2-meta').innerText = p2Cut === null ? 'WAKTU HABIS' : `Potong di ${p2Cut.toFixed(1)}% (target 50%)`;
+
+            const p1AccEl = document.getElementById('rr-p1-acc');
+            const p2AccEl = document.getElementById('rr-p2-acc');
+            const p1LblEl = document.getElementById('rr-p1-label');
+            const p2LblEl = document.getElementById('rr-p2-label');
+            p1AccEl.className = `rr-acc ${accClass(p1Acc)}`;
+            p2AccEl.className = `rr-acc ${accClass(p2Acc)}`;
+            p1LblEl.className = `rr-label ${accClass(p1Acc)}`;
+            p2LblEl.className = `rr-label ${accClass(p2Acc)}`;
+            p1LblEl.innerText = p1Cut === null ? 'TIME OUT!' : accLabelText(p1Acc);
+            p2LblEl.innerText = p2Cut === null ? 'TIME OUT!' : accLabelText(p2Acc);
+
+            const winText = winner === 0
+                ? '🤝 SERI RONDE'
+                : `🏆 PEMENANG RONDE: ${(winner === 1 ? game.p1Name : game.p2Name).toUpperCase()}`;
+            document.getElementById('rr-winner-text').innerText = winText;
+
+            // SFX (peak sudah di-trigger di weighing kalau 100%). Threshold kelipatan 2.
+            const winnerAcc = winner === 1 ? p1Acc : (winner === 2 ? p2Acc : Math.max(p1Acc, p2Acc));
+            if (winnerAcc >= 96 && winnerAcc < 100) sfx.amazing();
+            else if (winnerAcc >= 86) sfx.great();
+            else if (winnerAcc >= 70) sfx.good();
+            else if (winnerAcc < 50) sfx.miss();
+
+            showScreen('screen-round-result');
+        }
+
+        function proceedAfterRoundResult() {
+            sfx.click();
+            if (game.currentRound >= game.totalRounds) {
+                endMatch();
+            } else {
+                startNextRound();
+            }
+        }
+
+        /* ============================================================
+           11. PEAK EFFECT
+           ============================================================ */
+        function triggerPeakEffect() {
+            const banner = document.getElementById('peak-banner');
+            const flash = document.getElementById('peak-flash');
+            const shock = document.getElementById('peak-shockwave');
+            if (banner) { banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show'); }
+            if (flash)  { flash.classList.remove('go');   void flash.offsetWidth;  flash.classList.add('go'); }
+            if (shock)  { shock.classList.remove('go');   void shock.offsetWidth;  shock.classList.add('go'); }
+            sfx.peak();
+            spawnConfetti(0);
+            spawnConfetti(400);
+        }
+        function spawnConfetti(delay) {
+            const colors = ['#ffd700', '#00f2ff', '#ff4d6d', '#4dabff', '#2ecc71', '#f1c40f'];
+            setTimeout(() => {
+                for (let i = 0; i < 36; i++) {
+                    const piece = document.createElement('div');
+                    piece.className = 'confetti-piece';
+                    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 300 + Math.random() * 400;
+                    piece.style.setProperty('--cx', `${Math.cos(angle) * dist}px`);
+                    piece.style.setProperty('--cy', `${Math.sin(angle) * dist}px`);
+                    piece.style.left = (45 + Math.random() * 10) + 'vw';
+                    piece.style.top = (40 + Math.random() * 20) + 'vh';
+                    piece.style.animationDelay = (Math.random() * 0.2) + 's';
+                    document.body.appendChild(piece);
+                    piece.classList.add('fly');
+                    setTimeout(() => piece.remove(), 2200);
+                }
+            }, delay);
+        }
+
+        /* ============================================================
+           12. END MATCH — winner + LB update (sama pattern PerfectTimer)
+           ============================================================ */
+        function endMatch() {
+            clearTurnTheme();
+            let matchSeri = false;
+            let winnerName, loserName;
+            if (game.p1Wins > game.p2Wins) {
+                winnerName = game.p1Name;
+                loserName = game.p2Name;
+            } else if (game.p2Wins > game.p1Wins) {
+                winnerName = game.p2Name;
+                loserName = game.p1Name;
+            } else {
+                matchSeri = true;
+                winnerName = game.p1Name;
+                loserName = game.p2Name;
+            }
+            game.matchSeri = matchSeri;
+            game.lastWinner = winnerName;
+            game.lastLoser = loserName;
+
+            // LB update
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            game.lastOldWinnerScore = (lb.find(e => e.name.toLowerCase() === winnerName.toLowerCase()) || {}).score || 0;
+            game.lastOldLoserScore  = (lb.find(e => e.name.toLowerCase() === loserName.toLowerCase()) || {}).score || 0;
+
+            const wReward = matchSeri ? 150 : 200;
+            const lReward = matchSeri ? 150 : 50;
+            [{ n: winnerName, p: wReward }, { n: loserName, p: lReward }].forEach(x => {
+                const i = lb.findIndex(e => e.name.toLowerCase() === x.n.toLowerCase());
+                if (i !== -1) lb[i].score += x.p;
+                else lb.push({ name: x.n, score: x.p });
+            });
+            localStorage.setItem('guessRushLB', JSON.stringify(lb));
+
+            // Render match result screen
+            document.getElementById('final-rounds-label').innerText = `${game.totalRounds} RONDE`;
+            document.getElementById('final-diff-label').innerText = game.difficulty.toUpperCase();
+            if (matchSeri) {
+                document.getElementById('result-winloss-block').style.display = 'none';
+                document.getElementById('result-seri-block').style.display = 'block';
+                document.getElementById('seri-p1-name').innerText = game.p1Name.toUpperCase();
+                document.getElementById('seri-p2-name').innerText = game.p2Name.toUpperCase();
+                document.getElementById('seri-p1-wins').innerText = `${game.p1Wins} ronde dimenangkan`;
+                document.getElementById('seri-p2-wins').innerText = `${game.p2Wins} ronde dimenangkan`;
+            } else {
+                document.getElementById('result-winloss-block').style.display = 'block';
+                document.getElementById('result-seri-block').style.display = 'none';
+                document.getElementById('winner-name').innerText = winnerName.toUpperCase();
+                document.getElementById('loser-name').innerText = loserName.toUpperCase();
+                const wWins = (winnerName === game.p1Name) ? game.p1Wins : game.p2Wins;
+                const lWins = (loserName === game.p1Name) ? game.p1Wins : game.p2Wins;
+                document.getElementById('winner-stats').innerText = `RONDE DIMENANGKAN: ${wWins} / ${game.totalRounds}`;
+                document.getElementById('loser-stats').innerText  = `RONDE DIMENANGKAN: ${lWins} / ${game.totalRounds}`;
+            }
+
+            // Round summary pills
+            const summary = document.getElementById('rounds-summary');
+            summary.innerHTML = '';
+            game.roundResults.forEach((r, idx) => {
+                const pill = document.createElement('div');
+                let cls = 'tie';
+                let txt = `R${idx+1}: SERI`;
+                if (r.winner === 1) { cls = 'win-p1'; txt = `R${idx+1}: ${game.p1Name.toUpperCase()}`; }
+                else if (r.winner === 2) { cls = 'win-p2'; txt = `R${idx+1}: ${game.p2Name.toUpperCase()}`; }
+                pill.className = `round-pill ${cls}`;
+                pill.innerText = txt;
+                summary.appendChild(pill);
+            });
+
+            sfx.win();
+            showScreen('screen-result');
+        }
+
+        function surrenderMatch() {
+            if (!confirm("Menyerah? Lawan otomatis menang pertandingan.")) return;
+            stopCutTimer();
+            if (game.cdInterval) { clearInterval(game.cdInterval); game.cdInterval = null; }
+            const opponentWins = game.currentPlayer === 1 ? 2 : 1;
+            const roundsRemaining = game.totalRounds - game.roundResults.length;
+            for (let i = 0; i < roundsRemaining; i++) {
+                game.roundResults.push({
+                    round: game.roundResults.length + 1,
+                    object: game.currentObject ? game.currentObject.name : '—',
+                    p1CutPercent: null,
+                    p2CutPercent: null,
+                    p1Acc: 0,
+                    p2Acc: 0,
+                    winner: opponentWins,
+                    surrender: true
+                });
+                if (opponentWins === 1) game.p1Wins++;
+                else game.p2Wins++;
+            }
+            endMatch();
+        }
+
+        /* ============================================================
+           13. LEADERBOARD (sama pattern PerfectTimer)
+           ============================================================ */
+        function viewLeaderboard() {
+            sfx.flip();
+            showScreen('screen-leaderboard');
+            renderLeaderboard();
+        }
+        function renderLeaderboard() {
+            const arena = document.getElementById('leaderboard-arena');
+            arena.innerHTML = '';
+            let lb = [];
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+
+            const winnerName = game.lastWinner;
+            const loserName = game.lastLoser;
+            const oldWS = game.lastOldWinnerScore;
+            const oldLS = game.lastOldLoserScore;
+            const wReward = game.matchSeri ? 150 : 200;
+            const lReward = game.matchSeri ? 150 : 50;
+
+            const initialList = lb.map(e => {
+                let score = e.score;
+                if (e.name.toLowerCase() === winnerName.toLowerCase()) score = oldWS;
+                else if (e.name.toLowerCase() === loserName.toLowerCase()) score = oldLS;
+                return { name: e.name, score };
+            }).sort((a, b) => b.score - a.score).slice(0, 30);
+
+            if (!initialList.find(e => e.name.toLowerCase() === winnerName.toLowerCase())) {
+                initialList.push({ name: winnerName, score: oldWS });
+            }
+            if (!initialList.find(e => e.name.toLowerCase() === loserName.toLowerCase())) {
+                initialList.push({ name: loserName, score: oldLS });
+            }
+
+            const ROW_H = 60;
+            initialList.forEach((entry, i) => {
+                const isWinner = entry.name.toLowerCase() === winnerName.toLowerCase();
+                const div = document.createElement('div');
+                div.className = 'rank-card';
+                div.id = `card-${entry.name.replace(/\s+/g, '-')}`;
+                div.style.top = `${i * ROW_H}px`;
+                if (isWinner) div.classList.add('player-focus');
+                div.innerHTML = `
+                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <div class="rank-pos">#${i + 1}</div>
+                    <div class="rank-info">${entry.name}</div>
+                    <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
+                `;
+                arena.appendChild(div);
+                if (i === 0) div.classList.add('gold-rank');
+                else if (i === 1) div.classList.add('silver-rank');
+                else if (i === 2) div.classList.add('bronze-rank');
+            });
+
+            const spacer = document.createElement('div');
+            spacer.style.height = `${initialList.length * ROW_H + 30}px`;
+            spacer.style.pointerEvents = 'none';
+            arena.appendChild(spacer);
+
+            setTimeout(() => scrollToMyPosition(winnerName), 120);
+            setTimeout(() => {
+                phaseCountUpDual(
+                    winnerName, oldWS, oldWS + wReward,
+                    loserName, oldLS, oldLS + lReward,
+                    () => phaseReshuffle(lb)
+                );
+            }, 900);
+        }
+        function phaseCountUpDual(wn, wStart, wEnd, ln, lStart, lEnd, done) {
+            const wCard = document.getElementById(`card-${wn.replace(/\s+/g, '-')}`);
+            const wPts  = document.getElementById(`pts-${wn.replace(/\s+/g, '-')}`);
+            const lCard = document.getElementById(`card-${ln.replace(/\s+/g, '-')}`);
+            const lPts  = document.getElementById(`pts-${ln.replace(/\s+/g, '-')}`);
+            if (!wPts || !lPts) { setTimeout(() => done && done(), 200); return; }
+
+            const wReward = wEnd - wStart;
+            const lReward = lEnd - lStart;
+            if (wCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.style.color = 'var(--gold)';
+                f.style.textShadow = '0 0 12px rgba(255,215,0,0.7)';
+                f.innerText = `+${wReward}`;
+                wCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+            if (lCard) {
+                const f = document.createElement('div');
+                f.className = 'points-add-float';
+                f.innerText = `+${lReward}`;
+                lCard.appendChild(f);
+                setTimeout(() => f.remove(), 1500);
+            }
+
+            const duration = 1800;
+            const startT = Date.now();
+            let lastSfx = 0;
+            function step() {
+                const t = Math.min((Date.now() - startT) / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 3);
+                let wCur = Math.floor(wStart + wReward * eased);
+                let lCur = Math.floor(lStart + lReward * eased);
+                if (t >= 1) { wCur = wEnd; lCur = lEnd; }
+                wPts.innerText = wCur;
+                lPts.innerText = lCur;
+                if (Date.now() - lastSfx > 90) { sfx.tick(); lastSfx = Date.now(); }
+                if (t < 1) requestAnimationFrame(step);
+                else {
+                    wPts.innerText = wEnd;
+                    lPts.innerText = lEnd;
+                    setTimeout(() => done && done(), 350);
+                }
+            }
+            requestAnimationFrame(step);
+        }
+        function phaseReshuffle(fullData) {
+            const ROW_H = 60;
+            const finalRanks = [...fullData].sort((a, b) => b.score - a.score).slice(0, 30);
+            finalRanks.forEach((entry, idx) => {
+                const card = document.getElementById(`card-${entry.name.replace(/\s+/g, '-')}`);
+                if (!card) return;
+                card.style.top = `${idx * ROW_H}px`;
+                card.querySelector('.rank-pos').innerText = `#${idx + 1}`;
+                const medal = card.querySelector('.podium-medal');
+                if (medal) medal.innerText = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+                card.classList.remove('gold-rank', 'silver-rank', 'bronze-rank');
+                if (idx === 0) card.classList.add('gold-rank');
+                else if (idx === 1) card.classList.add('silver-rank');
+                else if (idx === 2) card.classList.add('bronze-rank');
+            });
+            setTimeout(() => scrollToMyPosition(game.lastWinner), 1300);
+        }
+        function scrollToMyPosition(myName) {
+            const arena = document.getElementById('leaderboard-arena');
+            const myCard = document.getElementById(`card-${myName.replace(/\s+/g, '-')}`);
+            if (!arena || !myCard) return;
+            const cardTop = parseInt(myCard.style.top) || 0;
+            const cardHeight = 52;
+            const target = Math.max(0, (cardTop + cardHeight / 2) - arena.clientHeight / 2);
+            arena.scrollTo({ top: target, behavior: 'smooth' });
+        }
+
+        /* ============================================================
+           14. NAVIGATION — Main Lagi (reset penuh) & Kembali ke Menu
+           Per rules.md: project pameran, MAIN LAGI = re-register dari awal.
+           ============================================================ */
+        function playAgain() {
+            sfx.click();
+            game.p1Name = '';
+            game.p2Name = '';
+            game.currentRound = 0;
+            game.roundResults = [];
+            game.p1Wins = 0;
+            game.p2Wins = 0;
+            game.matchSeri = false;
+            game.lastWinner = null;
+            game.lastLoser = null;
+            game.p1CutPercent = null; game.p1Accuracy = null; game.p1CutRaw = null;
+            game.p2CutPercent = null; game.p2Accuracy = null; game.p2CutRaw = null;
+            game.currentObject = null;
+            game.shuffledPool = [];
+            game.cutState = 'parked';
+            game.inputLocked = false;
+            stopCutTimer();
+            if (game.cdInterval) { clearInterval(game.cdInterval); game.cdInterval = null; }
+            clearTurnTheme();
+            document.getElementById('p1-name').value = '';
+            document.getElementById('p2-name').value = '';
+            game.totalRounds = 3;
+            game.difficulty = 'normal';
+            document.querySelectorAll('#screen-rounds .round-card').forEach(c => {
+                c.classList.toggle('selected', parseInt(c.dataset.rounds) === 3);
+            });
+            document.querySelectorAll('#screen-difficulty .diff-card').forEach(c => {
+                c.classList.toggle('selected', c.dataset.diff === 'normal');
+            });
+            showScreen('screen-register');
+        }
+        function backToMenu() {
+            sfx.flip();
+            stopCutTimer();
+            if (game.cdInterval) clearInterval(game.cdInterval);
+            window.location.href = 'index.html';
+        }
+
+        /* ============================================================
+           15. POINTER & CLICK HANDLERS for cut state machine
+           ============================================================ */
+        document.addEventListener('DOMContentLoaded', () => {
+            const arena = document.getElementById('cut-arena');
+            if (!arena) return;
+
+            // Pointer move: di NORMAL grabbed state → update pisau position
+            const onMove = (e) => {
+                if (game.cutState !== 'grabbed') return;
+                if (game.difficulty !== 'normal') return;
+                const arenaRect = arena.getBoundingClientRect();
+                const x = (e.clientX !== undefined ? e.clientX : e.touches?.[0]?.clientX) - arenaRect.left;
+                if (isNaN(x)) return;
+                updatePisauPosition(x);
+            };
+            arena.addEventListener('mousemove', onMove);
+            arena.addEventListener('touchmove', (e) => {
+                if (game.cutState !== 'grabbed' || game.difficulty !== 'normal') return;
+                e.preventDefault();
+                onMove(e);
+            }, { passive: false });
+
+            // Click on arena: di NORMAL grabbed → lock at current pisau X;
+            //                  di HARD grabbed → lock the auto-sliding object
+            arena.addEventListener('click', (e) => {
+                if (game.cutState !== 'grabbed' || game.inputLocked) return;
+                // Skip kalau klik di parking sendiri (sudah handled oleh onclick parking)
+                if (e.target.closest('#pisau-parking')) return;
+                if (game.difficulty === 'normal') {
+                    // Update pisau ke posisi click sebelum lock (supaya akurat)
+                    const arenaRect = arena.getBoundingClientRect();
+                    const x = e.clientX - arenaRect.left;
+                    updatePisauPosition(x);
+                }
+                lockPisau();
+            });
+
+            // Touch tap on arena (HARD lock)
+            arena.addEventListener('touchend', (e) => {
+                if (game.cutState !== 'grabbed' || game.inputLocked) return;
+                if (e.target.closest('#pisau-parking')) return;
+                if (game.difficulty === 'normal' && e.changedTouches?.[0]) {
+                    const arenaRect = arena.getBoundingClientRect();
+                    const x = e.changedTouches[0].clientX - arenaRect.left;
+                    updatePisauPosition(x);
+                }
+                lockPisau();
+                e.preventDefault();
+            }, { passive: false });
+        });
+
+        /* Spacebar shortcut — lock di grabbed, cut di locked */
+        document.addEventListener('keydown', (e) => {
+            if (e.code !== 'Space' && e.key !== ' ') return;
+            const playScreen = document.getElementById('screen-play');
+            if (!playScreen || !playScreen.classList.contains('active')) return;
+            e.preventDefault();
+            if (game.cutState === 'parked') grabPisau();
+            else if (game.cutState === 'grabbed') lockPisau();
+            else if (game.cutState === 'locked') executeCut();
+        });
+    </script>
+</body>
+</html>

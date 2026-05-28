@@ -380,6 +380,47 @@
         .player-focus .rank-info, .player-focus .rank-pts { color: var(--gold) !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.3s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
         @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+
+        /* ============================================================
+           LIGHT MODE OVERRIDE [2026-05-28] — mirror dari index.html.
+           Toggle via body.light, persisted di localStorage.guessRushTheme.
+           ============================================================ */
+        body.light {
+            --bg-color: #eef2f7;
+            --card-bg: #ffffff;
+            --text-primary: #11141b;
+            --text-secondary: #5a6473;
+            --accent-color: #00a8b5;
+            --accent-hover: #008f9b;
+        }
+        body.light .orb { opacity: 0.22; }
+        body.light .orb-1 { background: rgba(255, 77, 109, 0.22); }
+        body.light .orb-2 { background: rgba(0, 168, 181, 0.22); }
+        body.light #game-container {
+            background: rgba(255, 255, 255, 0.94);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 0 40px rgba(0, 168, 181, 0.1);
+        }
+        body.light button { color: #ffffff; box-shadow: 0 4px 0 #006b75; }
+        body.light button:active:not(:disabled) { box-shadow: 0 1px 0 #006b75; }
+        body.light .btn-ghost { background: rgba(0, 0, 0, 0.03); color: var(--accent-color); border-color: rgba(0, 168, 181, 0.35); }
+        body.light .btn-ghost:hover:not(:active) { background: rgba(0, 168, 181, 0.08); }
+        body.light .btn-danger-soft { color: var(--danger); border-color: rgba(255, 77, 77, 0.4); }
+        body.light .register-row input { background: rgba(0, 0, 0, 0.04); color: #11141b; }
+        body.light .register-suggestions { background: #ffffff; border-color: rgba(0, 0, 0, 0.15); }
+        body.light .register-suggestions div { color: var(--accent-color); }
+        body.light .lives-bar { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08); }
+        body.light .current-turn-display { background: rgba(0, 0, 0, 0.04); }
+        body.light .status-bar .status-left { color: #5a6473; }
+        body.light .pick-timer-track { background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.08); }
+        body.light .pick-timer-meta .t-label { color: #5a6473; }
+        body.light .cell { border-color: rgba(0, 0, 0, 0.12); }
+        body.light .rank-card { background: rgba(255, 255, 255, 0.92); border-color: rgba(0, 0, 0, 0.08); }
+        body.light .rank-pos { color: #6a7480; }
+        body.light .result-loser { background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)); border-color: rgba(0, 0, 0, 0.12); }
+        body.light .result-badge { color: rgba(0,0,0,0.55); }
+        body.light .result-name { color: #11141b; }
+        body.light .game-title { background: linear-gradient(180deg, #11141b, #b8860b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 </head>
 
@@ -514,6 +555,17 @@
     </div>
 
     <script>
+        /* ============================================================
+           0. THEME BOOTSTRAP [2026-05-28] — apply dark/light dari localStorage
+           Synced via key `guessRushTheme` dengan index.html & perfecttimer.html.
+           ============================================================ */
+        (function bootstrapTheme() {
+            try {
+                const t = localStorage.getItem('guessRushTheme');
+                if (t === 'light') document.body.classList.add('light');
+            } catch(e) {}
+        })();
+
         /* ============================================================
            1. AUDIO ENGINE & SFX
            ============================================================ */

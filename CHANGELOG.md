@@ -1,5 +1,140 @@
 # Changelog - Guess Rush
 
+## [2026-05-28] - Just Half It: Pisau Bigger + Bowl Sit-In Visual [AI / arahan Pradipta]
+### Changed
+- **Pisau diperbesar & posisinya lebih dekat object** — sebelumnya pisau floating jauh di atas arena (terbang ke layar atas, tidak terlihat di area play). Sekarang:
+  - Width `38 → 60px`, height `360 → 300px` (ratio 1:5, lebih chunky/proper kitchen knife look).
+  - Top `-300px → -200px` (idle position bottom edge Y=100, tip cuma 10px di atas object top Y=110 — visual "siap menebas", tidak terbang).
+  - Animation translateY ranges adjusted: `(0 → -40 → 140 → 120)` supaya tip menusuk ke Y=240 (past object center 210, deep cut).
+  - Drop-shadow diperkuat (`0 4px 10px` → `0 6px 14px`) untuk visual weight.
+
+### Fixed
+- **Bowl image layering** — sebelumnya image (potongan objek) render DI ATAS bowl crescent (look "bola melayang di atas wadah"). Sekarang image **di belakang bowl shape** dengan z-index manipulation:
+  - `.scale-bowl` jadi container transparent (no background).
+  - Bowl SHAPE (wood crescent + border + shadow) pindah ke `::after` pseudo dengan `z-index: 2`.
+  - Rim highlight `::before` `z-index: 3` (top catchlight).
+  - Image `z-index: 1` — DI BELAKANG bowl ::after.
+  - Visual: image (84×84, up dari 76×76) "duduk dalam bowl", bottom region tertutup wadah, top region visible above rim → look natural seperti makanan di mangkok.
+- **Bowl size diperbesar** `92×56 → 96×60` mengakomodasi image 84px (was 76px).
+- **Image position deeper**: `bottom: 14px → 6px` (sit lebih dalam bowl).
+
+### Files
+- `justhalfit.html`: CSS `.pisau-drag` + `@keyframes pisau-strike` retuned, `.scale-bowl` refactored ke pseudo-element structure.
+- `CHANGELOG.md`: entri ini.
+
+### Preserved
+- Counter-rotation bowls saat beam tilt — tetap upright (no regression).
+- Pisau drag behavior, cut state machine, timer 20s — unchanged.
+- Akurasi formula kelipatan 2, tier labels, peak effect — unchanged.
+
+
+## [2026-05-28] - Just Half It: Revisi (Timbangan Bug, Sulitin Akurasi, Buang Hologram) [AI / arahan Pradipta]
+### Fixed
+- **Timbangan layout bug** — bowls bertumpuk di tengah saat tilt karena absolute positioning (`left: calc(50% - 175px)`) jadi negatif di container narrow. Rebuild dengan struktur **nested beam-children**: arms + bowls jadi children dari `.scale-beam`, otomatis ikut rotasi tanpa absolute positioning gymnastics. Wrapper baru `.scale-rig` (width 360px, max 100%, margin auto) untuk reliable inner container.
+- **Counter-rotation pada bowls**: bowl tetap upright meski beam tilt (realistis hanging scale — mangkok diisi berat jatuh lebih rendah tapi mulutnya tetap menghadap atas). Tilt-left beam −13° → bowls +13° counter (net 0° world orientation). Sama untuk tilt-right & tilt-small variants.
+- **Pivot visual baru**: titik tumpu beam (`.scale-pivot`) bulat emas dengan glow, sit di atas pole. Replace inline `::before` pseudo yang sebelumnya offset.
+- **Weight consistency at 100%**: kalau displayed accuracy = 100, weights di-paksa equal (`totalW/2` each). Hindari visual bug "1.12 vs 1.08 pon" saat label bilang PERFECT. Pemain yang dapet raw 99 (cut at 49.5-50.5%) lihat berat balanced — visual sinkron dengan akurasi.
+- **Akurasi reveal positioning**: pindah dari `top: 130px` (overlap bowl) → `top: 96px` (di area antara beam dan bowls, no overlap). Background gold-bordered card dengan shadow supaya kontras dengan scale di belakangnya.
+
+### Changed
+- **Akurasi formula snap kelipatan 5 → kelipatan 2** (`Math.round(raw / 2) * 2`). Konsekuensi: 100% requires raw ≥ 99 → cut di **[49.5%, 50.5%]** (1% range, ~2px di object 200px). Jauh lebih ketat dari sebelumnya (47.5-52.5% = 5% range). Pemain jarang dapet 100% sekarang.
+- **Tier thresholds** disesuaikan: 100 = PERFECT, 96-98 = AMAZING, 86-94 = CLEAN CUT, 70-84 = OK CUT, 50-68 = WONKY, <50 = BUTCHERED. Threshold lama (95/85/70) shifted ke 96/86 supaya tier-tier pas dengan akurasi kelipatan 2.
+- **Arena diperbesar**: cut-arena `380px → 440px` max-width, height `360 → 420`. Cutting board `320×180 → 400×240`. Object stage `140 → 200px` (sweet spot relative jadi lebih kecil: 2px / 200px = 1% range).
+- **Pisau positioning**: top `-240 → -300`, height `320 → 360`, width `36 → 38`. Animation translateY ranges (0 → -40 → 160 → 140) supaya tip plunge ke object center Y=210 dari idle position Y=60.
+- **HARD mode slide range**: `±70 → ±90px` mengikuti arena yang lebih besar.
+- **Pisau clamp**: minX/maxX `±110 → ±140` dari arena center.
+
+### Removed
+- **Cut indicator hologram biru** (`.cut-indicator` vertical line). Arahan Pradipta: terlalu mempermudah aim, no artifisial cue. Pemain harus baca posisi pisau secara visual. Code dihapus dari CSS, DOM, dan JS (grabPisau, updatePisauPosition, startPlayScreen reset).
+- **Drop/lift class bowls** (`.drop-left`, `.lift-right`, dst). Tidak diperlukan karena bowls = children dari beam, otomatis ikut rotate. Sebelumnya source bug bertumpuk (separate transforms collide).
+
+### Files
+- `justhalfit.html`: CSS sections 11 (PLAY ARENA) + 12 (TIMBANGAN) di-rebuild. HTML weighing screen restructured (nested scale-rig). JS calcAccuracy snap kelipatan 2, accClass/accLabelText threshold update, showWeighing weight consistency + simplified tilt logic.
+- `CHANGELOG.md`: entri revisi ini.
+
+### Preserved
+- Pool 11 objek, Fisher-Yates shuffle, peak effect, leaderboard integration, light mode override — semua intact.
+- Cut state machine (parked → grabbed → locked → cutting → weighing) — unchanged.
+- Tier label warna (`acc-perfect`, `acc-amazing`, dst CSS) — unchanged.
+
+
+## [2026-05-28] - Game Baru: JUST HALF IT! (Belah Objek 50/50) [AI / arahan Pradipta]
+### Added
+- **`justhalfit.html`** — minigame standalone keempat. Mekanik: 2 pemain bergantian belah objek (semangka/burger/pizza/dll) tepat di 50%. Setelah cut → animasi timbangan menimbang kedua halves & reveal akurasi.
+- **Cut state machine** (di `screen-play`): `parked` (klik pisauicon untuk pegang) → `grabbed` (drag pisau ke posisi, NORMAL manual / HARD auto-slide) → `locked` (klik untuk kunci posisi, tombol POTONG! muncul) → `cutting` (animasi slice + halves separate via clip-path) → `weighing` (transition ke timbangan).
+- **Clip-path cut technique** (sesuai arahan Pradipta): 1 PNG per objek di-render 2x dengan `clip-path: inset(0 (100-cut)% 0 0)` (kiri) & `inset(0 0 0 cut%)` (kanan). Dark gradient overlay 6px di cut edge untuk mitigasi "no cross-section". Ghost line dashed gold di 50% center muncul setelah cut sebagai feedback "ini seharusnya posisinya".
+- **Difficulty NORMAL/HARD**:
+  - **NORMAL**: pisau di-drag manual mengikuti mouse X / touch, klik untuk lock.
+  - **HARD**: objek geser kanan-kiri otomatis (3.2s/cycle, range ±70px), pemain klik untuk hentikan posisi.
+- **Pool 11 objek** dari `assets/halfcut/`: semangka, bola, burger, coklat, cupcake, eskrim, kue, nanas, pepsi, pizza, pretzel. Per objek punya `weight` imajiner (pon) untuk display timbangan. Fisher-Yates shuffle per match → no-repeat dalam 1 match. Same object P1 & P2 di ronde yang sama (fair).
+- **Akurasi formula**: `raw = max(0, 100 - |50 - cutPercent| * 2)`, displayed di-bulatkan ke kelipatan 5 (`Math.round(raw / 5) * 5` → 0, 5, 10, ..., 100). Sesuai arahan Pradipta.
+- **Tier labels**: 100% = PERFECT HALF! (gold, peak effect), 95% = AMAZING SLICE (cyan), 85-90% = CLEAN CUT (green), 70-80% = OK CUT (white), 50-65% = WONKY (orange), <50% = BUTCHERED (red + shake animation).
+- **Timer 20 detik per cut**: kalau habis sebelum potong → auto akurasi 0% + label "TIME OUT!" + sfx miss. Timer warning kuning di 10s, danger merah di 5s.
+- **Timbangan (weighing scene)**: scale 2-bowl kayu dengan beam tilt animation. Berat per side proporsional ke cut position. Beam tilt 4 level (l-small, l-big, r-small, r-big) berdasarkan diff weight. Bowl drop/lift sesuai berat. Akurasi % muncul di center setelah scale settle.
+- **Cut animation**: pisau strike DOWN (translateY +60 + rotate animation), halves slide pisah translateX ±80px + slight rotation, dark cut-edge gradient appears, ghost line dashed gold reveal.
+- **Round/Match flow** (mirror PerfectTimer): register P1/P2 → ronde picker (1/3/5) → difficulty picker (NORMAL/HARD) → VS animation 1.8s → per ronde: round-intro + objek reveal 2.5s → P1 countdown 3s → P1 cut → P1 weighing → P2 countdown → P2 cut → P2 weighing → round result (P1 vs P2 side-by-side dengan tier label).
+- **Match scoring**: best-of-rounds (P1Wins vs P2Wins). LB poin: winner **+200**, loser **+50**, draw match **+150/+150**. Round tie (akurasi sama persis) = 0 wins untuk dua-duanya.
+- **Peak effect** (akurasi 100%): banner "🔪 PERFECT HALF! 🔪", gold flash, shockwave, 72 confetti pieces, peak chord SFX (5-note ascending).
+- **Leaderboard integration**: share `localStorage.guessRushLB` dengan game lain. Throne battle pattern: count-up animation +200/+50, reshuffle ranks, scroll to player position. Gold/silver/bronze ranks + animasi throne.
+- **Sound effects**: `grab` (pickup pisau), `lock` (lock posisi), `slice` (sawtooth+square cut sound), `scale` (timbangan wobble), reuse `peak/amazing/great/good/miss/win/tick` dari PerfectTimer.
+- **Light mode bootstrap** (IIFE block 0) + full `body.light` CSS override mirroring PerfectTimer pattern. Comprehensive: register, rounds, difficulty, play (timer, hint, pisau-parking), weighing scene (scale-weight-label), result, leaderboard.
+- **Spacebar shortcut**: di screen-play, SPASI = grab kalau parked, lock kalau grabbed, cut kalau locked. Click on arena di NORMAL = update pisau X + lock, di HARD = lock current slide position.
+- **Surrender option**: tombol MENYERAH di screen-play → lawan otomatis menang sisa ronde, langsung ke endMatch (+200/+50).
+- **MAIN LAGI flow**: reset state penuh + balik ke screen-register kosong (re-input nama, sesuai rules.md public exhibition).
+
+### Changed di `index.html`
+- **`.game-grid`** dari flex row 4 cards → grid 3 cols 2 rows (5 cards total: row 1 = Sambung Kata, Kaboom, Perfect Timer; row 2 = Just Half It!, Tebak Gambar). Gap dari 8px → 10px. Card width konsisten ~120px per kolom di modal 420px.
+- **`.modes-view.active .game-card:nth-child(5)`**: animation-delay 0.40s (extend dari 4-child sebelumnya).
+- **Header text**: "3 ARENA BUKA · 1 SEGERA" → "4 ARENA BUKA · 1 SEGERA".
+- **HTML**: Card baru `JUST HALF IT!` (unlocked, thumbnail `thumbnailjusthalfit.png`, onclick `openJustHalfIt()`) ditambah SEBELUM card LOCKED TEBAK GAMBAR (urutan: Sambung Kata, Kaboom, Perfect Timer, Just Half It!, Tebak Gambar).
+- **JS function baru `openJustHalfIt()`**: navigate ke `justhalfit.html` (sama pattern dengan `openKaboom` & `openPerfectTimer`).
+
+### Files
+- `justhalfit.html` (file baru, ~1100 lines): full game implementation.
+- `index.html`: CSS `.game-grid`, animation-delay nth-child 5, header text, HTML card baru, JS `openJustHalfIt`.
+- `CHANGELOG.md`: entri ini.
+
+### Preserved (NOT removed per rules.md)
+- Card LOCKED TEBAK GAMBAR tetap ada (geser ke posisi terakhir, masih COMING SOON).
+- Semua game existing (Sambung Kata, Kaching/Kaboom, Perfect Timer) tetap berfungsi & visual unchanged.
+- Light mode toggle, ceremony, throne effects, LB struktur — unchanged.
+- Pool asset existing (semua 11 PNG di `assets/halfcut/`) digunakan tanpa modifikasi. `pisauicon.png` & `pisaudrag.png` di-load via `<img src="...">` (rotated 180° via CSS untuk blade-down orientation saat cut).
+
+
+## [2026-05-28] - Light Mode Toggle di Settings (Sync All Games) [AI / arahan Pradipta]
+### Added
+- **Toggle TEMA DARK / LIGHT** di `modal-settings` (welcome screen, accessible via tombol ⚙️ PENGATURAN). Card baru di atas card AKHIRI PERTANDINGAN. Label dinamis — saat dark: "🌙 DARK · TEMA: DARK MODE", saat light: "☀️ LIGHT · TEMA: LIGHT MODE" (color flip ke orange `#e67e22`).
+- **`toggleTheme()`** (index.html): toggle class `body.light` + persist ke `localStorage.guessRushTheme` (`'dark'` default, `'light'` toggled). Update theme card label via `refreshThemeCard()`.
+- **`refreshThemeCard()`**: sync visual badge + title + desc berdasarkan current `body.light` state. Dipanggil saat `openSettings()` dan setelah `toggleTheme()`.
+- **Theme bootstrap loader** (IIFE block 0 di top of `<script>`) di **ketiga file** (`index.html`, `bom.html`, `perfecttimer.html`): cek `localStorage.guessRushTheme` saat load → `body.classList.add('light')` kalau set 'light'. Mencegah flash dark→light saat navigate antar game.
+- **CSS Section LIGHT MODE OVERRIDE** di **ketiga file**:
+  - **Root vars flip**: `--bg-color` → `#eef2f7`, `--card-bg` → `#ffffff`, `--text-primary` → `#11141b`, `--text-secondary` → `#5a6473`, `--accent-color` → `#00a8b5` (darker cyan supaya contrast di white bg), `--accent-hover` → `#008f9b`.
+  - **Brand preserved**: gold/silver/bronze/danger/p1/p2/correct TIDAK diubah — podium glow & throne effects tetap nyala, P1 merah / P2 biru tetap distinct.
+  - **Container & cards**: `rgba(17,20,27,0.85)` dark bg → `rgba(255,255,255,0.94)` white. Border `rgba(255,255,255,0.08)` → `rgba(0,0,0,0.08)`.
+  - **Orbs**: opacity 0.4 → 0.22 (subtler di light bg). index.html: cyan + purple. bom.html: red + cyan. perfecttimer.html: cyan + purple.
+  - **Buttons**: tetap colored backgrounds, text color white. Box-shadow color hijau-gelap (`#006b75`) menggantikan dark shadow.
+  - **Inputs, kbd, leaderboard cards, modal overlays, register dropdowns**: rgba dark → rgba light variants.
+  - **Game-specific overrides**:
+    - bom.html: `.lives-bar`, `.current-turn-display`, `.pick-timer-track`, `.cell` border, `.result-loser` bg.
+    - perfecttimer.html: `.round-card`, `.diff-card`, `.stopwatch-wrap`, `.stop-hint kbd`, `.result-row-perfect`, `.round-pill`, `.match-loser`.
+    - index.html: `.letter-box`, `.deck-card`, `.category-spinner-wrap`, `.chain-history`, `.p-tag`, `.timer-bar-track`, `.welcome-subtitle.glitch-active` pseudo bg, `.intro-word.guess` (white → dark), `.intro-grid` lines.
+  - `.game-title` gradient: putih→gold → dark→gold (di light mode header tetap berkilau).
+- **localStorage key**: `guessRushTheme` (string `'dark'` atau `'light'`). Shared dengan `guessRushLB` di same domain → switch theme di game manapun langsung apply di semua game saat navigate.
+
+### Changed
+- **`openSettings()`** (index.html): tambah `refreshThemeCard()` call sebelum modal show — pastikan label theme card sync dengan state sekarang (penting kalau theme diubah dari game lain via direct localStorage edit).
+
+### Files
+- `index.html`: CSS section 17 baru (`body.light` overrides comprehensive), HTML modal-settings (theme card baru ditambah sebelum AKHIRI PERTANDINGAN card), JS block 0 (bootstrap IIFE) + JS Block 8 (`toggleTheme`, `refreshThemeCard`).
+- `bom.html`: CSS LIGHT MODE block sebelum `</style>`, JS block 0 bootstrap.
+- `perfecttimer.html`: CSS section 18 LIGHT MODE block, JS block 0 bootstrap.
+- `CHANGELOG.md`: entri ini.
+
+### Preserved (NOT removed per rules.md)
+- Default theme tetap DARK — light mode opt-in via toggle. Existing user yang ngga pernah pencet tombol toggle ngga akan merasakan perubahan.
+- Semua animation keyframes, SFX, ceremony, throne effects, glitch subtitle — unchanged. Light mode pure CSS override + IIFE bootstrap, ngga ngubah logic.
+
+
 ## [2026-05-28] - Welcome Subtitle: Speed up Glitch Transition (3000ms → 1200ms) [AI / arahan Pradipta]
 ### Changed
 - **`SUBTITLE_GLITCH_MS`**: `3000` → `1200`. Glitch transition kerasa snappy (~1.2s) bukan kelamaan (~3s). Arahan Pradipta: "glitch nya kelamaan, aga cepet glitch nya".
