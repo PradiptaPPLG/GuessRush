@@ -1,5 +1,71 @@
 # Changelog - Guess Rush
 
+## [2026-05-27] - MODE LAINNYA: Polish Game Gallery Layout [AI / arahan Pradipta]
+### Changed
+- **`.game-grid`**: grid 2×2 → vertical list (`display: flex; flex-direction: column; gap: 10px`). 4 game card berjejer ke bawah, bukan 2-kolom.
+- **`.game-card`**: layout horizontal dalam tiap card — `[icon (2rem) | text(h3+p) flex:1 | badge]`. Padding 14px 16px. Entrance animation `translateY scale` → `translateX(-20px) → 0` (slide-in dari kiri). Hover (unlocked only): `translateY(-6px) scale(1.04)` → `translateX(4px)` (slide right, lebih cocok list).
+- **`.game-card .game-text`**: container baru wrap h3 + p, `flex: 1; min-width: 0` supaya text grow + truncate.
+- **`.game-card.locked`** hover effects DIHAPUS: `locked-shake` di-`:hover` removed, `cursor` `not-allowed → default`. Coming soon cards sekarang STATIC — ngga ada animasi atau cursor change saat di-hover. (arahan Pradipta: "jangan ada hover buat coming soon")
+- **Locked cards onclick** DIHAPUS: ngga lagi trigger popup "SEGERA HADIR!" karena ngga ada interaction sama sekali.
+- **`showComingSoon(name)`** function DIHAPUS dari JS (ngga ada caller setelah onclick dihapus).
+- **HTML card structure**: tambah `<div class="game-text">` wrap h3 + p untuk flex layout. Lock icon dipindah dari `font-size 1rem top:10px right:12px` → `font-size 0.75rem top:6px right:8px` (lebih subtle di pojok).
+
+### Added
+- **Tombol KEMBALI di view 1**: `<button class="modes-back-btn" onclick="closeModesModal()">← KEMBALI</button>` di top view-games. Tutup modal MODE LAINNYA → balik ke welcome screen. (arahan Pradipta: "kasih tombol back buat balik ke main menu")
+- **`closeModesModal()`** (JS Block 4): tutup modal-modes dengan `display='none'` + SFX flip.
+
+### Preserved (NOT removed per rules.md)
+- `@keyframes locked-shake` definition di CSS — masih ada untuk backward-compat, cuma ngga di-apply via `:hover` lagi.
+- View 2 (`#modes-view-chain`) + tombol KEMBALI di view 2 (back ke game grid) tetap unchanged.
+
+### Files
+- `index.html`: CSS section 11B (`.game-grid`, `.game-card` + variants), HTML modal-modes view 1 (back btn + card structure), JS Block 4 (`showComingSoon` dihapus, `closeModesModal` ditambah).
+- `CHANGELOG.md`: entri ini.
+
+
+## [2026-05-27] - MODE LAINNYA: Game Gallery (4 Cards) + Settings Modal + Combo Refactor [AI / arahan Pradipta]
+### Added
+- **CSS Section 11B — MORE MODES Game Grid + View Transitions**: Multi-view system di modal `#modal-modes`. `.modes-view` default hidden, `.modes-view.active` trigger `modes-view-in` (translateX + scale + blur fade) saat tampil. Grid 2×2 untuk `.game-card` dengan staggered entrance (`game-card-in` keyframes + animation-delay 0.10s/0.20s/0.30s/0.40s per nth-child).
+- **`.game-card.unlocked`**: cyan border + glow + hover lift (translateY -6px scale 1.04) + shimmer sweep diagonal (`::before` pseudo dengan linear-gradient yang translateX dari -120% → 120% saat hover).
+- **`.game-card.locked`**: saturate(0.3) brightness(0.7) + grayscale icon + lock icon (🔒) top-right + COMING SOON badge dengan `soon-pulse` keyframes (opacity 0.6 ↔ 1 + box-shadow red) + `locked-shake` keyframes saat hover (shake horizontal 5×).
+- **HTML Modal multi-view**:
+  - View 1 `#modes-view-games` (default): 4 game cards — SAMBUNG KATA (unlocked, 🔤, cyan) + TEBAK GAMBAR (locked, 🖼️) + SCRAMBLE (locked, 🎲) + SPEED QUIZ (locked, ⚡).
+  - View 2 `#modes-view-chain`: tombol KEMBALI + dua card lama (Casual 30s / Chaos 10s). NOT REMOVED — dipreservasi sesuai rules.md.
+- **`showGameGrid()`** + **`showChainSubModes()`** + **`showComingSoon(name)`** (JS Block 4): switch view via class toggle + `offsetWidth` reflow trick supaya entrance animation cards replay tiap switch. `showComingSoon` trigger popup orange "[NAME] - SEGERA HADIR!".
+- **Modal Settings `#modal-settings`**: 1 opsi card (🏆 AKHIRI PERTANDINGAN gold) yang trigger `startCeremony()`. Diakses dari tombol ⚙️ PENGATURAN di welcome screen (btn-ghost kecil di bawah MODE LAINNYA).
+- **`openSettings()`** + **`settingsEndMatch()`** (JS Block 8): buka modal-settings, lalu close + startCeremony saat card di-klik.
+- **Combo system di Sambung Kata** (CSS 213+, JS 1467+): `chain.combo` counter saling-berbalas naik tiap submit valid, escalate 🔥 → 🔥🔥 → 🔥🔥🔥 (gray → orange ≥3 → red ≥8 → gold inferno ≥15) + floating "🔥 COMBO ×N" di atas current word + pitch SFX naik per combo. `chain.bestCombo` track maksimum, ditampilkan di result screen sebagai "🔥 COMBO TERTINGGI: N 🔥".
+- **`spawnComboFloat`** + **`updateComboDisplay`** + **`bumpCombo`** (JS Block 7B2): animation helpers untuk combo UI.
+
+### Changed
+- **`openMoreModes`** (JS Block 4): tambah `showGameGrid()` di awal supaya modal selalu mulai dari view 1 tiap dibuka (ngga stuck di view 2 dari session sebelumnya).
+- **Welcome screen** (HTML): tambah tombol ke-3 "⚙️ PENGATURAN" (btn-ghost kecil, font 0.7rem, padding 10px) di bawah MODE LAINNYA. Onclick → `openSettings()`.
+- **Leaderboard tombol AKHIRI PERTANDINGAN** (HTML): ganti jadi **KEMBALI KE MENU** (`btn-ghost` cyan, onclick `backToMenuAfterCeremony`). Trigger ceremony dipindah ke modal Settings. Tombol di Sambung Kata game screen (`terminateMatch`) tetap.
+- **`playAgain`** (JS Block 8): tambah branching berdasarkan `lastGameMode`. Kalau `'chain'` → `openChainRegister(chain.mode)` + prefill nama P1/P2 dari `chain.players`. Kalau `'guess'` → `initRound()` (perilaku lama). Sebelumnya selalu `initRound` → user dari chain mode keluar ke Guess Rush, bingung.
+- **`lastGameMode`** state (JS Block 7): set ke `'guess'` di `initRound`, `'chain'` di `initWordChain`. Track mode terakhir untuk routing playAgain.
+- **`chain` state**: tambah `combo: 0` + `bestCombo: 0` (reset di `initWordChain`).
+- **`submitChain`**: increment combo + track best + spawn float + update display + bump animation tiap submit valid.
+- **`endChainGame` → result screen**: tampilkan `chain.bestCombo` di `#chain-result-combo` (UI baru di screen-chain-result).
+- **`chain-combo` UI** (HTML + CSS): dari bg + border + padding pill → minimalist text-only (`position: absolute; top: 100%`) anchored di bawah `chain-title` "MODE: 1V1". Ngga ngambil layout space → nama pemain ngga geser. Color escalation pure text-shadow.
+
+### Removed
+- **`endMatchFinal()`** (JS Block 8): function dihapus, dipindah ke `settingsEndMatch` (semantic baru: end match diakses via Settings, bukan tombol langsung di leaderboard).
+
+### Preserved (NOT removed per rules.md)
+- Card SAMBUNG KATA 1V1 - CASUAL & CHAOS (dengan badge 30 DETIK / 10 DETIK + deskripsi panjang) — dipindah ke view 2 `#modes-view-chain`, tetap utuh dengan onclick `openChainRegister`.
+- `triggerJuaraPeak`, `#juara-banner`, `.trophy-emoji`, `.shake-climb`, `.rank-jump`, `.podium-celebrate` — semua CSS + JS function masih ada, untuk backward-compat.
+
+### Files
+- `index.html`:
+  - CSS Section 11B baru (game-grid + game-card unlocked/locked + modes-view transitions + modes-back-btn).
+  - CSS Section 10B: `.chain-combo` direstruktur (position: absolute, no bg/border).
+  - HTML: `#modal-modes` direstruktur jadi 2 view, `#modal-settings` baru, welcome screen tambah tombol PENGATURAN, leaderboard tombol diganti.
+  - JS Block 4: `openMoreModes` + 3 function navigasi baru.
+  - JS Block 7B2 baru: combo helpers.
+  - JS Block 8: `playAgain` branching + `openSettings`/`settingsEndMatch`.
+- `CHANGELOG.md`: entri ini.
+
+
 ## [2026-05-27] - Sambung Kata: Count-Up Dual Animation di Leaderboard (Winner +200, Loser +50) [AI / arahan Pradipta]
 ### Added
 - **`startThroneBattleChain(fullData, winnerName, loserName, oldWS, oldLS)`** (JS Block 9F): variant `startThroneBattle` khusus chain mode. Render leaderboard dengan OLD scores untuk winner & loser, lalu trigger `phaseCountUpDual` → reshuffle (LB sudah punya new scores) → podium.

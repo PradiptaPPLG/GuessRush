@@ -279,6 +279,161 @@
         @keyframes pointsPop { 0% { transform: scale(1.3); color: var(--accent-color); } 100% { transform: scale(1); } }
 
         /* ============================================================
+           11B. MORE MODES — GAME GRID (2x2) + VIEW TRANSITIONS [2026-05-27]
+           Modal MODE LAINNYA jadi 2-view:
+             View 1 (default): 4 game cards (1 SAMBUNG KATA unlocked + 3 COMING SOON placeholders).
+             View 2: Sambung Kata sub-mode (Casual / Chaos) — yang lama, sekarang nested.
+           ============================================================ */
+        .modes-view { display: none; }
+        .modes-view.active { display: block; animation: modes-view-in 0.45s cubic-bezier(0.2, 0.85, 0.3, 1) forwards; }
+        @keyframes modes-view-in {
+            from { opacity: 0; transform: translateX(20px) scale(0.96); filter: blur(6px); }
+            to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+        }
+
+        /* CHANGED [2026-05-27]: grid 2×2 → vertical stack (flex column). Card layout horizontal:
+           [icon | text(h3+p) | badge] supaya tetap compact walaupun lebar penuh. */
+        .game-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .game-card {
+            position: relative;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 14px 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.3s, background 0.3s;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: game-card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .modes-view.active .game-card:nth-child(1) { animation-delay: 0.08s; }
+        .modes-view.active .game-card:nth-child(2) { animation-delay: 0.16s; }
+        .modes-view.active .game-card:nth-child(3) { animation-delay: 0.24s; }
+        .modes-view.active .game-card:nth-child(4) { animation-delay: 0.32s; }
+        @keyframes game-card-in {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .game-card .game-icon {
+            font-size: 2rem; line-height: 1;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 12px currentColor);
+        }
+        .game-card .game-text {
+            flex: 1; min-width: 0;
+        }
+        .game-card h3 {
+            font-size: 0.85rem; font-weight: 900;
+            letter-spacing: 1.2px;
+            margin: 0 0 3px;
+            text-transform: uppercase;
+        }
+        .game-card p {
+            font-size: 0.65rem; color: var(--text-secondary);
+            line-height: 1.4; margin: 0;
+        }
+        .game-card .game-badge {
+            flex-shrink: 0;
+            font-size: 0.55rem; font-weight: 900;
+            letter-spacing: 1.5px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        /* UNLOCKED — cyan glow + shimmer + slide-right pada hover (untuk list layout) */
+        .game-card.unlocked { border-color: rgba(0,242,255,0.3); }
+        .game-card.unlocked h3 { color: var(--accent-color); }
+        .game-card.unlocked .game-badge {
+            background: rgba(0,242,255,0.15);
+            color: var(--accent-color);
+            border: 1px solid rgba(0,242,255,0.4);
+        }
+        .game-card.unlocked:hover {
+            transform: translateX(4px);
+            border-color: var(--accent-color);
+            box-shadow: 0 6px 24px rgba(0,242,255,0.28), inset 0 0 25px rgba(0,242,255,0.06);
+            background: rgba(0,242,255,0.06);
+        }
+        /* Shimmer sweep saat hover (diagonal sweep cyan) */
+        .game-card.unlocked::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(0,242,255,0.18) 50%, transparent 70%);
+            transform: translateX(-120%);
+            transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        .game-card.unlocked:hover::before { transform: translateX(120%); }
+
+        /* LOCKED — STATIC, no hover effect (arahan Pradipta [2026-05-27]).
+           Hapus: locked-shake animation, cursor:not-allowed, semua :hover rule.
+           Keep: grayscale icon, dimmed brightness, soon-pulse di badge, lock icon corner. */
+        .game-card.locked {
+            cursor: default;
+            filter: saturate(0.3) brightness(0.7);
+        }
+        .game-card.locked h3 { color: var(--text-secondary); }
+        .game-card.locked .game-icon { filter: grayscale(1) drop-shadow(0 0 8px rgba(255,255,255,0.1)); }
+        .game-card.locked .game-badge {
+            background: rgba(255,77,77,0.08);
+            color: #ff8888;
+            border: 1px solid rgba(255,77,77,0.25);
+            animation: soon-pulse 2.2s infinite ease-in-out;
+        }
+        @keyframes soon-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; box-shadow: 0 0 12px rgba(255,77,77,0.25); }
+        }
+        .game-card.locked .game-lock-icon {
+            position: absolute; top: 6px; right: 8px;
+            font-size: 0.75rem; opacity: 0.55;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.2));
+        }
+        /* PRESERVED: locked-shake keyframes & class definitions di-keep untuk backward-compat (rules.md).
+           Tidak lagi di-apply via :hover, tapi class CSS masih ada. */
+        @keyframes locked-shake {
+            0%, 100% { transform: translate(0,0); }
+            20% { transform: translate(-5px, 0); }
+            40% { transform: translate(5px, 0); }
+            60% { transform: translate(-3px, 0); }
+            80% { transform: translate(3px, 0); }
+        }
+
+        /* Back button (view 2 → view 1) */
+        .modes-back-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-secondary);
+            padding: 7px 14px;
+            font-size: 0.65rem; font-weight: 900;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 14px;
+            transition: 0.25s;
+            width: auto;
+            box-shadow: none;
+            letter-spacing: 1.5px;
+        }
+        .modes-back-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            transform: translateX(-4px);
+            box-shadow: 0 0 12px rgba(0,242,255,0.2);
+        }
+
+        /* ============================================================
            12. NEW: 4-CARD DEALING DECK & CATEGORY SPINNER (REVEAL)
            Replaces single-card reveal. Cards dealt L→R, category text
            spins through random labels then locks on the real category.
@@ -811,20 +966,80 @@
         </div>
     </div>
 
-    <!-- [BLOCK: MODAL MODE SELECTION] -->
+    <!-- [BLOCK: MODAL MODE SELECTION] - REVAMP [2026-05-27]: Multi-view.
+         View 1 (default): grid 4 game cards — 1 SAMBUNG KATA unlocked, 3 placeholder COMING SOON.
+         View 2: Casual / Chaos sub-mode (yang lama) — sekarang dibuka via klik card SAMBUNG KATA. -->
     <div id="modal-modes" class="modal-overlay" onclick="this.style.display='none'">
         <div class="mode-selection-container" onclick="event.stopPropagation()">
-            <h2 style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">MODE LAINNYA</h2>
-            <div class="mode-card" onclick="openChainRegister('casual')">
-                <div class="mode-badge">30 DETIK</div>
-                <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
-                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
+
+            <!-- ===== VIEW 1: GAME GRID =====
+                 CHANGED [2026-05-27]: layout grid 2×2 → list vertikal, tiap card horizontal [icon|text|badge].
+                 Tombol KEMBALI di top → tutup modal (balik welcome screen).
+                 Locked cards: onclick dihapus + no hover effects (arahan Pradipta — coming soon static). -->
+            <div id="modes-view-games" class="modes-view active">
+                <button class="modes-back-btn" onclick="closeModesModal()">← KEMBALI</button>
+                <h2 style="color:white; margin-bottom:4px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">PILIH GAME</h2>
+                <p style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 6px;">1 ARENA BUKA · 3 SEGERA</p>
+                <div class="game-grid">
+                    <!-- UNLOCKED: SAMBUNG KATA → buka view 2 (Casual/Chaos) -->
+                    <div class="game-card unlocked" onclick="showChainSubModes()">
+                        <div class="game-icon" style="color:var(--accent-color);">🔤</div>
+                        <div class="game-text">
+                            <h3>SAMBUNG KATA</h3>
+                            <p>Duel 1v1 sambung huruf terakhir.</p>
+                        </div>
+                        <span class="game-badge">PLAY NOW</span>
+                    </div>
+                    <!-- LOCKED 1: no onclick, no hover -->
+                    <div class="game-card locked">
+                        <span class="game-lock-icon">🔒</span>
+                        <div class="game-icon">🖼️</div>
+                        <div class="game-text">
+                            <h3>TEBAK GAMBAR</h3>
+                            <p>Tebak alat dari ilustrasi visual.</p>
+                        </div>
+                        <span class="game-badge">COMING SOON</span>
+                    </div>
+                    <!-- LOCKED 2 -->
+                    <div class="game-card locked">
+                        <span class="game-lock-icon">🔒</span>
+                        <div class="game-icon">🎲</div>
+                        <div class="game-text">
+                            <h3>SCRAMBLE</h3>
+                            <p>Susun acak huruf jadi kata utuh.</p>
+                        </div>
+                        <span class="game-badge">COMING SOON</span>
+                    </div>
+                    <!-- LOCKED 3 -->
+                    <div class="game-card locked">
+                        <span class="game-lock-icon">🔒</span>
+                        <div class="game-icon">⚡</div>
+                        <div class="game-text">
+                            <h3>SPEED QUIZ</h3>
+                            <p>Jawab kilat tanpa hint.</p>
+                        </div>
+                        <span class="game-badge">COMING SOON</span>
+                    </div>
+                </div>
             </div>
-            <div class="mode-card" onclick="openChainRegister('chaos')">
-                <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
-                <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
-                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
+
+            <!-- ===== VIEW 2: SAMBUNG KATA SUB-MODES (Casual / Chaos) ===== -->
+            <div id="modes-view-chain" class="modes-view">
+                <button class="modes-back-btn" onclick="showGameGrid()">← KEMBALI</button>
+                <h2 style="color:white; margin-bottom:4px; text-align:center; font-size: 1.4rem; letter-spacing: 2px; font-weight: 900;">🔤 SAMBUNG KATA</h2>
+                <p style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 12px;">PILIH INTENSITAS DUEL</p>
+                <div class="mode-card" onclick="openChainRegister('casual')">
+                    <div class="mode-badge">30 DETIK</div>
+                    <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
+                    <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
+                </div>
+                <div class="mode-card" onclick="openChainRegister('chaos')">
+                    <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
+                    <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
+                    <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
+                </div>
             </div>
+
         </div>
     </div>
 
@@ -1035,7 +1250,35 @@
         }
 
         function enterArena() { sfx.correct(); initRound(); }
-        function openMoreModes() { sfx.flip(); document.getElementById('modal-modes').style.display = 'flex'; }
+        // CHANGED [2026-05-27]: modal MODE LAINNYA sekarang multi-view (game grid → sub-modes).
+        // Selalu reset ke view 1 (game grid) tiap kali dibuka — supaya user ngga ketinggalan di view 2.
+        function openMoreModes() {
+            sfx.flip();
+            showGameGrid();
+            document.getElementById('modal-modes').style.display = 'flex';
+        }
+
+        // NEW [2026-05-27]: navigasi 2-view di modal MODE LAINNYA.
+        // showGameGrid → view 1 (4 game cards), showChainSubModes → view 2 (Casual/Chaos).
+        // offsetWidth trick = force reflow supaya animasi entrance staggered cards replay tiap switch.
+        // closeModesModal → tutup modal dari tombol KEMBALI di view 1 (balik ke welcome screen).
+        function showGameGrid() {
+            document.querySelectorAll('#modal-modes .modes-view').forEach(v => v.classList.remove('active'));
+            const v = document.getElementById('modes-view-games');
+            void v.offsetWidth;
+            v.classList.add('active');
+        }
+        function showChainSubModes() {
+            sfx.flip();
+            document.querySelectorAll('#modal-modes .modes-view').forEach(v => v.classList.remove('active'));
+            const v = document.getElementById('modes-view-chain');
+            void v.offsetWidth;
+            v.classList.add('active');
+        }
+        function closeModesModal() {
+            sfx.flip();
+            document.getElementById('modal-modes').style.display = 'none';
+        }
 
         function showPopup(t, c) {
             const p = document.getElementById('msg-popup');
