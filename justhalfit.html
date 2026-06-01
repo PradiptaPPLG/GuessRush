@@ -184,19 +184,19 @@
         @keyframes timer-blink { from { opacity: 0.6; } to { opacity: 1; } }
         .play-hint { font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 1.5px; font-weight: 900; }
 
-        /* ARENA — area utama tempat cut. [revisi 2026-05-28] diperbesar 380→440, object 140→200
-           supaya sweet spot RELATIF lebih kecil (2px / 200px = 1%) tapi visual tetap besar & enak dipandang. */
+        /* ARENA — area utama tempat cut. [revisi 2026-06-01] diperbesar 420→580px tinggi
+           supaya pisau (380px) punya ruang di atas object. Tidak pakai overflow:hidden agar pisau tidak terpotong. */
         .cut-arena {
             position: relative;
             width: 100%; max-width: 440px;
-            height: 420px;
+            height: 400px;
             margin: 14px auto 6px;
             display: flex; align-items: center; justify-content: center;
             user-select: none;
             touch-action: none;
         }
 
-        /* CUTTING BOARD (talenan kayu) — diperbesar proportional, responsive (90% of arena, max 400px) */
+        /* CUTTING BOARD (talenan kayu) — dipindah ke bawah sesuai object (top: 50%) */
         .cutting-board {
             position: absolute;
             top: 50%; left: 50%;
@@ -232,7 +232,7 @@
             pointer-events: none;
         }
 
-        /* OBJECT — di tengah cutting board. Diperbesar 140→200px supaya sweet spot 1% jadi ~2px (susah). */
+        /* OBJECT — dipindah ke bawah arena (top: 50%) supaya pisau punya ruang di atasnya dalam arena. */
         .object-stage {
             position: absolute;
             top: 50%; left: 50%;
@@ -240,7 +240,7 @@
             width: 200px; height: 200px;
             z-index: 5;
         }
-        /* HARD mode: object slide L-R otomatis. Range diperluas 70→90px karena arena bigger. */
+        /* HARD mode: object slide L-R otomatis. Range ±90px. */
         .object-stage.slide {
             animation: obj-slide 3.2s ease-in-out infinite alternate;
         }
@@ -297,32 +297,34 @@
         }
         .object-stage.cut .ghost-line { opacity: 1; }
 
-        /* PISAU — [revisi 2026-05-28 v3] diperbesar (38→60 w, 360→300 h) & posisinya lebih dekat object.
-           Arena 420 tinggi, object top Y=110. Pisau top:-200 + height 300 → bottom edge Y=100
-           (tip cuma 10px di atas object top — visual "siap menebas", tidak floating jauh di atas).
-           Cutting anim translateY(140) → tip menusuk ke Y=240 (deep into object center 210, past it).
-           Image asset ratio asli ~1:8 — di-render 60×300 (ratio 1:5) jadi sedikit lebih chunky/proper kitchen knife. */
+        /* PISAU — [revisi 2026-06-01 v4] Hardcode CSS positioning.
+           Karena gambar pisau punya transparent padding yang besar, JS getBoundingClientRect
+           tidak akurat. Kita posisikan manual agar blade tip (setelah rotate) pas di atas object.
+           Object ada di top: 68% (sekitar 394px dari atas).
+           Pisau tingginya 380px. Jika top kita set sekitar 0px, DOM bottom = 380px (dekat dengan 394px).
+           Coba top: -30px agar lebih pas visualnya. */
         .pisau-drag {
             position: absolute;
-            top: -200px;
+            top: 10px;      
             left: 50%;
-            width: 60px;
-            height: 300px;
-            transform: translateX(-50%) rotate(180deg);
+            width: 120px;
+            height: 380px;
+            transform: translateX(-50%) translateY(0) rotate(0deg);
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
-            z-index: 10;
-            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+            z-index: 100; /* Render di depan elemen buah (object-stage z-index: 5) */
+            filter: drop-shadow(0 4px 15px rgba(0,0,0,0.95)) drop-shadow(0 0 12px rgba(0,242,255,0.45));
         }
         .pisau-drag img { width: 100%; height: 100%; object-fit: contain; }
         .pisau-drag.visible { opacity: 1; }
         .pisau-drag.cutting { animation: pisau-strike 0.45s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
+        /* Animasi memotong menembus objek */
         @keyframes pisau-strike {
-            0%   { transform: translateX(-50%) rotate(180deg) translateY(0); }
-            25%  { transform: translateX(-50%) rotate(180deg) translateY(-40px); }
-            60%  { transform: translateX(-50%) rotate(180deg) translateY(140px); }
-            100% { transform: translateX(-50%) rotate(180deg) translateY(120px); opacity: 0.5; }
+            0%   { transform: translateX(-50%) translateY(0) rotate(0deg); }
+            20%  { transform: translateX(-50%) translateY(-120px) rotate(0deg); } /* ancang-ancang angkat */
+            60%  { transform: translateX(-50%) translateY(150px) rotate(0deg); } /* iris ke bawah menembus */
+            100% { transform: translateX(-50%) translateY(135px) rotate(0deg); opacity: 0.5; } /* rest di bawah object */
         }
 
         /* Cut indicator (hologram biru vertical line) DIHAPUS [2026-05-28 revisi]
@@ -1388,7 +1390,7 @@
             const pisau = document.getElementById('pisau-drag');
             pisau.classList.remove('visible', 'cutting');
             pisau.style.left = '50%';
-            pisau.style.transform = 'translateX(-50%) rotate(180deg)';
+            pisau.style.transform = 'translateX(-50%) translateY(0) rotate(0deg)';
             // [revisi 2026-05-28] cut-indicator dihapus — no hologram cue.
 
             // Update hint
@@ -1424,12 +1426,10 @@
             if (game.cutState !== 'parked' || game.inputLocked) return;
             game.cutState = 'grabbed';
             sfx.grab();
-            // Sembunyikan parking, tampilkan pisau drag (cut-indicator dihapus — no hologram)
+            // Sembunyikan parking, tampilkan pisau drag
             document.getElementById('pisau-parking').classList.add('hidden');
             document.getElementById('pisau-drag').classList.add('visible');
             updateHint();
-            // Listen to pointer move on arena for NORMAL drag, or click for HARD lock
-            // (handlers di-attach saat DOMContentLoaded — cek state di dalam handler)
         }
 
         /* Konversi pointer X (relative to arena) → percent 0-100 of object container.
@@ -1533,10 +1533,10 @@
                 // Halves slide apart (CSS handles transform)
             }, 250);
 
-            // Calculate accuracy. Snap displayed ke kelipatan 2 (was 5 — terlalu lenient: 47.5-52.5% = 100%).
-            // Kelipatan 2: hanya raw >= 99 jadi 100% → cut harus di [49.5%, 50.5%] (1% range, ~2px di object 200px).
+            // Calculate accuracy. Snap displayed ke kelipatan 1 (integer) — lebih ketat dari kelipatan 2.
+            // Kelipatan 1: raw >= 99.5 → 100% → cut harus di [49.75%, 50.25%] (~0.5% range = ~1px di object 200px).
             const raw = Math.max(0, 100 - Math.abs(50 - cutPercent) * 2);
-            const displayed = Math.round(raw / 2) * 2;   // kelipatan 2 — lebih ketat
+            const displayed = Math.round(raw);   // kelipatan 1 — sangat ketat
 
             // Store per-player
             if (game.currentPlayer === 1) {
@@ -1683,11 +1683,11 @@
                 accVal.className = 'scale-acc-value ' + accClass(accuracy);
                 accCenter.classList.add('visible');
 
-                // Trigger peak effect kalau 100%. Threshold disesuaikan kelipatan 2.
+                // Trigger peak effect kalau 100%. Threshold disesuaikan kelipatan 1.
                 if (accuracy === 100) {
                     triggerPeakEffect();
-                } else if (accuracy >= 96) sfx.amazing();
-                else if (accuracy >= 86) sfx.great();
+                } else if (accuracy >= 95) sfx.amazing();
+                else if (accuracy >= 85) sfx.great();
                 else if (accuracy >= 70) sfx.good();
                 else if (accuracy < 50) sfx.miss();
                 else sfx.tick();
@@ -1706,25 +1706,25 @@
         /* ============================================================
            9. ACCURACY HELPERS
            ============================================================ */
-        // Tier thresholds disesuaikan untuk akurasi kelipatan 2.
-        // 100 = PERFECT (raw ≥ 99 → cut di [49.5%, 50.5%], ~1% range = sweet spot ~2px di object 200px).
-        // 96-98 = AMAZING (cut di [49%, 51%] luar perfect)
-        // 86-94 = CLEAN CUT
+        // Tier thresholds disesuaikan untuk akurasi kelipatan 1.
+        // 100 = PERFECT (raw ≥ 99.5 → cut di [49.75%, 50.25%], ~0.5% range = ~1px di object 200px).
+        // 95-99 = AMAZING (cut di [49.25%, 50.75%] luar perfect)
+        // 85-94 = CLEAN CUT
         // 70-84 = OK CUT
-        // 50-68 = WONKY
+        // 50-69 = WONKY
         // <50 = BUTCHERED
         function accClass(acc) {
             if (acc === 100) return 'acc-perfect';
-            if (acc >= 96) return 'acc-amazing';
-            if (acc >= 86) return 'acc-clean';
+            if (acc >= 95) return 'acc-amazing';
+            if (acc >= 85) return 'acc-clean';
             if (acc >= 70) return 'acc-ok';
             if (acc >= 50) return 'acc-wonky';
             return 'acc-butchered';
         }
         function accLabelText(acc) {
             if (acc === 100) return 'PERFECT HALF!';
-            if (acc >= 96) return 'AMAZING SLICE';
-            if (acc >= 86) return 'CLEAN CUT';
+            if (acc >= 95) return 'AMAZING SLICE';
+            if (acc >= 85) return 'CLEAN CUT';
             if (acc >= 70) return 'OK CUT';
             if (acc >= 50) return 'WONKY';
             return 'BUTCHERED';
@@ -1783,10 +1783,10 @@
                 : `🏆 PEMENANG RONDE: ${(winner === 1 ? game.p1Name : game.p2Name).toUpperCase()}`;
             document.getElementById('rr-winner-text').innerText = winText;
 
-            // SFX (peak sudah di-trigger di weighing kalau 100%). Threshold kelipatan 2.
+            // SFX (peak sudah di-trigger di weighing kalau 100%). Threshold kelipatan 1.
             const winnerAcc = winner === 1 ? p1Acc : (winner === 2 ? p2Acc : Math.max(p1Acc, p2Acc));
-            if (winnerAcc >= 96 && winnerAcc < 100) sfx.amazing();
-            else if (winnerAcc >= 86) sfx.great();
+            if (winnerAcc >= 95 && winnerAcc < 100) sfx.amazing();
+            else if (winnerAcc >= 85) sfx.great();
             else if (winnerAcc >= 70) sfx.good();
             else if (winnerAcc < 50) sfx.miss();
 

@@ -29,46 +29,233 @@
         /* ============================================================
            2. GLOBAL RESET & BASE STYLES
            ============================================================ */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow-x: hidden; position: relative; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
 
         /* ============================================================
            3. BACKGROUND VISUAL EFFECTS (AMBIENT ORBS)
            ============================================================ */
-        .orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.4; z-index: 0; pointer-events: none; }
-        .orb-1 { width: 400px; height: 400px; background: rgba(0, 242, 255, 0.15); top: -100px; left: -100px; animation: moveOrb 15s infinite alternate ease-in-out; }
-        .orb-2 { width: 450px; height: 450px; background: rgba(123, 44, 255, 0.15); bottom: -150px; right: -150px; animation: moveOrb 20s infinite alternate-reverse ease-in-out; }
-        @keyframes moveOrb { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(100px, 100px) scale(1.1); } }
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 242, 255, 0.15);
+            top: -100px;
+            left: -100px;
+            animation: moveOrb 15s infinite alternate ease-in-out;
+        }
+
+        .orb-2 {
+            width: 450px;
+            height: 450px;
+            background: rgba(123, 44, 255, 0.15);
+            bottom: -150px;
+            right: -150px;
+            animation: moveOrb 20s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes moveOrb {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(100px, 100px) scale(1.1);
+            }
+        }
 
         /* ============================================================
            4. MAIN CONTAINER & SCREEN TRANSITIONS
            ============================================================ */
         #game-container {
-            width: 95%; max-width: 500px; background: rgba(17, 20, 27, 0.85); padding: 2rem; border-radius: 32px;
-            box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(0, 242, 255, 0.05); text-align: center; position: relative; z-index: 1;
-            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 95%;
+            max-width: 500px;
+            background: rgba(17, 20, 27, 0.85);
+            padding: 2rem;
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 242, 255, 0.05);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .screen { display: none; }
-        .screen.active { display: block; animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        @keyframes screenIn { from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: screenIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes screenIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+                filter: blur(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
 
         /* ============================================================
            5. CINEMATIC INTRO STYLES
            ============================================================ */
-        .intro-stage { position: relative; padding: 20px 0; overflow: hidden; margin: -2rem; padding-top: 4rem; padding-bottom: 3rem; border-radius: 32px; }
-        .intro-grid { position: absolute; inset: -50px; background-image: linear-gradient(rgba(0, 242, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.08) 1px, transparent 1px); background-size: 40px 40px; mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%); opacity: 0; animation: intro-grid-in 1.5s 0.2s forwards; pointer-events: none; }
-        @keyframes intro-grid-in { to { opacity: 1; } }
-        .intro-scanline { position: absolute; top: 0; left: -10%; width: 120%; height: 6px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); box-shadow: 0 0 25px var(--accent-color); animation: intro-scanline 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; pointer-events: none; z-index: 5; }
-        @keyframes intro-scanline { 0% { top: 0%; opacity: 1; } 80% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        .intro-stage {
+            position: relative;
+            padding: 20px 0;
+            overflow: hidden;
+            margin: -2rem;
+            padding-top: 4rem;
+            padding-bottom: 3rem;
+            border-radius: 32px;
+        }
 
-        .intro-title { font-size: 3.5rem; font-weight: 900; letter-spacing: 8px; line-height: 1; margin: 0; display: flex; justify-content: center; gap: 15px; text-transform: uppercase; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.2)); }
-        .intro-word.guess { animation: intro-slam-left 0.8s 0.5s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; opacity: 0; color: white; }
-        .intro-word.rush { animation: intro-slam-right 0.8s 0.7s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards; opacity: 0; background: linear-gradient(180deg, var(--accent-color), #00d1db); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        @keyframes intro-slam-left { 0% { opacity: 0; transform: translateX(-150px) skewX(-30deg) scale(1.5); filter: blur(20px); } 100% { opacity: 1; transform: translateX(0) skewX(0) scale(1); filter: blur(0); } }
-        @keyframes intro-slam-right { 0% { opacity: 0; transform: translateX(150px) skewX(30deg) scale(1.5); filter: blur(20px); } 100% { opacity: 1; transform: translateX(0) skewX(0) scale(1); filter: blur(0); } }
-        .intro-underline { height: 4px; width: 70%; margin: 15px auto 0; background: linear-gradient(90deg, transparent, var(--accent-color), #ff3d8a, var(--accent-color), transparent); transform: scaleX(0); animation: intro-underline 0.8s 1.3s cubic-bezier(0.7, 0, 0.3, 1) forwards; }
-        @keyframes intro-underline { to { transform: scaleX(1); } }
+        .intro-grid {
+            position: absolute;
+            inset: -50px;
+            background-image: linear-gradient(rgba(0, 242, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 255, 0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse at center, #000 40%, transparent 85%);
+            opacity: 0;
+            animation: intro-grid-in 1.5s 0.2s forwards;
+            pointer-events: none;
+        }
+
+        @keyframes intro-grid-in {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .intro-scanline {
+            position: absolute;
+            top: 0;
+            left: -10%;
+            width: 120%;
+            height: 6px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            box-shadow: 0 0 25px var(--accent-color);
+            animation: intro-scanline 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes intro-scanline {
+            0% {
+                top: 0%;
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        .intro-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 8px;
+            line-height: 1;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            text-transform: uppercase;
+            filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.2));
+        }
+
+        .intro-word.guess {
+            animation: intro-slam-left 0.8s 0.5s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards;
+            opacity: 0;
+            color: white;
+        }
+
+        .intro-word.rush {
+            animation: intro-slam-right 0.8s 0.7s cubic-bezier(0.15, 0.85, 0.3, 1.1) forwards;
+            opacity: 0;
+            background: linear-gradient(180deg, var(--accent-color), #00d1db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes intro-slam-left {
+            0% {
+                opacity: 0;
+                transform: translateX(-150px) skewX(-30deg) scale(1.5);
+                filter: blur(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) skewX(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes intro-slam-right {
+            0% {
+                opacity: 0;
+                transform: translateX(150px) skewX(30deg) scale(1.5);
+                filter: blur(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) skewX(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        .intro-underline {
+            height: 4px;
+            width: 70%;
+            margin: 15px auto 0;
+            background: linear-gradient(90deg, transparent, var(--accent-color), #ff3d8a, var(--accent-color), transparent);
+            transform: scaleX(0);
+            animation: intro-underline 0.8s 1.3s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+        }
+
+        @keyframes intro-underline {
+            to {
+                transform: scaleX(1);
+            }
+        }
 
         /* ============================================================
            5B. WELCOME SUBTITLE — RANDOM PHRASE CYCLER + GLITCH TRANSITION [2026-05-28]
@@ -86,117 +273,402 @@
             font-family: 'Courier New', monospace;
             transition: color 0.3s;
         }
+
         .welcome-subtitle.glitch-active {
             color: #f0f6fc;
             animation: subtitle-jitter 0.12s infinite steps(1);
             text-shadow:
-                2px 0 rgba(255,77,109,0.85),
-                -2px 0 rgba(0,242,255,0.85),
-                0 0 8px rgba(255,255,255,0.25);
+                2px 0 rgba(255, 77, 109, 0.85),
+                -2px 0 rgba(0, 242, 255, 0.85),
+                0 0 8px rgba(255, 255, 255, 0.25);
         }
+
         @keyframes subtitle-jitter {
-            0%   { transform: translate(0, 0); }
-            15%  { transform: translate(-2px, 1px); }
-            30%  { transform: translate(2px, -1px); }
-            45%  { transform: translate(-1px, 0); }
-            60%  { transform: translate(1px, 1px); }
-            75%  { transform: translate(-2px, -1px); }
-            90%  { transform: translate(1px, 0); }
-            100% { transform: translate(0, 0); }
+            0% {
+                transform: translate(0, 0);
+            }
+
+            15% {
+                transform: translate(-2px, 1px);
+            }
+
+            30% {
+                transform: translate(2px, -1px);
+            }
+
+            45% {
+                transform: translate(-1px, 0);
+            }
+
+            60% {
+                transform: translate(1px, 1px);
+            }
+
+            75% {
+                transform: translate(-2px, -1px);
+            }
+
+            90% {
+                transform: translate(1px, 0);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
         }
+
         /* Optional clip-path "scan tear" overlays via pseudo (uses data-text attr kept in sync by JS) */
         .welcome-subtitle.glitch-active::before,
         .welcome-subtitle.glitch-active::after {
             content: attr(data-text);
             position: absolute;
-            top: 0; left: 0;
+            top: 0;
+            left: 0;
             width: 100%;
             pointer-events: none;
             background: var(--card-bg);
         }
+
         .welcome-subtitle.glitch-active::before {
             color: #ff4d6d;
             animation: subtitle-tear-top 0.42s infinite linear;
             clip-path: inset(0 0 70% 0);
-            text-shadow: 2px 0 rgba(255,77,109,0.9);
+            text-shadow: 2px 0 rgba(255, 77, 109, 0.9);
         }
+
         .welcome-subtitle.glitch-active::after {
             color: #00f2ff;
             animation: subtitle-tear-bot 0.55s infinite linear;
             clip-path: inset(70% 0 0 0);
-            text-shadow: -2px 0 rgba(0,242,255,0.9);
+            text-shadow: -2px 0 rgba(0, 242, 255, 0.9);
         }
+
         @keyframes subtitle-tear-top {
-            0%   { transform: translateX(0); clip-path: inset(0 0 70% 0); }
-            25%  { transform: translateX(-4px); clip-path: inset(10% 0 60% 0); }
-            50%  { transform: translateX(3px); clip-path: inset(5% 0 65% 0); }
-            75%  { transform: translateX(-2px); clip-path: inset(15% 0 70% 0); }
-            100% { transform: translateX(0); clip-path: inset(0 0 70% 0); }
+            0% {
+                transform: translateX(0);
+                clip-path: inset(0 0 70% 0);
+            }
+
+            25% {
+                transform: translateX(-4px);
+                clip-path: inset(10% 0 60% 0);
+            }
+
+            50% {
+                transform: translateX(3px);
+                clip-path: inset(5% 0 65% 0);
+            }
+
+            75% {
+                transform: translateX(-2px);
+                clip-path: inset(15% 0 70% 0);
+            }
+
+            100% {
+                transform: translateX(0);
+                clip-path: inset(0 0 70% 0);
+            }
         }
+
         @keyframes subtitle-tear-bot {
-            0%   { transform: translateX(0); clip-path: inset(70% 0 0 0); }
-            25%  { transform: translateX(3px); clip-path: inset(75% 0 5% 0); }
-            50%  { transform: translateX(-4px); clip-path: inset(65% 0 10% 0); }
-            75%  { transform: translateX(2px); clip-path: inset(80% 0 0 0); }
-            100% { transform: translateX(0); clip-path: inset(70% 0 0 0); }
+            0% {
+                transform: translateX(0);
+                clip-path: inset(70% 0 0 0);
+            }
+
+            25% {
+                transform: translateX(3px);
+                clip-path: inset(75% 0 5% 0);
+            }
+
+            50% {
+                transform: translateX(-4px);
+                clip-path: inset(65% 0 10% 0);
+            }
+
+            75% {
+                transform: translateX(2px);
+                clip-path: inset(80% 0 0 0);
+            }
+
+            100% {
+                transform: translateX(0);
+                clip-path: inset(70% 0 0 0);
+            }
         }
 
         /* ============================================================
            6. UI COMPONENTS: BUTTONS & INPUTS
            ============================================================ */
-        button { background: var(--accent-color); color: #0a0e14; border: none; padding: 14px 24px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.85rem; margin: 8px 0; box-shadow: 0 4px 0 #00b8c4; position: relative; overflow: hidden; }
-        button:active { transform: translateY(3px); box-shadow: 0 1px 0 #00b8c4; }
-        button:hover:not(:active) { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+        button {
+            background: var(--accent-color);
+            color: #0a0e14;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 0.85rem;
+            margin: 8px 0;
+            box-shadow: 0 4px 0 #00b8c4;
+            position: relative;
+            overflow: hidden;
+        }
 
-        .btn-ghost { background: rgba(255,255,255,0.05); border: 1px solid rgba(0,242,255,0.3); color: var(--accent-color); box-shadow: none; }
-        .btn-ghost:hover { background: rgba(0,242,255,0.1); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #00b8c4;
+        }
 
-        .btn-danger { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.3); padding: 8px 16px; margin-top: 15px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: 0.3s; width: auto; display: inline-block; }
-        .btn-danger:hover { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 15px rgba(255,77,77,0.3); }
+        button:hover:not(:active) {
+            background: var(--accent-hover);
+            box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            color: var(--accent-color);
+            box-shadow: none;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(0, 242, 255, 0.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            padding: 8px 16px;
+            margin-top: 15px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            width: auto;
+            display: inline-block;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            box-shadow: 0 0 15px rgba(255, 77, 77, 0.3);
+        }
 
         /* ============================================================
            7. WORDLE INPUT GRID
            ============================================================ */
-        #word-input-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 30px 0; }
-        .letter-box { width: 42px; height: 55px; background: rgba(0,0,0,0.2); border: 2px solid #30363d; color: white; font-size: 1.8rem; font-weight: bold; text-align: center; text-transform: uppercase; outline: none; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 10px; }
-        .letter-box:focus { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); background: rgba(0, 242, 255, 0.05); }
-        .letter-box.correct { background: var(--correct); border-color: var(--correct); transform: translateY(-5px); box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3); }
-        .letter-box.present { background: var(--present); border-color: var(--present); color: #000; }
-        .letter-box.absent { background: #21262d; border-color: #21262d; opacity: 0.5; }
-        .pop-anim { animation: letterPop 0.2s ease-out; }
-        @keyframes letterPop { 0% { transform: scale(0.8); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #word-input-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        .letter-box {
+            width: 42px;
+            height: 55px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid #30363d;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            outline: none;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+        }
+
+        .letter-box:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .letter-box.correct {
+            background: var(--correct);
+            border-color: var(--correct);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .letter-box.present {
+            background: var(--present);
+            border-color: var(--present);
+            color: #000;
+        }
+
+        .letter-box.absent {
+            background: #21262d;
+            border-color: #21262d;
+            opacity: 0.5;
+        }
+
+        .pop-anim {
+            animation: letterPop 0.2s ease-out;
+        }
+
+        @keyframes letterPop {
+            0% {
+                transform: scale(0.8);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
 
         /* ============================================================
            8. LEADERBOARD & THRONE BATTLE ANIMATIONS
            ============================================================ */
-        #leaderboard-arena { position: relative; margin-top: 15px; height: 350px; overflow-y: auto; padding-bottom: 80px; scroll-behavior: smooth; }
-        #leaderboard-arena::-webkit-scrollbar { width: 5px; }
-        #leaderboard-arena::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        #leaderboard-arena {
+            position: relative;
+            margin-top: 15px;
+            height: 350px;
+            overflow-y: auto;
+            padding-bottom: 80px;
+            scroll-behavior: smooth;
+        }
+
+        #leaderboard-arena::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #leaderboard-arena::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
 
         /* FIX: inset left/right + tinggi & padding ramping; arena dikasih padding lateral supaya glow tidak kepotong overflow. */
-        .rank-card { position: absolute; left: 10px; right: 10px; height: 52px; display: flex; align-items: center; padding: 0 14px; background: rgba(28, 33, 40, 0.8); border-radius: 14px; transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s, transform 0.3s; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px; }
+        .rank-card {
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            background: rgba(28, 33, 40, 0.8);
+            border-radius: 14px;
+            transition: top 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border 0.3s, box-shadow 0.3s, transform 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 8px;
+        }
+
         /* FIX [2026-05-27]: rank-pos lebih lebar (52px) + padding-left 28px → reserved slot untuk medal di SEMUA card
            (podium & non-podium aligned di kolom yang sama). # ngga lagi dempet medal. box-sizing: border-box supaya
            padding tidak menambah total width. */
-        .rank-pos { width: 52px; padding-left: 28px; box-sizing: border-box; font-weight: 900; font-size: 0.95rem; color: var(--text-secondary); text-align: left; }
+        .rank-pos {
+            width: 52px;
+            padding-left: 28px;
+            box-sizing: border-box;
+            font-weight: 900;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+
         /* FIX [2026-05-27]: padding-left 6px → gap kecil antara # dan nama player supaya ngga dempet */
-        .rank-info { flex-grow: 1; text-align: left; font-weight: 600; font-size: 0.85rem; padding-left: 6px; }
-        .rank-pts { font-weight: 900; font-size: 0.95rem; color: var(--accent-color); min-width: 60px; text-align: right; }
+        .rank-info {
+            flex-grow: 1;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding-left: 6px;
+        }
+
+        .rank-pts {
+            font-weight: 900;
+            font-size: 0.95rem;
+            color: var(--accent-color);
+            min-width: 60px;
+            text-align: right;
+        }
 
         /* Special Throne Ranking Glows */
-        @keyframes throne-gold { 0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); } 50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); } }
-        @keyframes throne-silver { 0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.2); } 50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.5); } }
-        @keyframes throne-bronze { 0%, 100% { box-shadow: 0 0 10px rgba(205, 127, 50, 0.2); } 50% { box-shadow: 0 0 15px rgba(205, 127, 50, 0.4); } }
+        @keyframes throne-gold {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+            }
+        }
+
+        @keyframes throne-silver {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(192, 192, 192, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+            }
+        }
+
+        @keyframes throne-bronze {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(205, 127, 50, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 15px rgba(205, 127, 50, 0.4);
+            }
+        }
 
         /* FIX [2026-05-27]: transform: scale dihapus dari gold-rank & player-focus supaya semua card podium (1,2,3)
            punya WIDTH yang konsisten. Sebelumnya: gold scale(1.02), silver baseline, bronze baseline, player-focus scale(1.05).
            Kalau current player kebetulan #3, dia jadi paling besar (1.05) > gold (1.02) → inconsistent. Sekarang semua = 1.
            Border + glow + animasi throne masih jalan untuk visual hierarchy. */
-        .gold-rank { border: 2px solid var(--gold) !important; background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95)); animation: throne-gold 2s infinite; z-index: 5; }
-        .silver-rank { border: 1.5px solid var(--silver) !important; background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-silver 2s infinite; z-index: 4; }
-        .bronze-rank { border: 1.5px solid var(--bronze) !important; background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9)); animation: throne-bronze 2s infinite; z-index: 3; }
+        .gold-rank {
+            border: 2px solid var(--gold) !important;
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.15), rgba(28, 33, 40, 0.95));
+            animation: throne-gold 2s infinite;
+            z-index: 5;
+        }
 
-        .player-focus { z-index: 100; border: 2px solid var(--accent-color) !important; box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important; }
+        .silver-rank {
+            border: 1.5px solid var(--silver) !important;
+            background: linear-gradient(90deg, rgba(192, 192, 192, 0.1), rgba(28, 33, 40, 0.9));
+            animation: throne-silver 2s infinite;
+            z-index: 4;
+        }
+
+        .bronze-rank {
+            border: 1.5px solid var(--bronze) !important;
+            background: linear-gradient(90deg, rgba(205, 127, 50, 0.1), rgba(28, 33, 40, 0.9));
+            animation: throne-bronze 2s infinite;
+            z-index: 3;
+        }
+
+        .player-focus {
+            z-index: 100;
+            border: 2px solid var(--accent-color) !important;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4) !important;
+        }
+
         /* NEW [2026-05-27]: highlight warna nama + poin player saat ini jadi GOLD (kuning emas) supaya
            langsung kelihatan baris mana yang dipakai user di leaderboard. */
         .player-focus .rank-info,
@@ -204,150 +676,593 @@
             color: var(--gold) !important;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
-        .shake-climb { animation: battle-shake 0.4s infinite; }
-        @keyframes battle-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1px) rotate(-0.5deg); } 75% { transform: translateX(1px) rotate(0.5deg); } }
+
+        .shake-climb {
+            animation: battle-shake 0.4s infinite;
+        }
+
+        @keyframes battle-shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-1px) rotate(-0.5deg);
+            }
+
+            75% {
+                transform: translateX(1px) rotate(0.5deg);
+            }
+        }
 
         /* RESTORED: FIXED ACTION FOOTER (Sticky Button) */
-        .fixed-lb-footer { position: sticky; bottom: -2px; left: 0; right: 0; background: linear-gradient(transparent, #0a0e14 60%); padding: 20px 10px; display: none; z-index: 200; transform: translateY(10px); }
+        .fixed-lb-footer {
+            position: sticky;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, #0a0e14 60%);
+            padding: 20px 10px;
+            display: none;
+            z-index: 200;
+            transform: translateY(10px);
+        }
 
         /* ============================================================
            9. CARD REVEAL UI
            ============================================================ */
-        .card-container { perspective: 1000px; width: 150px; height: 210px; margin: 20px auto; }
-        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
-        .card.is-flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 24px; border: 3px solid var(--accent-color); background: #1c2128; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
-        .card-front { background: radial-gradient(circle at center, #1c2128, #11141b); }
-        .card-back { transform: rotateY(180deg); background: linear-gradient(135deg, #1c2128, #11141b); }
-        .card-shuffle { animation: cardShuffle 0.15s infinite alternate; }
-        @keyframes cardShuffle { from { transform: translate(-3px, -3px) rotate(-1deg); } to { transform: translate(3px, 3px) rotate(1deg); } }
+        .card-container {
+            perspective: 1000px;
+            width: 150px;
+            height: 210px;
+            margin: 20px auto;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 24px;
+            border: 3px solid var(--accent-color);
+            background: #1c2128;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-front {
+            background: radial-gradient(circle at center, #1c2128, #11141b);
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #1c2128, #11141b);
+        }
+
+        .card-shuffle {
+            animation: cardShuffle 0.15s infinite alternate;
+        }
+
+        @keyframes cardShuffle {
+            from {
+                transform: translate(-3px, -3px) rotate(-1deg);
+            }
+
+            to {
+                transform: translate(3px, 3px) rotate(1deg);
+            }
+        }
 
         /* ============================================================
            10. SAMBUNG KATA (WORD CHAIN) UI
            ============================================================ */
-        .chain-word-big { font-size: 3rem; font-weight: 900; color: white; text-transform: uppercase; margin: 20px 0; letter-spacing: 3px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
-        .suffix-highlight { color: var(--accent-color); text-decoration: underline; text-underline-offset: 10px; text-decoration-thickness: 3px; }
-        .p-tag { padding: 8px 18px; border-radius: 25px; background: #1c2128; font-size: 0.75rem; font-weight: 900; border: 2px solid transparent; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); margin: 0 6px; display: inline-block; color: var(--text-secondary); }
-        .p-tag.active { border-color: var(--accent-color); box-shadow: 0 0 20px var(--accent-color); transform: scale(1.15); color: white; background: rgba(0,242,255,0.1); }
-        .chain-history { height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); border-radius: 20px; padding: 15px; font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column-reverse; gap: 6px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px; }
+        .chain-word-big {
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            text-transform: uppercase;
+            margin: 20px 0;
+            letter-spacing: 3px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+        }
 
-        .pulse-red { animation: screen-pulse 0.5s infinite; }
-        @keyframes screen-pulse { 0% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 80px rgba(255,77,77,0.3); } 100% { box-shadow: inset 0 0 0px var(--danger); } }
+        .suffix-highlight {
+            color: var(--accent-color);
+            text-decoration: underline;
+            text-underline-offset: 10px;
+            text-decoration-thickness: 3px;
+        }
+
+        .p-tag {
+            padding: 8px 18px;
+            border-radius: 25px;
+            background: #1c2128;
+            font-size: 0.75rem;
+            font-weight: 900;
+            border: 2px solid transparent;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 6px;
+            display: inline-block;
+            color: var(--text-secondary);
+        }
+
+        .p-tag.active {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color);
+            transform: scale(1.15);
+            color: white;
+            background: rgba(0, 242, 255, 0.1);
+        }
+
+        .chain-history {
+            height: 120px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            padding: 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 15px;
+        }
+
+        .pulse-red {
+            animation: screen-pulse 0.5s infinite;
+        }
+
+        @keyframes screen-pulse {
+            0% {
+                box-shadow: inset 0 0 0px var(--danger);
+            }
+
+            50% {
+                box-shadow: inset 0 0 80px rgba(255, 77, 77, 0.3);
+            }
+
+            100% {
+                box-shadow: inset 0 0 0px var(--danger);
+            }
+        }
 
         /* ============================================================
            10B. SAMBUNG KATA: REGISTER 2-PLAYER + TURN-BASED COLOR THEME (P1 = MERAH, P2 = BIRU)
            Auto-suggest dari leaderboard, transisi mix color saat ganti giliran.
            ============================================================ */
-        :root { --p1: #ff4d6d; --p2: #4dabff; }
+        :root {
+            --p1: #ff4d6d;
+            --p2: #4dabff;
+        }
 
         /* --- Register screen --- */
-        .register-row { margin: 14px 0; text-align: left; }
-        .register-label { font-size: 0.78rem; font-weight: 900; letter-spacing: 2.5px; margin-bottom: 8px; }
-        .register-p1 .register-label { color: var(--p1); text-shadow: 0 0 10px rgba(255,77,109,0.3); }
-        .register-p2 .register-label { color: var(--p2); text-shadow: 0 0 10px rgba(77,171,255,0.3); }
-        .register-row input { width: 100%; padding: 14px 16px; border-radius: 14px; background: rgba(0,0,0,0.3); color: white; outline: none; font-size: 1rem; transition: 0.3s; }
-        .register-p1 input { border: 2px solid rgba(255,77,109,0.3); }
-        .register-p1 input:focus { border-color: var(--p1); box-shadow: 0 0 15px rgba(255,77,109,0.3); background: rgba(255,77,109,0.05); }
-        .register-p2 input { border: 2px solid rgba(77,171,255,0.3); }
-        .register-p2 input:focus { border-color: var(--p2); box-shadow: 0 0 15px rgba(77,171,255,0.3); background: rgba(77,171,255,0.05); }
-        .vs-divider { text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--accent-color); margin: 6px 0; letter-spacing: 6px; text-shadow: 0 0 12px rgba(0,242,255,0.4); }
-        .register-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: rgba(28,33,40,0.98); border-radius: 12px; padding: 8px; border: 1px solid #333; z-index: 100; margin-top: 6px; text-align: left; max-height: 180px; overflow-y: auto; }
+        .register-row {
+            margin: 14px 0;
+            text-align: left;
+        }
+
+        .register-label {
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            margin-bottom: 8px;
+        }
+
+        .register-p1 .register-label {
+            color: var(--p1);
+            text-shadow: 0 0 10px rgba(255, 77, 109, 0.3);
+        }
+
+        .register-p2 .register-label {
+            color: var(--p2);
+            text-shadow: 0 0 10px rgba(77, 171, 255, 0.3);
+        }
+
+        .register-row input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            outline: none;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        .register-p1 input {
+            border: 2px solid rgba(255, 77, 109, 0.3);
+        }
+
+        .register-p1 input:focus {
+            border-color: var(--p1);
+            box-shadow: 0 0 15px rgba(255, 77, 109, 0.3);
+            background: rgba(255, 77, 109, 0.05);
+        }
+
+        .register-p2 input {
+            border: 2px solid rgba(77, 171, 255, 0.3);
+        }
+
+        .register-p2 input:focus {
+            border-color: var(--p2);
+            box-shadow: 0 0 15px rgba(77, 171, 255, 0.3);
+            background: rgba(77, 171, 255, 0.05);
+        }
+
+        .vs-divider {
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--accent-color);
+            margin: 6px 0;
+            letter-spacing: 6px;
+            text-shadow: 0 0 12px rgba(0, 242, 255, 0.4);
+        }
+
+        .register-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(28, 33, 40, 0.98);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid #333;
+            z-index: 100;
+            margin-top: 6px;
+            text-align: left;
+            max-height: 180px;
+            overflow-y: auto;
+        }
 
         /* --- In-game turn-based color theme (smooth transition saat ganti giliran) --- */
-        #game-container { transition: box-shadow 0.6s ease, border-color 0.6s ease; }
-        #game-container.turn-p1 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(255,77,109,0.18); border-color: rgba(255,77,109,0.3); }
-        #game-container.turn-p2 { box-shadow: 0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(77,171,255,0.18); border-color: rgba(77,171,255,0.3); }
+        #game-container {
+            transition: box-shadow 0.6s ease, border-color 0.6s ease;
+        }
 
-        .chain-word-big { transition: color 0.6s, text-shadow 0.6s; }
-        #screen-word-chain.turn-p1 .chain-word-big { color: var(--p1); text-shadow: 0 0 14px rgba(255,77,109,0.4); }
-        #screen-word-chain.turn-p2 .chain-word-big { color: var(--p2); text-shadow: 0 0 14px rgba(77,171,255,0.4); }
+        #game-container.turn-p1 {
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 77, 109, 0.18);
+            border-color: rgba(255, 77, 109, 0.3);
+        }
 
-        .suffix-highlight { transition: color 0.6s, text-decoration-color 0.6s; }
-        #screen-word-chain.turn-p1 .suffix-highlight { color: var(--p1) !important; }
-        #screen-word-chain.turn-p2 .suffix-highlight { color: var(--p2) !important; }
+        #game-container.turn-p2 {
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8), 0 0 40px rgba(77, 171, 255, 0.18);
+            border-color: rgba(77, 171, 255, 0.3);
+        }
 
-        #screen-word-chain.turn-p1 #chain-input { border-color: rgba(255,77,109,0.5) !important; }
-        #screen-word-chain.turn-p2 #chain-input { border-color: rgba(77,171,255,0.5) !important; }
-        #screen-word-chain.turn-p1 #chain-input:focus { border-color: var(--p1) !important; box-shadow: 0 0 15px rgba(255,77,109,0.3); }
-        #screen-word-chain.turn-p2 #chain-input:focus { border-color: var(--p2) !important; box-shadow: 0 0 15px rgba(77,171,255,0.3); }
+        .chain-word-big {
+            transition: color 0.6s, text-shadow 0.6s;
+        }
+
+        #screen-word-chain.turn-p1 .chain-word-big {
+            color: var(--p1);
+            text-shadow: 0 0 14px rgba(255, 77, 109, 0.4);
+        }
+
+        #screen-word-chain.turn-p2 .chain-word-big {
+            color: var(--p2);
+            text-shadow: 0 0 14px rgba(77, 171, 255, 0.4);
+        }
+
+        .suffix-highlight {
+            transition: color 0.6s, text-decoration-color 0.6s;
+        }
+
+        #screen-word-chain.turn-p1 .suffix-highlight {
+            color: var(--p1) !important;
+        }
+
+        #screen-word-chain.turn-p2 .suffix-highlight {
+            color: var(--p2) !important;
+        }
+
+        #screen-word-chain.turn-p1 #chain-input {
+            border-color: rgba(255, 77, 109, 0.5) !important;
+        }
+
+        #screen-word-chain.turn-p2 #chain-input {
+            border-color: rgba(77, 171, 255, 0.5) !important;
+        }
+
+        #screen-word-chain.turn-p1 #chain-input:focus {
+            border-color: var(--p1) !important;
+            box-shadow: 0 0 15px rgba(255, 77, 109, 0.3);
+        }
+
+        #screen-word-chain.turn-p2 #chain-input:focus {
+            border-color: var(--p2) !important;
+            box-shadow: 0 0 15px rgba(77, 171, 255, 0.3);
+        }
 
         /* p-tag color override untuk player-1/player-2 (lebih spesifik dari .p-tag.active default) */
-        .p-tag.player-1 { color: rgba(255,77,109,0.55); border: 2px solid rgba(255,77,109,0.25); }
-        .p-tag.player-2 { color: rgba(77,171,255,0.55); border: 2px solid rgba(77,171,255,0.25); }
-        .p-tag.player-1.active { color: var(--p1) !important; background: rgba(255,77,109,0.15) !important; border-color: var(--p1) !important; box-shadow: 0 0 18px rgba(255,77,109,0.45) !important; transform: scale(1.12); }
-        .p-tag.player-2.active { color: var(--p2) !important; background: rgba(77,171,255,0.15) !important; border-color: var(--p2) !important; box-shadow: 0 0 18px rgba(77,171,255,0.45) !important; transform: scale(1.12); }
+        .p-tag.player-1 {
+            color: rgba(255, 77, 109, 0.55);
+            border: 2px solid rgba(255, 77, 109, 0.25);
+        }
 
-        #typing-status { transition: color 0.6s; }
-        #screen-word-chain.turn-p1 #typing-status { color: var(--p1); }
-        #screen-word-chain.turn-p2 #typing-status { color: var(--p2); }
+        .p-tag.player-2 {
+            color: rgba(77, 171, 255, 0.55);
+            border: 2px solid rgba(77, 171, 255, 0.25);
+        }
+
+        .p-tag.player-1.active {
+            color: var(--p1) !important;
+            background: rgba(255, 77, 109, 0.15) !important;
+            border-color: var(--p1) !important;
+            box-shadow: 0 0 18px rgba(255, 77, 109, 0.45) !important;
+            transform: scale(1.12);
+        }
+
+        .p-tag.player-2.active {
+            color: var(--p2) !important;
+            background: rgba(77, 171, 255, 0.15) !important;
+            border-color: var(--p2) !important;
+            box-shadow: 0 0 18px rgba(77, 171, 255, 0.45) !important;
+            transform: scale(1.12);
+        }
+
+        #typing-status {
+            transition: color 0.6s;
+        }
+
+        #screen-word-chain.turn-p1 #typing-status {
+            color: var(--p1);
+        }
+
+        #screen-word-chain.turn-p2 #typing-status {
+            color: var(--p2);
+        }
 
         /* --- Combo system [2026-05-27]: track berapa kali pemain saling berbalas, fire emoji escalation --- */
         /* CHANGED [2026-05-27]: bg + border + padding dihapus (arahan Pradipta). Posisi: absolute di bawah
            chain-title (parent wrapper jadi position:relative) supaya ngga ngambil layout space → nama
            pemain ngga geser ke bawah. Visual escalation murni dari color + text-shadow. */
-        .chain-word-big { position: relative; }  /* supaya .combo-float absolute bisa anchor */
+        .chain-word-big {
+            position: relative;
+        }
+
+        /* supaya .combo-float absolute bisa anchor */
         .chain-combo {
-            position: absolute; top: 100%; left: 0; margin-top: 3px;
-            font-weight: 900; font-size: 0.72rem;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 3px;
+            font-weight: 900;
+            font-size: 0.72rem;
             color: var(--text-secondary);
-            letter-spacing: 1px; white-space: nowrap;
+            letter-spacing: 1px;
+            white-space: nowrap;
             transition: color 0.3s, text-shadow 0.3s;
             pointer-events: none;
         }
-        .chain-combo.active { color: #ff9500; text-shadow: 0 0 8px rgba(255,149,0,0.5); }
-        .chain-combo.hot { color: #ff5500; text-shadow: 0 0 10px rgba(255,85,0,0.7); }
+
+        .chain-combo.active {
+            color: #ff9500;
+            text-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
+        }
+
+        .chain-combo.hot {
+            color: #ff5500;
+            text-shadow: 0 0 10px rgba(255, 85, 0, 0.7);
+        }
+
         .chain-combo.inferno {
             color: #ffe000;
-            text-shadow: 0 0 14px rgba(255,224,0,0.9), 0 0 24px rgba(255,140,0,0.6);
+            text-shadow: 0 0 14px rgba(255, 224, 0, 0.9), 0 0 24px rgba(255, 140, 0, 0.6);
         }
-        .chain-combo.bump { animation: combo-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .chain-combo.bump {
+            animation: combo-bump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
         @keyframes combo-bump {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.35); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.35);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         /* Floating combo emoji yang muncul di atas current-word-display tiap submit */
         .combo-float {
             position: absolute;
-            left: 50%; top: -8px;
-            font-size: 1.5rem; font-weight: 900;
+            left: 50%;
+            top: -8px;
+            font-size: 1.5rem;
+            font-weight: 900;
             color: #ff7700;
-            text-shadow: 0 0 18px rgba(255,119,0,0.75), 0 0 32px rgba(255,61,0,0.4);
-            pointer-events: none; z-index: 50;
+            text-shadow: 0 0 18px rgba(255, 119, 0, 0.75), 0 0 32px rgba(255, 61, 0, 0.4);
+            pointer-events: none;
+            z-index: 50;
             transform: translateX(-50%);
             white-space: nowrap;
             animation: combo-float-up 1.3s ease-out forwards;
         }
+
         @keyframes combo-float-up {
-            0%   { opacity: 0; transform: translate(-50%, 20px) scale(0.6) rotate(-12deg); }
-            25%  { opacity: 1; transform: translate(-50%, 0) scale(1.18) rotate(0deg); }
-            100% { opacity: 0; transform: translate(-50%, -70px) scale(1.3) rotate(8deg); }
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.6) rotate(-12deg);
+            }
+
+            25% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1.18) rotate(0deg);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -70px) scale(1.3) rotate(8deg);
+            }
         }
 
         /* --- Chain result screen --- */
-        .chain-result-row { margin: 12px 0; padding: 16px 18px; border-radius: 16px; text-align: left; position: relative; overflow: hidden; }
-        .chain-result-winner { background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,215,0,0.04)); border: 2px solid rgba(255,215,0,0.5); box-shadow: 0 0 24px rgba(255,215,0,0.22); }
-        .chain-result-loser { background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.12); }
-        .chain-result-badge { font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
-        .chain-result-winner .chain-result-badge { color: var(--gold); }
-        .chain-result-name { font-size: 1.4rem; font-weight: 900; color: white; letter-spacing: 1px; margin: 4px 0; }
-        .chain-result-winner .chain-result-name { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.5); font-size: 1.7rem; }
-        .chain-result-pts { font-size: 0.85rem; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; }
+        .chain-result-row {
+            margin: 12px 0;
+            padding: 16px 18px;
+            border-radius: 16px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chain-result-winner {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), rgba(255, 215, 0, 0.04));
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            box-shadow: 0 0 24px rgba(255, 215, 0, 0.22);
+        }
+
+        .chain-result-loser {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .chain-result-badge {
+            font-size: 0.7rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 4px;
+        }
+
+        .chain-result-winner .chain-result-badge {
+            color: var(--gold);
+        }
+
+        .chain-result-name {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: white;
+            letter-spacing: 1px;
+            margin: 4px 0;
+        }
+
+        .chain-result-winner .chain-result-name {
+            color: var(--gold);
+            text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
+            font-size: 1.7rem;
+        }
+
+        .chain-result-pts {
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            font-weight: 700;
+            letter-spacing: 1.5px;
+        }
 
         /* ============================================================
            11. MODALS & NOTIFICATIONS
            ============================================================ */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(15px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .mode-selection-container { max-width: 420px; width: 100%; display: flex; flex-direction: column; gap: 15px; }
-        .mode-card { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: 0.3s; text-align: left; position: relative; overflow: hidden; }
-        .mode-card:hover { border-color: var(--accent-color); transform: scale(1.03); background: rgba(0, 242, 255, 0.05); }
-        .mode-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,242,255,0.1); color: var(--accent-color); padding: 3px 10px; border-radius: 8px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-        #msg-popup { position: fixed; top: 40px; left: 50%; transform: translateX(-50%); padding: 12px 35px; border-radius: 15px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 40px rgba(0,0,0,0.6); color: #fff; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .mode-selection-container {
+            max-width: 420px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-        .points-pop { animation: pointsPop 0.3s ease-out; }
-        @keyframes pointsPop { 0% { transform: scale(1.3); color: var(--accent-color); } 100% { transform: scale(1); } }
+        .mode-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 20px;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.03);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .mode-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--accent-color);
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: 0.6rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        #msg-popup {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 35px;
+            border-radius: 15px;
+            font-weight: 900;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .points-pop {
+            animation: pointsPop 0.3s ease-out;
+        }
+
+        @keyframes pointsPop {
+            0% {
+                transform: scale(1.3);
+                color: var(--accent-color);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
 
         /* ============================================================
            11B. MORE MODES — GAME GRID (2x2) + VIEW TRANSITIONS [2026-05-27]
@@ -355,11 +1270,27 @@
              View 1 (default): 4 game cards (1 SAMBUNG KATA unlocked + 3 COMING SOON placeholders).
              View 2: Sambung Kata sub-mode (Casual / Chaos) — yang lama, sekarang nested.
            ============================================================ */
-        .modes-view { display: none; }
-        .modes-view.active { display: block; animation: modes-view-in 0.45s cubic-bezier(0.2, 0.85, 0.3, 1) forwards; }
+        .modes-view {
+            display: none;
+        }
+
+        .modes-view.active {
+            display: block;
+            animation: modes-view-in 0.45s cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+        }
+
         @keyframes modes-view-in {
-            from { opacity: 0; transform: translateX(20px) scale(0.96); filter: blur(6px); }
-            to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+            from {
+                opacity: 0;
+                transform: translateX(20px) scale(0.96);
+                filter: blur(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                filter: blur(0);
+            }
         }
 
         /* CHANGED [2026-05-28]: vertical list → horizontal row (4 card sejajar kepinggir).
@@ -379,8 +1310,8 @@
             position: relative;
             flex: 1;
             min-width: 0;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 14px;
             padding: 14px 6px 12px;
             cursor: pointer;
@@ -396,19 +1327,40 @@
             transform: translateY(18px) scale(0.92);
             animation: game-card-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
-        .modes-view.active .game-card:nth-child(1) { animation-delay: 0.08s; }
-        .modes-view.active .game-card:nth-child(2) { animation-delay: 0.16s; }
-        .modes-view.active .game-card:nth-child(3) { animation-delay: 0.24s; }
-        .modes-view.active .game-card:nth-child(4) { animation-delay: 0.32s; }
-        .modes-view.active .game-card:nth-child(5) { animation-delay: 0.40s; }
+
+        .modes-view.active .game-card:nth-child(1) {
+            animation-delay: 0.08s;
+        }
+
+        .modes-view.active .game-card:nth-child(2) {
+            animation-delay: 0.16s;
+        }
+
+        .modes-view.active .game-card:nth-child(3) {
+            animation-delay: 0.24s;
+        }
+
+        .modes-view.active .game-card:nth-child(4) {
+            animation-delay: 0.32s;
+        }
+
+        .modes-view.active .game-card:nth-child(5) {
+            animation-delay: 0.40s;
+        }
+
         @keyframes game-card-in {
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .game-card .game-icon {
-            font-size: 1.9rem; line-height: 1;
+            font-size: 1.9rem;
+            line-height: 1;
             filter: drop-shadow(0 0 12px currentColor);
         }
+
         /* NEW [2026-05-28]: thumbnail image (Roblox-style) — gantiin emoji icon untuk game yang punya artwork. */
         .game-card .game-thumb {
             width: 100%;
@@ -416,30 +1368,40 @@
             object-fit: cover;
             border-radius: 10px;
             display: block;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
         }
+
         .game-card.unlocked .game-thumb {
-            border: 1px solid rgba(0,242,255,0.25);
+            border: 1px solid rgba(0, 242, 255, 0.25);
         }
+
         .game-card.locked .game-thumb {
             filter: grayscale(1) brightness(0.5);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
         .game-card .game-text {
             width: 100%;
         }
+
         .game-card h3 {
-            font-size: 0.65rem; font-weight: 900;
+            font-size: 0.65rem;
+            font-weight: 900;
             letter-spacing: 0.5px;
             margin: 0;
             text-transform: uppercase;
             line-height: 1.15;
             word-break: break-word;
         }
+
         /* Description disembunyikan di layout horizontal compact (terlalu sempit untuk text body) */
-        .game-card p { display: none; }
+        .game-card p {
+            display: none;
+        }
+
         .game-card .game-badge {
-            font-size: 0.48rem; font-weight: 900;
+            font-size: 0.48rem;
+            font-weight: 900;
             letter-spacing: 1px;
             padding: 3px 7px;
             border-radius: 7px;
@@ -447,29 +1409,41 @@
         }
 
         /* UNLOCKED — cyan glow + shimmer + lift up pada hover (cocok untuk row layout) */
-        .game-card.unlocked { border-color: rgba(0,242,255,0.3); }
-        .game-card.unlocked h3 { color: var(--accent-color); }
-        .game-card.unlocked .game-badge {
-            background: rgba(0,242,255,0.15);
-            color: var(--accent-color);
-            border: 1px solid rgba(0,242,255,0.4);
+        .game-card.unlocked {
+            border-color: rgba(0, 242, 255, 0.3);
         }
+
+        .game-card.unlocked h3 {
+            color: var(--accent-color);
+        }
+
+        .game-card.unlocked .game-badge {
+            background: rgba(0, 242, 255, 0.15);
+            color: var(--accent-color);
+            border: 1px solid rgba(0, 242, 255, 0.4);
+        }
+
         .game-card.unlocked:hover {
             transform: translateY(-6px) scale(1.04);
             border-color: var(--accent-color);
-            box-shadow: 0 10px 24px rgba(0,242,255,0.32), inset 0 0 25px rgba(0,242,255,0.06);
-            background: rgba(0,242,255,0.06);
+            box-shadow: 0 10px 24px rgba(0, 242, 255, 0.32), inset 0 0 25px rgba(0, 242, 255, 0.06);
+            background: rgba(0, 242, 255, 0.06);
         }
+
         /* Shimmer sweep saat hover (diagonal sweep cyan) */
         .game-card.unlocked::before {
             content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(120deg, transparent 30%, rgba(0,242,255,0.18) 50%, transparent 70%);
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(0, 242, 255, 0.18) 50%, transparent 70%);
             transform: translateX(-120%);
             transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
             pointer-events: none;
         }
-        .game-card.unlocked:hover::before { transform: translateX(120%); }
+
+        .game-card.unlocked:hover::before {
+            transform: translateX(120%);
+        }
 
         /* LOCKED — STATIC, no hover effect (arahan Pradipta [2026-05-27]).
            Hapus: locked-shake animation, cursor:not-allowed, semua :hover rule.
@@ -478,40 +1452,78 @@
             cursor: default;
             filter: saturate(0.3) brightness(0.7);
         }
-        .game-card.locked h3 { color: var(--text-secondary); }
-        .game-card.locked .game-icon { filter: grayscale(1) drop-shadow(0 0 8px rgba(255,255,255,0.1)); }
+
+        .game-card.locked h3 {
+            color: var(--text-secondary);
+        }
+
+        .game-card.locked .game-icon {
+            filter: grayscale(1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+        }
+
         .game-card.locked .game-badge {
-            background: rgba(255,77,77,0.08);
+            background: rgba(255, 77, 77, 0.08);
             color: #ff8888;
-            border: 1px solid rgba(255,77,77,0.25);
+            border: 1px solid rgba(255, 77, 77, 0.25);
             animation: soon-pulse 2.2s infinite ease-in-out;
         }
+
         @keyframes soon-pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; box-shadow: 0 0 12px rgba(255,77,77,0.25); }
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 12px rgba(255, 77, 77, 0.25);
+            }
         }
+
         .game-card.locked .game-lock-icon {
-            position: absolute; top: 6px; right: 8px;
-            font-size: 0.75rem; opacity: 0.55;
-            filter: drop-shadow(0 0 6px rgba(255,255,255,0.2));
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            font-size: 0.75rem;
+            opacity: 0.55;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
         }
+
         /* PRESERVED: locked-shake keyframes & class definitions di-keep untuk backward-compat (rules.md).
            Tidak lagi di-apply via :hover, tapi class CSS masih ada. */
         @keyframes locked-shake {
-            0%, 100% { transform: translate(0,0); }
-            20% { transform: translate(-5px, 0); }
-            40% { transform: translate(5px, 0); }
-            60% { transform: translate(-3px, 0); }
-            80% { transform: translate(3px, 0); }
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            20% {
+                transform: translate(-5px, 0);
+            }
+
+            40% {
+                transform: translate(5px, 0);
+            }
+
+            60% {
+                transform: translate(-3px, 0);
+            }
+
+            80% {
+                transform: translate(3px, 0);
+            }
         }
 
         /* Back button (view 2 → view 1) */
         .modes-back-btn {
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             color: var(--text-secondary);
             padding: 7px 14px;
-            font-size: 0.65rem; font-weight: 900;
+            font-size: 0.65rem;
+            font-weight: 900;
             border-radius: 10px;
             cursor: pointer;
             margin-bottom: 14px;
@@ -520,11 +1532,12 @@
             box-shadow: none;
             letter-spacing: 1.5px;
         }
+
         .modes-back-btn:hover {
             border-color: var(--accent-color);
             color: var(--accent-color);
             transform: translateX(-4px);
-            box-shadow: 0 0 12px rgba(0,242,255,0.2);
+            box-shadow: 0 0 12px rgba(0, 242, 255, 0.2);
         }
 
         /* ============================================================
@@ -532,141 +1545,699 @@
            Replaces single-card reveal. Cards dealt L→R, category text
            spins through random labels then locks on the real category.
            ============================================================ */
-        .category-spinner-wrap { background: rgba(0,0,0,0.45); border: 1px solid rgba(0,242,255,0.2); border-radius: 18px; padding: 14px 16px; margin: 8px auto 18px; max-width: 360px; overflow: hidden; position: relative; }
-        .category-spinner-label { font-size: 0.6rem; color: var(--text-secondary); letter-spacing: 2.5px; font-weight: 900; margin-bottom: 6px; }
-        .category-spinner-text { font-size: 1.25rem; font-weight: 900; color: var(--accent-color); letter-spacing: 1.5px; transition: 0.05s; min-height: 1.5rem; }
-        .category-spinner-text.locked { color: var(--gold); text-shadow: 0 0 18px rgba(255,215,0,0.7); animation: locked-pulse 0.7s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes locked-pulse { 0% { transform: scale(1.5); letter-spacing: 5px; } 70% { transform: scale(0.95); } 100% { transform: scale(1); letter-spacing: 1.5px; } }
+        .category-spinner-wrap {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin: 8px auto 18px;
+            max-width: 360px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .category-spinner-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            letter-spacing: 2.5px;
+            font-weight: 900;
+            margin-bottom: 6px;
+        }
+
+        .category-spinner-text {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--accent-color);
+            letter-spacing: 1.5px;
+            transition: 0.05s;
+            min-height: 1.5rem;
+        }
+
+        .category-spinner-text.locked {
+            color: var(--gold);
+            text-shadow: 0 0 18px rgba(255, 215, 0, 0.7);
+            animation: locked-pulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes locked-pulse {
+            0% {
+                transform: scale(1.5);
+                letter-spacing: 5px;
+            }
+
+            70% {
+                transform: scale(0.95);
+            }
+
+            100% {
+                transform: scale(1);
+                letter-spacing: 1.5px;
+            }
+        }
 
         /* min-height ditambah supaya kartu yang scale-up tidak nabrak dinding atas. */
-        .deck-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 18px auto 12px; min-height: 220px; perspective: 1200px; max-width: 380px; padding: 30px 5px 20px; }
-        .deck-card { width: 75px; height: 110px; background: linear-gradient(135deg, #1c2128, #0a0e14); border-radius: 14px; border: 2px solid var(--accent-color); box-shadow: 0 10px 25px rgba(0,0,0,0.55), inset 0 0 12px rgba(0,242,255,0.06); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.3s, box-shadow 0.3s; opacity: 0; transform: translateX(-280px) rotate(-8deg); }
-        .deck-card.dealt { animation: deal-card 0.55s cubic-bezier(0.2, 0.85, 0.3, 1.05) forwards; }
-        @keyframes deal-card { 0% { opacity: 0; transform: translateX(-280px) rotate(-12deg) scale(0.8); } 60% { opacity: 1; transform: translateX(10px) rotate(2deg) scale(1.04); } 100% { opacity: 1; transform: translateX(0) rotate(0deg) scale(1); } }
-        .deck-card.idle-bob { animation: card-bob 2.4s ease-in-out infinite; }
+        .deck-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 18px auto 12px;
+            min-height: 220px;
+            perspective: 1200px;
+            max-width: 380px;
+            padding: 30px 5px 20px;
+        }
+
+        .deck-card {
+            width: 75px;
+            height: 110px;
+            background: linear-gradient(135deg, #1c2128, #0a0e14);
+            border-radius: 14px;
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55), inset 0 0 12px rgba(0, 242, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s, box-shadow 0.3s;
+            opacity: 0;
+            transform: translateX(-280px) rotate(-8deg);
+        }
+
+        .deck-card.dealt {
+            animation: deal-card 0.55s cubic-bezier(0.2, 0.85, 0.3, 1.05) forwards;
+        }
+
+        @keyframes deal-card {
+            0% {
+                opacity: 0;
+                transform: translateX(-280px) rotate(-12deg) scale(0.8);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translateX(10px) rotate(2deg) scale(1.04);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(0) rotate(0deg) scale(1);
+            }
+        }
+
+        .deck-card.idle-bob {
+            animation: card-bob 2.4s ease-in-out infinite;
+        }
+
         /* FIX: opacity:1 di tiap keyframe — kalau tidak, base opacity:0 dari .deck-card kembali aktif saat idle-bob menggantikan deal-card. */
-        @keyframes card-bob { 0%, 100% { opacity: 1; transform: translateY(0) rotate(0); } 50% { opacity: 1; transform: translateY(-4px) rotate(0.5deg); } }
-        .deck-card:hover:not(.flipped):not(.disabled) { transform: translateY(-12px) scale(1.06); box-shadow: 0 18px 35px rgba(0,242,255,0.35); border-color: var(--gold); }
-        .deck-card .card-q { font-size: 2.4rem; color: var(--accent-color); font-weight: 900; text-shadow: 0 0 14px rgba(0,242,255,0.5); }
-        .deck-card.flipped { background: linear-gradient(135deg, rgba(255,215,0,0.12), #11141b); border-color: var(--gold); box-shadow: 0 0 35px rgba(255,215,0,0.45); animation: flip-reveal 0.7s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        @keyframes card-bob {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotate(0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-4px) rotate(0.5deg);
+            }
+        }
+
+        .deck-card:hover:not(.flipped):not(.disabled) {
+            transform: translateY(-12px) scale(1.06);
+            box-shadow: 0 18px 35px rgba(0, 242, 255, 0.35);
+            border-color: var(--gold);
+        }
+
+        .deck-card .card-q {
+            font-size: 2.4rem;
+            color: var(--accent-color);
+            font-weight: 900;
+            text-shadow: 0 0 14px rgba(0, 242, 255, 0.5);
+        }
+
+        .deck-card.flipped {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), #11141b);
+            border-color: var(--gold);
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.45);
+            animation: flip-reveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
         /* FIX: opacity:1 supaya kartu yang dipilih tetap visible setelah animasi flip-reveal selesai. */
-        @keyframes flip-reveal { 0% { opacity: 1; transform: rotateY(0) scale(1); } 50% { opacity: 1; transform: rotateY(90deg) scale(1.1); } 100% { opacity: 1; transform: rotateY(0) scale(1.08) translateY(-6px); } }
+        @keyframes flip-reveal {
+            0% {
+                opacity: 1;
+                transform: rotateY(0) scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: rotateY(90deg) scale(1.1);
+            }
+
+            100% {
+                opacity: 1;
+                transform: rotateY(0) scale(1.08) translateY(-6px);
+            }
+        }
+
         /* FIX: pakai filter (bukan opacity) supaya tidak ketimpa animation forwards/active. */
-        .deck-card.disabled:not(.flipped) { pointer-events: none; filter: grayscale(0.85) brightness(0.45); }
+        .deck-card.disabled:not(.flipped) {
+            pointer-events: none;
+            filter: grayscale(0.85) brightness(0.45);
+        }
 
         /* NEW: animasi DROP (kartu yang tidak dipilih jatuh ke bawah) */
-        .deck-card.dropping { animation: card-drop 0.7s cubic-bezier(0.55, 0.05, 0.7, 0.4) forwards !important; pointer-events: none; z-index: 1; }
+        .deck-card.dropping {
+            animation: card-drop 0.7s cubic-bezier(0.55, 0.05, 0.7, 0.4) forwards !important;
+            pointer-events: none;
+            z-index: 1;
+        }
+
         @keyframes card-drop {
-            0% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
-            30% { opacity: 1; transform: translateY(20px) rotate(calc(var(--drop-rot, 15deg) * 0.4)) scale(0.95); }
-            100% { opacity: 0; transform: translateY(350px) rotate(var(--drop-rot, 25deg)) scale(0.55); }
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0) scale(1);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(20px) rotate(calc(var(--drop-rot, 15deg) * 0.4)) scale(0.95);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(350px) rotate(var(--drop-rot, 25deg)) scale(0.55);
+            }
         }
 
         /* NEW: animasi CHOSEN (kartu dipilih membesar + flip) — override flip-reveal */
-        .deck-card.chosen { z-index: 30; animation: card-chosen-flip 0.95s cubic-bezier(0.34,1.56,0.64,1) forwards !important; }
-        @keyframes card-chosen-flip {
-            0% { opacity: 1; transform: rotateY(0) scale(1); }
-            35% { opacity: 1; transform: rotateY(90deg) scale(1.25); }
-            70% { opacity: 1; transform: rotateY(0deg) scale(1.7); }
-            100% { opacity: 1; transform: rotateY(0deg) scale(1.55); }
+        .deck-card.chosen {
+            z-index: 30;
+            animation: card-chosen-flip 0.95s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
         }
-        .deck-card .card-content { display: none; text-align: center; padding: 4px; }
-        .deck-card.flipped .card-content { display: block; animation: fade-in 0.4s 0.32s both; }
-        .deck-card.flipped .card-q { display: none; }
-        @keyframes fade-in { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
-        .deck-card .card-diff { font-size: 0.6rem; font-weight: 900; color: var(--gold); letter-spacing: 1.2px; }
-        .deck-card .card-pts { font-size: 0.85rem; font-weight: 900; color: white; margin-top: 4px; }
-        .deck-card .card-cat-hint { font-size: 0.55rem; color: var(--text-secondary); margin-top: 3px; letter-spacing: 1px; }
 
-        .deck-hint { font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 2px; font-weight: 900; margin-top: 4px; min-height: 18px; }
-        .deck-hint.flash { color: var(--accent-color); animation: deck-hint-flash 1s infinite; }
-        @keyframes deck-hint-flash { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes card-chosen-flip {
+            0% {
+                opacity: 1;
+                transform: rotateY(0) scale(1);
+            }
+
+            35% {
+                opacity: 1;
+                transform: rotateY(90deg) scale(1.25);
+            }
+
+            70% {
+                opacity: 1;
+                transform: rotateY(0deg) scale(1.7);
+            }
+
+            100% {
+                opacity: 1;
+                transform: rotateY(0deg) scale(1.55);
+            }
+        }
+
+        .deck-card .card-content {
+            display: none;
+            text-align: center;
+            padding: 4px;
+        }
+
+        .deck-card.flipped .card-content {
+            display: block;
+            animation: fade-in 0.4s 0.32s both;
+        }
+
+        .deck-card.flipped .card-q {
+            display: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: scale(0.7);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .deck-card .card-diff {
+            font-size: 0.6rem;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: 1.2px;
+        }
+
+        .deck-card .card-pts {
+            font-size: 0.85rem;
+            font-weight: 900;
+            color: white;
+            margin-top: 4px;
+        }
+
+        .deck-card .card-cat-hint {
+            font-size: 0.55rem;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            letter-spacing: 1px;
+        }
+
+        .deck-hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            font-weight: 900;
+            margin-top: 4px;
+            min-height: 18px;
+        }
+
+        .deck-hint.flash {
+            color: var(--accent-color);
+            animation: deck-hint-flash 1s infinite;
+        }
+
+        @keyframes deck-hint-flash {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
 
         /* ============================================================
            13. NEW: MATCH TIMER BAR (IN-GAME, 2 MENIT)
            ============================================================ */
-        .timer-wrap { margin: 4px 0 14px; }
-        .timer-meta { display: flex; justify-content: space-between; font-family: monospace; font-size: 0.7rem; font-weight: 900; color: var(--text-secondary); margin-bottom: 5px; letter-spacing: 1px; }
-        .timer-meta .t-label { color: var(--accent-color); }
-        .timer-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
-        .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #7b2cff); width: 100%; box-shadow: 0 0 10px rgba(0,242,255,0.4); transition: width 0.2s linear; }
-        .timer-bar-fill.warning { background: linear-gradient(90deg, #f1c40f, #e67e22); box-shadow: 0 0 10px rgba(241,196,15,0.5); }
-        .timer-bar-fill.danger { background: linear-gradient(90deg, var(--danger), #ff3d8a); box-shadow: 0 0 15px rgba(255,77,77,0.6); animation: bar-pulse 0.5s infinite alternate; }
-        @keyframes bar-pulse { from { opacity: 0.6; } to { opacity: 1; } }
+        .timer-wrap {
+            margin: 4px 0 14px;
+        }
+
+        .timer-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: monospace;
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .timer-meta .t-label {
+            color: var(--accent-color);
+        }
+
+        .timer-bar-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .timer-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), #7b2cff);
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
+            transition: width 0.2s linear;
+        }
+
+        .timer-bar-fill.warning {
+            background: linear-gradient(90deg, #f1c40f, #e67e22);
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+
+        .timer-bar-fill.danger {
+            background: linear-gradient(90deg, var(--danger), #ff3d8a);
+            box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+            animation: bar-pulse 0.5s infinite alternate;
+        }
+
+        @keyframes bar-pulse {
+            from {
+                opacity: 0.6;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
 
         /* ============================================================
            14. NEW: FIXED LEADERBOARD LAYOUT, PODIUM SHOWCASE, CONFETTI
            Hanya area leaderboard yang scroll. Tombol fixed di bawah.
            ============================================================ */
-        #leaderboard-section.fixed-layout { display: flex !important; flex-direction: column; height: 72vh; max-height: 620px; min-height: 460px; }
-        #leaderboard-section.fixed-layout .lb-header { flex-shrink: 0; }
+        #leaderboard-section.fixed-layout {
+            display: flex !important;
+            flex-direction: column;
+            height: 72vh;
+            max-height: 620px;
+            min-height: 460px;
+        }
+
+        #leaderboard-section.fixed-layout .lb-header {
+            flex-shrink: 0;
+        }
+
         /* FIX: padding-top 40px supaya trophy 🏆 (top: -32px relative ke card #1) tidak terpotong overflow. */
         /* FIX [2026-05-27]: `z-index: 1` → arena bikin stacking context sendiri supaya child `.player-focus`
            (z-index 100) NGGA leak ke parent stacking dan paint OVER `.lb-actions` (z-index 10). Tanpa ini,
            kalau current player card kebetulan di bottom arena, cyan border + glow nya tembus ke area button. */
-        #leaderboard-section.fixed-layout #leaderboard-arena { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; height: auto; padding: 40px 4px 20px; min-height: 0; position: relative; z-index: 1; }
+        #leaderboard-section.fixed-layout #leaderboard-arena {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: auto;
+            padding: 40px 4px 20px;
+            min-height: 0;
+            position: relative;
+            z-index: 1;
+        }
+
         /* FIX [2026-05-27]: gradient lebih cepat opaque (was `transparent → 0.95 dari 35%`, sekarang `0.7 → 1.0
            dari 45%`) supaya card bawah ngga keliatan jelas tembus ke area button. Margin-top overlap dikurangi
            dari -22px ke -14px supaya transisi visual lebih bersih tanpa kehilangan fade effect. */
-        #leaderboard-section.fixed-layout .lb-actions { flex-shrink: 0; padding-top: 14px; background: linear-gradient(rgba(17,20,27,0.7) 0%, rgba(17,20,27,1) 45%, rgba(17,20,27,1) 100%); margin-top: -14px; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+        #leaderboard-section.fixed-layout .lb-actions {
+            flex-shrink: 0;
+            padding-top: 14px;
+            background: linear-gradient(rgba(17, 20, 27, 0.7) 0%, rgba(17, 20, 27, 1) 45%, rgba(17, 20, 27, 1) 100%);
+            margin-top: -14px;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         /* Trophy lebih besar + dramatic. top diturunkan -32px supaya pas dengan padding-top arena 40px. */
-        .trophy-emoji { position: absolute; top: -32px; left: 50%; transform: translateX(-50%) scale(0); font-size: 2.2rem; filter: drop-shadow(0 0 22px rgba(255,215,0,0.9)) drop-shadow(0 0 8px rgba(255,215,0,0.6)); pointer-events: none; z-index: 50; }
-        .trophy-emoji.revealed { animation: trophy-pop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, trophy-float 2.2s 0.85s infinite ease-in-out; }
-        @keyframes trophy-pop { 0% { transform: translateX(-50%) scale(0) rotate(-240deg); } 60% { transform: translateX(-50%) scale(1.35) rotate(20deg); } 100% { transform: translateX(-50%) scale(1) rotate(0); } }
-        @keyframes trophy-float { 0%, 100% { transform: translateX(-50%) translateY(0) scale(1) rotate(-4deg); } 50% { transform: translateX(-50%) translateY(-6px) scale(1.1) rotate(4deg); } }
+        .trophy-emoji {
+            position: absolute;
+            top: -32px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 2.2rem;
+            filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.9)) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .trophy-emoji.revealed {
+            animation: trophy-pop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, trophy-float 2.2s 0.85s infinite ease-in-out;
+        }
+
+        @keyframes trophy-pop {
+            0% {
+                transform: translateX(-50%) scale(0) rotate(-240deg);
+            }
+
+            60% {
+                transform: translateX(-50%) scale(1.35) rotate(20deg);
+            }
+
+            100% {
+                transform: translateX(-50%) scale(1) rotate(0);
+            }
+        }
+
+        @keyframes trophy-float {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0) scale(1) rotate(-4deg);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-6px) scale(1.1) rotate(4deg);
+            }
+        }
 
         /* FIX [2026-05-27]: medal lebih besar (1.05 → 1.25rem) + posisi `left: 8px` (was -4px) supaya
            sit di dalam card, ngga overhang. Drop-shadow lebih kuat untuk pop-out.
            CHANGED [2026-05-27]: hapus scale(0) initial + transition pop-in (arahan Pradipta — "ngga usah ada
            animasi emoji medali 1 2 3"). Medal sekarang langsung visible saat card render, tanpa animasi. */
-        .podium-medal { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 1.25rem; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255,255,255,0.35)); }
-        .podium-medal.show { transform: translateY(-50%); } /* no-op, kept untuk backward-compat dengan JS yang masih nambah class .show */
+        .podium-medal {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.25rem;
+            pointer-events: none;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+        }
+
+        .podium-medal.show {
+            transform: translateY(-50%);
+        }
+
+        /* no-op, kept untuk backward-compat dengan JS yang masih nambah class .show */
         /* Redundant sekarang karena .rank-pos sudah punya padding-left 28px default — tapi dipertahankan
            dengan nilai sama untuk dokumentasi intent "podium butuh ruang untuk medal". */
-        .gold-rank .rank-pos, .silver-rank .rank-pos, .bronze-rank .rank-pos { padding-left: 28px; }
+        .gold-rank .rank-pos,
+        .silver-rank .rank-pos,
+        .bronze-rank .rank-pos {
+            padding-left: 28px;
+        }
 
-        .rank-card.podium-celebrate { animation: podium-celebrate 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes podium-celebrate { 0% { transform: scale(1); } 35% { transform: scale(1.1); box-shadow: 0 0 45px rgba(255,215,0,0.6); } 100% { transform: scale(1.02); } }
-        .rank-card.rank-jump { animation: rank-jump 0.7s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes rank-jump { 0% { transform: scale(1) rotate(0); } 30% { transform: scale(1.08) rotate(-1.5deg); box-shadow: 0 0 35px rgba(0,242,255,0.5); } 60% { transform: scale(1.04) rotate(1deg); } 100% { transform: scale(1.05) rotate(0); } }
+        .rank-card.podium-celebrate {
+            animation: podium-celebrate 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes podium-celebrate {
+            0% {
+                transform: scale(1);
+            }
+
+            35% {
+                transform: scale(1.1);
+                box-shadow: 0 0 45px rgba(255, 215, 0, 0.6);
+            }
+
+            100% {
+                transform: scale(1.02);
+            }
+        }
+
+        .rank-card.rank-jump {
+            animation: rank-jump 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes rank-jump {
+            0% {
+                transform: scale(1) rotate(0);
+            }
+
+            30% {
+                transform: scale(1.08) rotate(-1.5deg);
+                box-shadow: 0 0 35px rgba(0, 242, 255, 0.5);
+            }
+
+            60% {
+                transform: scale(1.04) rotate(1deg);
+            }
+
+            100% {
+                transform: scale(1.05) rotate(0);
+            }
+        }
 
         /* Confetti pakai position:fixed supaya bebas terbang ke luar bounds leaderboard-arena. */
-        .confetti-piece { position: fixed; width: 9px; height: 14px; pointer-events: none; opacity: 0; top: 50vh; left: 50vw; border-radius: 2px; z-index: 9999; }
-        .confetti-piece.fly { animation: confetti-fly 2s cubic-bezier(0.15, 0.6, 0.55, 0.95) forwards; }
-        @keyframes confetti-fly { 0% { opacity: 1; transform: translate(0,0) rotate(0deg) scale(1.2); } 100% { opacity: 0; transform: translate(var(--cx), var(--cy)) rotate(900deg) scale(0.3); } }
+        .confetti-piece {
+            position: fixed;
+            width: 9px;
+            height: 14px;
+            pointer-events: none;
+            opacity: 0;
+            top: 50vh;
+            left: 50vw;
+            border-radius: 2px;
+            z-index: 9999;
+        }
 
-        .points-add-float { position: absolute; right: 90px; color: var(--correct); font-weight: 900; font-size: 0.95rem; pointer-events: none; animation: pts-float 1.1s ease-out forwards; text-shadow: 0 0 10px rgba(46,204,113,0.6); }
-        @keyframes pts-float { 0% { opacity: 0; transform: translateY(0) scale(0.7); } 25% { opacity: 1; transform: translateY(-6px) scale(1.1); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+        .confetti-piece.fly {
+            animation: confetti-fly 2s cubic-bezier(0.15, 0.6, 0.55, 0.95) forwards;
+        }
 
-        .btn-end-match { background: transparent; color: var(--danger); border: 1px solid rgba(255, 77, 77, 0.35); padding: 12px 16px; border-radius: 14px; font-weight: 900; cursor: pointer; transition: 0.25s; width: 100%; letter-spacing: 1.5px; font-size: 0.78rem; text-transform: uppercase; box-shadow: none; margin: 0; }
-        .btn-end-match:hover { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 0 18px rgba(255,77,77,0.35); transform: translateY(-1px); }
+        @keyframes confetti-fly {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(0deg) scale(1.2);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(var(--cx), var(--cy)) rotate(900deg) scale(0.3);
+            }
+        }
+
+        .points-add-float {
+            position: absolute;
+            right: 90px;
+            color: var(--correct);
+            font-weight: 900;
+            font-size: 0.95rem;
+            pointer-events: none;
+            animation: pts-float 1.1s ease-out forwards;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
+        }
+
+        @keyframes pts-float {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0.7);
+            }
+
+            25% {
+                opacity: 1;
+                transform: translateY(-6px) scale(1.1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-34px) scale(1);
+            }
+        }
+
+        .btn-end-match {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 77, 0.35);
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.25s;
+            width: 100%;
+            letter-spacing: 1.5px;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            box-shadow: none;
+            margin: 0;
+        }
+
+        .btn-end-match:hover {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            box-shadow: 0 0 18px rgba(255, 77, 77, 0.35);
+            transform: translateY(-1px);
+        }
 
         /* ============================================================
            15. NEW: JUARA BANNER PEAK & SHOCKWAVE
            Overlay full-viewport yang slam in saat #1 di-reveal.
            ============================================================ */
-        .juara-banner { position: fixed; top: 18vh; left: 50%; transform: translateX(-50%) scale(0); font-size: 2rem; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b; pointer-events: none; z-index: 9998; opacity: 0; white-space: nowrap; text-align: center; }
-        .juara-banner.show { animation: juara-slam 0.85s cubic-bezier(0.34,1.56,0.64,1) forwards, juara-pulse 1.6s 0.85s 3 ease-in-out, juara-out 0.5s 5.5s forwards; }
-        @keyframes juara-slam {
-            0%   { opacity: 0; transform: translateX(-50%) scale(3) rotate(-15deg); filter: blur(20px); }
-            60%  { opacity: 1; transform: translateX(-50%) scale(0.85) rotate(2deg); filter: blur(0); }
-            100% { opacity: 1; transform: translateX(-50%) scale(1) rotate(0); filter: blur(0); }
-        }
-        @keyframes juara-pulse {
-            0%, 100% { transform: translateX(-50%) scale(1); text-shadow: 0 0 25px rgba(255,215,0,0.9), 0 0 50px rgba(255,215,0,0.6), 0 4px 0 #b8860b; }
-            50% { transform: translateX(-50%) scale(1.08); text-shadow: 0 0 35px rgba(255,215,0,1), 0 0 70px rgba(255,215,0,0.8), 0 4px 0 #b8860b; }
-        }
-        @keyframes juara-out {
-            0% { opacity: 1; transform: translateX(-50%) scale(1); }
-            100% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(-40px); }
+        .juara-banner {
+            position: fixed;
+            top: 18vh;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--gold);
+            text-shadow: 0 0 25px rgba(255, 215, 0, 0.9), 0 0 50px rgba(255, 215, 0, 0.6), 0 4px 0 #b8860b;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            white-space: nowrap;
+            text-align: center;
         }
 
-        .juara-shockwave { position: fixed; top: 50vh; left: 50vw; width: 0; height: 0; border-radius: 50%; border: 4px solid var(--gold); opacity: 0; pointer-events: none; z-index: 9997; transform: translate(-50%, -50%); }
-        .juara-shockwave.go { animation: shockwave 0.9s ease-out forwards; }
+        .juara-banner.show {
+            animation: juara-slam 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, juara-pulse 1.6s 0.85s 3 ease-in-out, juara-out 0.5s 5.5s forwards;
+        }
+
+        @keyframes juara-slam {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) scale(3) rotate(-15deg);
+                filter: blur(20px);
+            }
+
+            60% {
+                opacity: 1;
+                transform: translateX(-50%) scale(0.85) rotate(2deg);
+                filter: blur(0);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1) rotate(0);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes juara-pulse {
+
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+                text-shadow: 0 0 25px rgba(255, 215, 0, 0.9), 0 0 50px rgba(255, 215, 0, 0.6), 0 4px 0 #b8860b;
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.08);
+                text-shadow: 0 0 35px rgba(255, 215, 0, 1), 0 0 70px rgba(255, 215, 0, 0.8), 0 4px 0 #b8860b;
+            }
+        }
+
+        @keyframes juara-out {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.7) translateY(-40px);
+            }
+        }
+
+        .juara-shockwave {
+            position: fixed;
+            top: 50vh;
+            left: 50vw;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            border: 4px solid var(--gold);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9997;
+            transform: translate(-50%, -50%);
+        }
+
+        .juara-shockwave.go {
+            animation: shockwave 0.9s ease-out forwards;
+        }
+
         @keyframes shockwave {
-            0% { width: 0; height: 0; opacity: 0.8; border-width: 6px; }
-            100% { width: 120vmax; height: 120vmax; opacity: 0; border-width: 1px; }
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 0.8;
+                border-width: 6px;
+            }
+
+            100% {
+                width: 120vmax;
+                height: 120vmax;
+                opacity: 0;
+                border-width: 1px;
+            }
         }
 
         /* ============================================================
@@ -675,7 +2246,8 @@
            Sequence: dark overlay → spotlight #3 (right) → #2 (left) → #1 (center, climax).
            ============================================================ */
         .ceremony-overlay {
-            position: fixed; inset: 0;
+            position: fixed;
+            inset: 0;
             background: radial-gradient(ellipse at center, #07090f 0%, #000 80%);
             /* FIX [2026-05-27]: z-index 99999 → 5000 supaya confetti (z-index 9999) & shockwave (9997)
                yang di-spawn ke document.body bisa render DI ATAS ceremony overlay (bukan ketutup). */
@@ -685,17 +2257,24 @@
             opacity: 0;
             transition: opacity 0.6s ease-in;
         }
-        .ceremony-overlay.active { display: block; opacity: 1; }
+
+        .ceremony-overlay.active {
+            display: block;
+            opacity: 1;
+        }
 
         .ceremony-bg-stars {
-            position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.5;
             background-image:
-                radial-gradient(1.5px 1.5px at 15% 22%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1px 1px at 78% 38%, rgba(255,255,255,0.4), transparent),
-                radial-gradient(2px 2px at 42% 65%, rgba(255,255,255,0.4), transparent),
-                radial-gradient(1px 1px at 88% 12%, rgba(255,255,255,0.5), transparent),
-                radial-gradient(1.5px 1.5px at 28% 80%, rgba(255,255,255,0.35), transparent),
-                radial-gradient(1px 1px at 62% 90%, rgba(255,255,255,0.4), transparent);
+                radial-gradient(1.5px 1.5px at 15% 22%, rgba(255, 255, 255, 0.5), transparent),
+                radial-gradient(1px 1px at 78% 38%, rgba(255, 255, 255, 0.4), transparent),
+                radial-gradient(2px 2px at 42% 65%, rgba(255, 255, 255, 0.4), transparent),
+                radial-gradient(1px 1px at 88% 12%, rgba(255, 255, 255, 0.5), transparent),
+                radial-gradient(1.5px 1.5px at 28% 80%, rgba(255, 255, 255, 0.35), transparent),
+                radial-gradient(1px 1px at 62% 90%, rgba(255, 255, 255, 0.4), transparent);
         }
 
         /* Spotlight cones — turn on per phase via .active */
@@ -709,25 +2288,45 @@
             transform-origin: 50% 0%;
             will-change: opacity, filter;
         }
-        .ceremony-spot.active { animation: ceremony-spot-focus 0.95s ease-out forwards; }
-        @keyframes ceremony-spot-focus {
-            0%   { opacity: 0; filter: blur(45px) brightness(0.25); }
-            60%  { opacity: 1; filter: blur(4px) brightness(1.5); }
-            100% { opacity: 1; filter: blur(10px) brightness(1); }
+
+        .ceremony-spot.active {
+            animation: ceremony-spot-focus 0.95s ease-out forwards;
         }
+
+        @keyframes ceremony-spot-focus {
+            0% {
+                opacity: 0;
+                filter: blur(45px) brightness(0.25);
+            }
+
+            60% {
+                opacity: 1;
+                filter: blur(4px) brightness(1.5);
+            }
+
+            100% {
+                opacity: 1;
+                filter: blur(10px) brightness(1);
+            }
+        }
+
         .ceremony-spot-3 {
             right: -22vw;
-            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(205,127,50,0.6), rgba(205,127,50,0.12) 38%, transparent 72%);
+            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(205, 127, 50, 0.6), rgba(205, 127, 50, 0.12) 38%, transparent 72%);
             transform: rotate(14deg);
         }
+
         .ceremony-spot-2 {
             left: -22vw;
-            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(220,220,220,0.55), rgba(220,220,220,0.12) 38%, transparent 72%);
+            background: radial-gradient(ellipse 38% 70% at 50% 4%, rgba(220, 220, 220, 0.55), rgba(220, 220, 220, 0.12) 38%, transparent 72%);
             transform: rotate(-14deg);
         }
+
         .ceremony-spot-1 {
-            left: 50%; transform: translateX(-50%); width: 75vw;
-            background: radial-gradient(ellipse 42% 80% at 50% 3%, rgba(255,215,0,0.75), rgba(255,215,0,0.18) 36%, transparent 70%);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75vw;
+            background: radial-gradient(ellipse 42% 80% at 50% 3%, rgba(255, 215, 0, 0.75), rgba(255, 215, 0, 0.18) 36%, transparent 70%);
         }
 
         /* FIX [2026-05-27]: pakai FLEX LAYOUT di podium supaya 3 slot CLUSTER di tengah dengan jarak konsisten.
@@ -736,8 +2335,13 @@
            Sekarang slot dirender berurutan (rank-2 | rank-1 | rank-3 sesuai HTML order) dengan gap 2vw,
            justify-content: center → otomatis center cluster apapun viewport width-nya. */
         .ceremony-podium {
-            position: absolute; left: 0; right: 0; bottom: 8vh;
-            display: flex; align-items: flex-end; justify-content: center;
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 8vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
             gap: 2vw;
             padding: 0 2vw;
             pointer-events: none;
@@ -745,103 +2349,199 @@
 
         /* Podium slots — base hidden, reveal via .show */
         .ceremony-slot {
-            position: relative;  /* was absolute — sekarang flex child, ngga butuh bottom anchor sendiri */
-            width: 30vw; max-width: 230px; min-width: 110px;
+            position: relative;
+            /* was absolute — sekarang flex child, ngga butuh bottom anchor sendiri */
+            width: 30vw;
+            max-width: 230px;
+            min-width: 110px;
             text-align: center;
             opacity: 0;
             transition: opacity 0.9s ease-out, transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
             will-change: opacity, transform;
         }
+
         /* Position lock removed (right/left/margin-left) — flex handle positioning. Transform animation TETAP. */
-        .ceremony-rank-3 { transform: translateY(80px) scale(0.82); transform-origin: bottom center; }
-        .ceremony-rank-3.show { opacity: 1; transform: translateY(0) scale(0.82); }
-        .ceremony-rank-2 { transform: translateY(80px) scale(0.9); transform-origin: bottom center; }
-        .ceremony-rank-2.show { opacity: 1; transform: translateY(0) scale(0.9); }
-        .ceremony-rank-1 { transform: translateY(120px) scale(0.5); transform-origin: bottom center; }
-        .ceremony-rank-1.show { opacity: 1; transform: translateY(0) scale(1); }
+        .ceremony-rank-3 {
+            transform: translateY(80px) scale(0.82);
+            transform-origin: bottom center;
+        }
+
+        .ceremony-rank-3.show {
+            opacity: 1;
+            transform: translateY(0) scale(0.82);
+        }
+
+        .ceremony-rank-2 {
+            transform: translateY(80px) scale(0.9);
+            transform-origin: bottom center;
+        }
+
+        .ceremony-rank-2.show {
+            opacity: 1;
+            transform: translateY(0) scale(0.9);
+        }
+
+        .ceremony-rank-1 {
+            transform: translateY(120px) scale(0.5);
+            transform-origin: bottom center;
+        }
+
+        .ceremony-rank-1.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
 
         .ceremony-medal-big {
-            font-size: 4rem; line-height: 1; margin-bottom: 4px;
+            font-size: 4rem;
+            line-height: 1;
+            margin-bottom: 4px;
             filter: drop-shadow(0 0 18px currentColor);
         }
+
         .ceremony-rank-1 .ceremony-medal-big {
-            font-size: 5.5rem; color: var(--gold);
+            font-size: 5.5rem;
+            color: var(--gold);
             animation: ceremony-medal-shine 2.4s 0.4s infinite ease-in-out;
         }
-        .ceremony-rank-2 .ceremony-medal-big { color: var(--silver); }
-        .ceremony-rank-3 .ceremony-medal-big { color: var(--bronze); }
+
+        .ceremony-rank-2 .ceremony-medal-big {
+            color: var(--silver);
+        }
+
+        .ceremony-rank-3 .ceremony-medal-big {
+            color: var(--bronze);
+        }
+
         @keyframes ceremony-medal-shine {
-            0%, 100% { filter: drop-shadow(0 0 18px rgba(255,215,0,0.5)); transform: scale(1); }
-            50%      { filter: drop-shadow(0 0 30px rgba(255,215,0,1)) drop-shadow(0 0 60px rgba(255,215,0,0.5)); transform: scale(1.08); }
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.5));
+                transform: scale(1);
+            }
+
+            50% {
+                filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1)) drop-shadow(0 0 60px rgba(255, 215, 0, 0.5));
+                transform: scale(1.08);
+            }
         }
 
         .ceremony-rank-label {
-            font-size: 0.85rem; font-weight: 900; letter-spacing: 4px;
-            color: rgba(255,255,255,0.85); margin-bottom: 6px;
+            font-size: 0.85rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 6px;
         }
-        .ceremony-rank-1 .ceremony-rank-label { color: var(--gold); text-shadow: 0 0 14px rgba(255,215,0,0.7); font-size: 1.05rem; letter-spacing: 6px; }
-        .ceremony-rank-2 .ceremony-rank-label { color: var(--silver); }
-        .ceremony-rank-3 .ceremony-rank-label { color: var(--bronze); }
+
+        .ceremony-rank-1 .ceremony-rank-label {
+            color: var(--gold);
+            text-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+            font-size: 1.05rem;
+            letter-spacing: 6px;
+        }
+
+        .ceremony-rank-2 .ceremony-rank-label {
+            color: var(--silver);
+        }
+
+        .ceremony-rank-3 .ceremony-rank-label {
+            color: var(--bronze);
+        }
 
         .ceremony-player-name {
-            font-size: 1.15rem; font-weight: 900; color: white;
-            text-shadow: 0 0 14px rgba(255,255,255,0.45);
-            letter-spacing: 1.5px; margin-top: 5px; word-break: break-word;
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+            letter-spacing: 1.5px;
+            margin-top: 5px;
+            word-break: break-word;
         }
-        .ceremony-rank-1 .ceremony-player-name { font-size: 1.6rem; text-shadow: 0 0 22px rgba(255,215,0,0.7); }
+
+        .ceremony-rank-1 .ceremony-player-name {
+            font-size: 1.6rem;
+            text-shadow: 0 0 22px rgba(255, 215, 0, 0.7);
+        }
 
         .ceremony-player-score {
-            font-size: 0.75rem; color: var(--accent-color); font-weight: 700;
-            margin-top: 4px; letter-spacing: 2px;
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            font-weight: 700;
+            margin-top: 4px;
+            letter-spacing: 2px;
         }
-        .ceremony-rank-1 .ceremony-player-score { font-size: 0.9rem; }
+
+        .ceremony-rank-1 .ceremony-player-score {
+            font-size: 0.9rem;
+        }
 
         /* Pedestal: tinggi 1 > 2 > 3 (klasik podium) */
         .ceremony-pedestal {
-            margin-top: 12px; width: 100%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+            margin-top: 12px;
+            width: 100%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
             border-radius: 8px 8px 0 0;
-            border: 1px solid rgba(255,255,255,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-bottom: 0;
         }
+
         .ceremony-rank-1 .ceremony-pedestal {
             height: 100px;
-            background: linear-gradient(180deg, rgba(255,215,0,0.28), rgba(255,215,0,0.04));
-            border-color: rgba(255,215,0,0.4);
-            box-shadow: 0 -10px 30px rgba(255,215,0,0.18);
+            background: linear-gradient(180deg, rgba(255, 215, 0, 0.28), rgba(255, 215, 0, 0.04));
+            border-color: rgba(255, 215, 0, 0.4);
+            box-shadow: 0 -10px 30px rgba(255, 215, 0, 0.18);
         }
+
         .ceremony-rank-2 .ceremony-pedestal {
             height: 70px;
-            background: linear-gradient(180deg, rgba(192,192,192,0.22), rgba(192,192,192,0.04));
-            border-color: rgba(192,192,192,0.4);
+            background: linear-gradient(180deg, rgba(192, 192, 192, 0.22), rgba(192, 192, 192, 0.04));
+            border-color: rgba(192, 192, 192, 0.4);
         }
+
         .ceremony-rank-3 .ceremony-pedestal {
             height: 45px;
-            background: linear-gradient(180deg, rgba(205,127,50,0.22), rgba(205,127,50,0.04));
-            border-color: rgba(205,127,50,0.4);
+            background: linear-gradient(180deg, rgba(205, 127, 50, 0.22), rgba(205, 127, 50, 0.04));
+            border-color: rgba(205, 127, 50, 0.4);
         }
 
         .ceremony-close {
-            position: absolute; bottom: 2.5vh; left: 50%;
+            position: absolute;
+            bottom: 2.5vh;
+            left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,242,255,0.12); border: 1px solid rgba(0,242,255,0.5);
-            color: var(--accent-color); padding: 11px 22px;
-            border-radius: 14px; font-weight: 900; font-size: 0.75rem;
-            letter-spacing: 2px; cursor: pointer;
-            opacity: 0; pointer-events: none;
+            background: rgba(0, 242, 255, 0.12);
+            border: 1px solid rgba(0, 242, 255, 0.5);
+            color: var(--accent-color);
+            padding: 11px 22px;
+            border-radius: 14px;
+            font-weight: 900;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
             transition: opacity 0.6s, background 0.25s, transform 0.25s, box-shadow 0.25s;
-            text-transform: uppercase; width: auto;
-            box-shadow: none; margin: 0;
+            text-transform: uppercase;
+            width: auto;
+            box-shadow: none;
+            margin: 0;
         }
-        .ceremony-close.show { opacity: 1; pointer-events: auto; }
+
+        .ceremony-close.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         /* FIX [2026-05-27]: pakai selector `button.ceremony-close` supaya specificity (0,3,1) menang dari
            base `button:hover:not(:active)` (0,2,1). Kalau ngga, translateX(-50%) hilang saat hover →
            button geser jauh ke kanan dari center. Active state juga di-override supaya tetap center. */
         button.ceremony-close:hover:not(:active) {
-            background: rgba(0,242,255,0.25);
+            background: rgba(0, 242, 255, 0.25);
             transform: translateX(-50%) translateY(-2px);
-            box-shadow: 0 0 18px rgba(0,242,255,0.25);
+            box-shadow: 0 0 18px rgba(0, 242, 255, 0.25);
         }
+
         button.ceremony-close:active {
             transform: translateX(-50%) translateY(1px);
             box-shadow: none;
@@ -864,53 +2564,203 @@
             --accent-color: #00a8b5;
             --accent-hover: #008f9b;
         }
-        body.light .orb { opacity: 0.22; }
-        body.light .orb-1 { background: rgba(0, 168, 181, 0.28); }
-        body.light .orb-2 { background: rgba(123, 44, 255, 0.22); }
+
+        body.light .orb {
+            opacity: 0.22;
+        }
+
+        body.light .orb-1 {
+            background: rgba(0, 168, 181, 0.28);
+        }
+
+        body.light .orb-2 {
+            background: rgba(123, 44, 255, 0.22);
+        }
+
         body.light #game-container {
             background: rgba(255, 255, 255, 0.94);
             border-color: rgba(0, 0, 0, 0.08);
-            box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 0 40px rgba(0, 168, 181, 0.1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.12), 0 0 40px rgba(0, 168, 181, 0.1);
         }
-        body.light button { color: #ffffff; box-shadow: 0 4px 0 #006b75; }
-        body.light button:active:not(:disabled) { box-shadow: 0 1px 0 #006b75; }
-        body.light .btn-ghost { background: rgba(0, 0, 0, 0.03); color: var(--accent-color); border-color: rgba(0, 168, 181, 0.35); }
-        body.light .btn-ghost:hover:not(:active) { background: rgba(0, 168, 181, 0.08); box-shadow: 0 0 15px rgba(0, 168, 181, 0.2); }
-        body.light .btn-danger { color: var(--danger); border-color: rgba(255, 77, 77, 0.4); }
-        body.light .letter-box { background: rgba(0, 0, 0, 0.04); border-color: #c4cad3; color: #11141b; }
-        body.light .letter-box:focus { background: rgba(0, 168, 181, 0.06); }
-        body.light .letter-box.absent { background: #d0d5dc; border-color: #d0d5dc; color: #6a7480; opacity: 0.7; }
-        body.light .rank-card { background: rgba(255, 255, 255, 0.92); border-color: rgba(0, 0, 0, 0.08); }
-        body.light .rank-pos { color: #6a7480; }
-        body.light .modal-overlay { background: rgba(238, 242, 247, 0.9); backdrop-filter: blur(15px); }
-        body.light .mode-card { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.1); }
-        body.light .mode-card:hover { background: rgba(0, 168, 181, 0.06); }
-        body.light .game-card.unlocked { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 168, 181, 0.35); }
-        body.light .game-card.unlocked:hover { background: rgba(0, 168, 181, 0.07); }
-        body.light .game-card.locked { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.1); }
-        body.light .modes-back-btn { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.15); color: #5a6473; }
-        body.light #modal-modes h2, body.light #modal-settings h2 { color: #11141b; }
-        body.light .deck-card { background: linear-gradient(135deg, #f7f9fc, #e6ebf2); border-color: var(--accent-color); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        body.light .deck-card .card-q { color: var(--accent-color); }
-        body.light .deck-card.flipped { background: linear-gradient(135deg, rgba(255,215,0,0.18), #ffffff); }
-        body.light .category-spinner-wrap { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 168, 181, 0.25); }
-        body.light .chain-history { background: rgba(0, 0, 0, 0.04); border-color: rgba(0, 0, 0, 0.08); color: #5a6473; }
-        body.light .p-tag { background: #e6ebf2; color: #5a6473; }
-        body.light .register-row input { background: rgba(0, 0, 0, 0.04); color: #11141b; }
-        body.light .register-suggestions { background: #ffffff; border-color: rgba(0, 0, 0, 0.15); }
-        body.light .register-suggestions div { color: var(--accent-color); }
-        body.light #chain-input { background: rgba(0, 0, 0, 0.04); color: #11141b; }
-        body.light .timer-bar-track { background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.08); }
-        body.light .timer-meta { color: #5a6473; }
-        body.light .welcome-subtitle { color: var(--text-secondary); }
-        body.light .welcome-subtitle.glitch-active { color: #11141b; }
+
+        body.light button {
+            color: #ffffff;
+            box-shadow: 0 4px 0 #006b75;
+        }
+
+        body.light button:active:not(:disabled) {
+            box-shadow: 0 1px 0 #006b75;
+        }
+
+        body.light .btn-ghost {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--accent-color);
+            border-color: rgba(0, 168, 181, 0.35);
+        }
+
+        body.light .btn-ghost:hover:not(:active) {
+            background: rgba(0, 168, 181, 0.08);
+            box-shadow: 0 0 15px rgba(0, 168, 181, 0.2);
+        }
+
+        body.light .btn-danger {
+            color: var(--danger);
+            border-color: rgba(255, 77, 77, 0.4);
+        }
+
+        body.light .letter-box {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: #c4cad3;
+            color: #11141b;
+        }
+
+        body.light .letter-box:focus {
+            background: rgba(0, 168, 181, 0.06);
+        }
+
+        body.light .letter-box.absent {
+            background: #d0d5dc;
+            border-color: #d0d5dc;
+            color: #6a7480;
+            opacity: 0.7;
+        }
+
+        body.light .rank-card {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light .rank-pos {
+            color: #6a7480;
+        }
+
+        body.light .modal-overlay {
+            background: rgba(238, 242, 247, 0.9);
+            backdrop-filter: blur(15px);
+        }
+
+        body.light .mode-card {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light .mode-card:hover {
+            background: rgba(0, 168, 181, 0.06);
+        }
+
+        body.light .game-card.unlocked {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 168, 181, 0.35);
+        }
+
+        body.light .game-card.unlocked:hover {
+            background: rgba(0, 168, 181, 0.07);
+        }
+
+        body.light .game-card.locked {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light .modes-back-btn {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #5a6473;
+        }
+
+        body.light #modal-modes h2,
+        body.light #modal-settings h2 {
+            color: #11141b;
+        }
+
+        body.light .deck-card {
+            background: linear-gradient(135deg, #f7f9fc, #e6ebf2);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body.light .deck-card .card-q {
+            color: var(--accent-color);
+        }
+
+        body.light .deck-card.flipped {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.18), #ffffff);
+        }
+
+        body.light .category-spinner-wrap {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 168, 181, 0.25);
+        }
+
+        body.light .chain-history {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #5a6473;
+        }
+
+        body.light .p-tag {
+            background: #e6ebf2;
+            color: #5a6473;
+        }
+
+        body.light .register-row input {
+            background: rgba(0, 0, 0, 0.04);
+            color: #11141b;
+        }
+
+        body.light .register-suggestions {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body.light .register-suggestions div {
+            color: var(--accent-color);
+        }
+
+        body.light #chain-input {
+            background: rgba(0, 0, 0, 0.04);
+            color: #11141b;
+        }
+
+        body.light .timer-bar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light .timer-meta {
+            color: #5a6473;
+        }
+
+        body.light .welcome-subtitle {
+            color: var(--text-secondary);
+        }
+
+        body.light .welcome-subtitle.glitch-active {
+            color: #11141b;
+        }
+
         body.light .welcome-subtitle.glitch-active::before,
-        body.light .welcome-subtitle.glitch-active::after { background: var(--card-bg); }
-        body.light .chain-result-row { background: rgba(0, 0, 0, 0.03); }
-        body.light .chain-result-loser { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.1); }
+        body.light .welcome-subtitle.glitch-active::after {
+            background: var(--card-bg);
+        }
+
+        body.light .chain-result-row {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        body.light .chain-result-loser {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
         /* Intro title: GUESS putih → dark di light mode, RUSH tetep cyan */
-        body.light .intro-word.guess { color: #11141b; }
-        body.light .intro-grid { background-image: linear-gradient(rgba(0, 168, 181, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 168, 181, 0.1) 1px, transparent 1px); }
+        body.light .intro-word.guess {
+            color: #11141b;
+        }
+
+        body.light .intro-grid {
+            background-image: linear-gradient(rgba(0, 168, 181, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 168, 181, 0.1) 1px, transparent 1px);
+        }
     </style>
 </head>
 
@@ -969,12 +2819,15 @@
                 <div class="intro-underline"></div>
                 <!-- CHANGED [2026-05-28]: was static "ARENA TAKLUKAN ALAT TEKNIK SMK".
                      Sekarang random phrase cycler dengan glitch transition 3 detik (CSS section 5B + JS block 12). -->
-                <p id="welcome-subtitle" class="welcome-subtitle" style="color: var(--text-secondary); margin: 25px 0; font-size: 0.85rem; letter-spacing: 1.5px; font-weight: 600;">RUN THE CODE: RUN YOUR BRAIN</p>
+                <p id="welcome-subtitle" class="welcome-subtitle"
+                    style="color: var(--text-secondary); margin: 25px 0; font-size: 0.85rem; letter-spacing: 1.5px; font-weight: 600;">
+                    RUN THE CODE: RUN YOUR BRAIN</p>
                 <div style="max-width: 300px; margin: 0 auto; display: flex; flex-direction: column; gap: 5px;">
                     <button onclick="enterArena()">MASUK ARENA</button>
                     <button class="btn-ghost" onclick="openMoreModes()">MODE LAINNYA</button>
                     <!-- NEW [2026-05-27]: settings — akses 1 opsi: AKHIRI PERTANDINGAN (trigger ceremony) -->
-                    <button class="btn-ghost" onclick="openSettings()" style="font-size: 0.7rem; padding: 10px;">⚙️ PENGATURAN</button>
+                    <button class="btn-ghost" onclick="openSettings()" style="font-size: 0.7rem; padding: 10px;">⚙️
+                        PENGATURAN</button>
                 </div>
             </div>
         </div>
@@ -994,8 +2847,12 @@
         <!-- [BLOCK: SCREEN GUESS RUSH GAMEPLAY] - NEW: 2-MIN TIMER BAR, NO AKHIRI (pindah ke leaderboard) -->
         <div id="screen-game" class="screen">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span id="game-category-label" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">MODUL: ALAT TEKNIK</span>
-                <span id="stat-points-label" style="background: rgba(0,242,255,0.12); border: 1px solid rgba(0,242,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 900;">0 POIN</span>
+                <span id="game-category-label"
+                    style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">MODUL:
+                    ALAT TEKNIK</span>
+                <span id="stat-points-label"
+                    style="background: rgba(0,242,255,0.12); border: 1px solid rgba(0,242,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 0.75rem; font-weight: 900;">0
+                    POIN</span>
             </div>
             <!-- NEW: TIMER BAR 2 MENIT -->
             <div class="timer-wrap">
@@ -1003,27 +2860,37 @@
                     <span class="t-label">WAKTU PERTANDINGAN</span>
                     <span id="timer-text">01:00</span>
                 </div>
-                <div class="timer-bar-track"><div id="timer-bar" class="timer-bar-fill"></div></div>
+                <div class="timer-bar-track">
+                    <div id="timer-bar" class="timer-bar-fill"></div>
+                </div>
             </div>
-            <div id="hint-list" style="margin: 10px 0; min-height: 90px; max-height: 120px; overflow-y: auto; text-align: left; font-size: 0.9rem;"></div>
+            <div id="hint-list"
+                style="margin: 10px 0; min-height: 90px; max-height: 120px; overflow-y: auto; text-align: left; font-size: 0.9rem;">
+            </div>
             <div id="word-input-area"></div>
             <div style="display: flex; gap: 10px;">
                 <button style="flex: 2;" onclick="checkGuess()">SUBMIT KATA</button>
-                <button id="btn-next-hint" style="flex: 1; background: #30363d; color: white; box-shadow: 0 4px 0 #1c2128;" onclick="nextHint()">HINT</button>
+                <button id="btn-next-hint"
+                    style="flex: 1; background: #30363d; color: white; box-shadow: 0 4px 0 #1c2128;"
+                    onclick="nextHint()">HINT</button>
             </div>
             <!-- MENYERAH: akhiri match ronde ini, simpan skor, masuk leaderboard -->
-            <div class="btn-surrender" onclick="surrender()" style="margin-top:12px; cursor:pointer; color: var(--text-secondary); font-size: 0.75rem; letter-spacing: 1px; text-align:center; font-weight: 700;">MENYERAH (PASRAH)</div>
+            <div class="btn-surrender" onclick="surrender()"
+                style="margin-top:12px; cursor:pointer; color: var(--text-secondary); font-size: 0.75rem; letter-spacing: 1px; text-align:center; font-weight: 700;">
+                MENYERAH (PASRAH)</div>
         </div>
 
         <!-- [BLOCK: SCREEN SAMBUNG KATA REGISTER] - NEW [2026-05-27]: register Pemain 1 + Pemain 2 dengan autosuggest dari leaderboard -->
         <div id="screen-chain-register" class="screen">
             <h2 style="margin-bottom: 6px; font-size: 1.4rem; letter-spacing: 2px; font-weight: 900;">DAFTAR PEMAIN</h2>
-            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 18px;">Mode: <span id="chain-mode-display" style="color: var(--accent-color); font-weight: 900;">CASUAL</span></p>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 18px;">Mode: <span
+                    id="chain-mode-display" style="color: var(--accent-color); font-weight: 900;">CASUAL</span></p>
 
             <div class="register-row register-p1">
                 <div class="register-label">🟥 PEMAIN 1</div>
                 <div style="position: relative;">
-                    <input type="text" id="chain-p1-name" placeholder="Nama Pemain 1..." oninput="handleChainNameInput(this.value, 1)" maxlength="15" autocomplete="off">
+                    <input type="text" id="chain-p1-name" placeholder="Nama Pemain 1..."
+                        oninput="handleChainNameInput(this.value, 1)" maxlength="15" autocomplete="off">
                     <div id="suggestions-p1" class="register-suggestions" style="display:none;"></div>
                 </div>
             </div>
@@ -1033,7 +2900,8 @@
             <div class="register-row register-p2">
                 <div class="register-label">🟦 PEMAIN 2</div>
                 <div style="position: relative;">
-                    <input type="text" id="chain-p2-name" placeholder="Nama Pemain 2..." oninput="handleChainNameInput(this.value, 2)" maxlength="15" autocomplete="off">
+                    <input type="text" id="chain-p2-name" placeholder="Nama Pemain 2..."
+                        oninput="handleChainNameInput(this.value, 2)" maxlength="15" autocomplete="off">
                     <div id="suggestions-p2" class="register-suggestions" style="display:none;"></div>
                 </div>
             </div>
@@ -1044,22 +2912,31 @@
 
         <!-- [BLOCK: SCREEN SAMBUNG KATA 1V1] -->
         <div id="screen-word-chain" class="screen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 8px;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 8px;">
                 <!-- CHANGED [2026-05-27]: chain-title di-wrap dalam container position:relative supaya
                      combo counter (position:absolute) anchor ke title, render di bawah teks MODE: 1V1 tanpa
                      ngegeser nama pemain. -->
                 <div style="position: relative;">
-                    <span id="chain-title" style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG KATA 1V1</span>
+                    <span id="chain-title"
+                        style="color:var(--accent-color); font-weight: 900; font-size: 0.8rem; letter-spacing: 1px;">SAMBUNG
+                        KATA 1V1</span>
                     <!-- combo counter, escalate dengan fire emoji 🔥 → 🔥🔥 → 🔥🔥🔥 (inferno) -->
                     <span id="chain-combo" class="chain-combo">🔥 0</span>
                 </div>
-                <span id="chain-timer-display" style="color:var(--danger); font-weight:bold; font-family:monospace; font-size:1.3rem; text-shadow: 0 0 10px rgba(255,77,77,0.3);">30s</span>
+                <span id="chain-timer-display"
+                    style="color:var(--danger); font-weight:bold; font-family:monospace; font-size:1.3rem; text-shadow: 0 0 10px rgba(255,77,77,0.3);">30s</span>
             </div>
-            <div id="chain-players" style="margin-bottom: 10px; display: flex; justify-content: center; gap: 10px;"></div>
+            <div id="chain-players" style="margin-bottom: 10px; display: flex; justify-content: center; gap: 10px;">
+            </div>
             <div id="current-word-display" class="chain-word-big">---</div>
             <div class="chain-history" id="chain-history"></div>
-            <input type="text" id="chain-input" style="width:100%; padding:16px; border-radius:18px; background:rgba(0,0,0,0.3); border:2px solid #30363d; color:white; outline:none; text-align:center; font-size:1.2rem; margin-bottom: 15px; transition: 0.3s;" placeholder="Ketik kata..." onkeydown="handleChainKey(event)" autocomplete="off">
-            <p id="typing-status" style="font-size:0.85rem; color:var(--accent-color); font-weight: 900; height:24px; margin-top:-10px; margin-bottom:12px; opacity:1; text-align: center;">Giliran Player 1</p>
+            <input type="text" id="chain-input"
+                style="width:100%; padding:16px; border-radius:18px; background:rgba(0,0,0,0.3); border:2px solid #30363d; color:white; outline:none; text-align:center; font-size:1.2rem; margin-bottom: 15px; transition: 0.3s;"
+                placeholder="Ketik kata..." onkeydown="handleChainKey(event)" autocomplete="off">
+            <p id="typing-status"
+                style="font-size:0.85rem; color:var(--accent-color); font-weight: 900; height:24px; margin-top:-10px; margin-bottom:12px; opacity:1; text-align: center;">
+                Giliran Player 1</p>
             <div style="display:flex; flex-direction: column; gap:10px;">
                 <button onclick="submitChain()">KIRIM KATA</button>
                 <!-- RESTORED: AKHIRI PERTANDINGAN -->
@@ -1071,7 +2948,8 @@
         <!-- [BLOCK: SCREEN SAMBUNG KATA RESULT] - NEW [2026-05-27]: announce winner/loser dengan badge gold + point distribution -->
         <div id="screen-chain-result" class="screen">
             <h2 style="font-size: 1.4rem; letter-spacing: 2px; font-weight: 900; margin-bottom: 6px;">HASIL DUEL!</h2>
-            <p style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 20px; letter-spacing: 1.5px;">MODE <span id="chain-result-mode">CASUAL</span></p>
+            <p style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 20px; letter-spacing: 1.5px;">
+                MODE <span id="chain-result-mode">CASUAL</span></p>
 
             <div class="chain-result-row chain-result-winner">
                 <div class="chain-result-badge">🏆 PEMENANG</div>
@@ -1086,7 +2964,8 @@
             </div>
 
             <!-- NEW [2026-05-27]: tampilin max combo dicapai selama duel -->
-            <p style="text-align: center; margin: 16px 0 4px; color: #ff7700; font-size: 0.95rem; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255,119,0,0.4);">
+            <p
+                style="text-align: center; margin: 16px 0 4px; color: #ff7700; font-size: 0.95rem; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0 12px rgba(255,119,0,0.4);">
                 🔥 COMBO TERTINGGI: <span id="chain-result-combo">0</span> 🔥
             </p>
 
@@ -1096,14 +2975,21 @@
 
         <!-- [BLOCK: SCREEN RESULTS & LEADERBOARD] - NEW: FIXED LAYOUT, hanya leaderboard yg scroll, MAIN LAGI + AKHIRI PERTANDINGAN -->
         <div id="screen-result" class="screen">
-            <h2 id="result-status" style="letter-spacing: 2px; font-weight: 900; font-size: 1.5rem; color: white;">MISI SELESAI!</h2>
-            <div style="font-size: 5rem; color: var(--accent-color); margin: 10px 0; font-weight: 900; text-shadow: 0 0 30px rgba(0, 242, 255, 0.3);" id="final-score">0</div>
+            <h2 id="result-status" style="letter-spacing: 2px; font-weight: 900; font-size: 1.5rem; color: white;">MISI
+                SELESAI!</h2>
+            <div style="font-size: 5rem; color: var(--accent-color); margin: 10px 0; font-weight: 900; text-shadow: 0 0 30px rgba(0, 242, 255, 0.3);"
+                id="final-score">0</div>
 
             <div id="save-section">
-                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 10px;">Simpan pencapaianmu:</p>
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 10px;">Simpan pencapaianmu:
+                </p>
                 <div class="input-group" style="position: relative;">
-                    <div id="suggestions" style="display:none; position: absolute; bottom: 100%; left: 0; right: 0; background:rgba(28, 33, 40, 0.98); border-radius:15px; padding:10px; border:1px solid #333; z-index: 100; margin-bottom: 10px; text-align: left; max-height: 180px; overflow-y: auto;"></div>
-                    <input type="text" id="player-name" placeholder="Masukkan namamu..." oninput="handleNameInput(this.value)" maxlength="15" autocomplete="off" style="padding: 18px; border-radius: 18px; font-size: 1.2rem; width:100%; background: rgba(0,0,0,0.2); border: 2px solid #333; color: white; outline: none; text-align: center;">
+                    <div id="suggestions"
+                        style="display:none; position: absolute; bottom: 100%; left: 0; right: 0; background:rgba(28, 33, 40, 0.98); border-radius:15px; padding:10px; border:1px solid #333; z-index: 100; margin-bottom: 10px; text-align: left; max-height: 180px; overflow-y: auto;">
+                    </div>
+                    <input type="text" id="player-name" placeholder="Masukkan namamu..."
+                        oninput="handleNameInput(this.value)" maxlength="15" autocomplete="off"
+                        style="padding: 18px; border-radius: 18px; font-size: 1.2rem; width:100%; background: rgba(0,0,0,0.2); border: 2px solid #333; color: white; outline: none; text-align: center;">
                 </div>
                 <button onclick="finalizeScore()" style="margin-top: 15px;">AMANKAN SKOR</button>
             </div>
@@ -1111,8 +2997,12 @@
             <!-- LEADERBOARD: FIXED LAYOUT — hanya area arena yg scroll -->
             <div id="leaderboard-section" style="display:none;">
                 <div class="lb-header">
-                    <h3 style="margin-bottom: 12px; color: var(--accent-color); font-weight: 900; font-size: 1.2rem; letter-spacing: 1px;">SMK GLOBAL RANKING</h3>
-                    <input type="text" class="search-input" style="width:100%; padding:12px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid #444; color:white; margin-bottom:12px;" placeholder="Cari penantang..." oninput="searchPlayer(this.value)">
+                    <h3
+                        style="margin-bottom: 12px; color: var(--accent-color); font-weight: 900; font-size: 1.2rem; letter-spacing: 1px;">
+                        SMK GLOBAL RANKING</h3>
+                    <input type="text" class="search-input"
+                        style="width:100%; padding:12px; border-radius:12px; background:rgba(255,255,255,0.04); border:1px solid #444; color:white; margin-bottom:12px;"
+                        placeholder="Cari penantang..." oninput="searchPlayer(this.value)">
                 </div>
 
                 <div id="leaderboard-arena"></div>
@@ -1120,8 +3010,11 @@
                 <!-- CHANGED [2026-05-27]: AKHIRI PERTANDINGAN dipindah ke modal-settings (welcome screen).
                      Di leaderboard sekarang KEMBALI KE MENU — navigasi non-destruktif balik ke welcome. -->
                 <div class="lb-actions">
-                    <button onclick="playAgain()" style="background: var(--accent-color); color: black; font-weight: 900; box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4); margin: 0;">MAIN LAGI</button>
-                    <button class="btn-ghost" onclick="backToMenuAfterCeremony()" style="margin: 0;">KEMBALI KE MENU</button>
+                    <button onclick="playAgain()"
+                        style="background: var(--accent-color); color: black; font-weight: 900; box-shadow: 0 5px 20px rgba(0, 242, 255, 0.4); margin: 0;">MAIN
+                        LAGI</button>
+                    <button class="btn-ghost" onclick="backToMenuAfterCeremony()" style="margin: 0;">KEMBALI KE
+                        MENU</button>
                 </div>
             </div>
         </div>
@@ -1139,9 +3032,13 @@
                  Locked cards: onclick dihapus + no hover effects (arahan Pradipta — coming soon static). -->
             <div id="modes-view-games" class="modes-view active">
                 <button class="modes-back-btn" onclick="closeModesModal()">← KEMBALI</button>
-                <h2 style="color:white; margin-bottom:4px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">PILIH GAME</h2>
+                <h2
+                    style="color:white; margin-bottom:4px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">
+                    PILIH GAME</h2>
                 <!-- CHANGED [2026-05-28]: 3 ARENA BUKA · 1 SEGERA → 4 ARENA BUKA · 1 SEGERA (Just Half It! unlocked) -->
-                <p style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 6px;">4 ARENA BUKA · 1 SEGERA</p>
+                <p
+                    style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 6px;">
+                    4 ARENA BUKA · 1 SEGERA</p>
                 <div class="game-grid">
                     <!-- UNLOCKED 1: SAMBUNG KATA — thumbnail image, klik → view 2 (Casual/Chaos) -->
                     <div class="game-card unlocked" onclick="showChainSubModes()">
@@ -1171,61 +3068,80 @@
                     <!-- UNLOCKED 4: JUST HALF IT! — thumbnail image, klik → navigate ke justhalfit.html [NEW 2026-05-28]
                          Game baru: belah objek 50/50 menggunakan pisau yang di-drag (NORMAL) atau dengan
                          object slide otomatis (HARD). Scoring sama PerfectTimer: best-of-rounds, LB +200/+50/+150. -->
+
                     <div class="game-card unlocked" onclick="openJustHalfIt()">
-                        <img src="assets/thumbnailjusthalfit.png" class="game-thumb" alt="Just Half It">
-                        <div class="game-text">
-                            <h3>JUST HALF IT!</h3>
-                        </div>
-                        <span class="game-badge">PLAY</span>
+                    <img src="assets/thumbnailjusthalfit.png" class="game-thumb" alt="Just Half It">
+                    <div class="game-text">
+                        <h3>JUST HALF IT!</h3>
                     </div>
-                    <!-- CHANGED [2026-05-28]: was LOCKED SPEED QUIZ (⚡ emoji), sekarang LOCKED TEBAK GAMBAR
+                    <span class="game-badge">PLAY</span>
+                </div>
+                <!-- CHANGED [2026-05-28]: was LOCKED SPEED QUIZ (⚡ emoji), sekarang LOCKED TEBAK GAMBAR
                          (thumbnail thumbnailtebakgambar.png, masih COMING SOON, no onclick). -->
-                    <div class="game-card locked">
-                        <span class="game-lock-icon">🔒</span>
-                        <img src="assets/thumbnailtebakgambar.png" class="game-thumb" alt="Tebak Gambar">
-                        <div class="game-text">
-                            <h3>TEBAK GAMBAR</h3>
-                        </div>
-                        <span class="game-badge">COMING SOON</span>
+                <div class="game-card locked">
+                    <span class="game-lock-icon">🔒</span>
+                    <img src="assets/thumbnailtebakgambar.png" class="game-thumb" alt="Tebak Gambar">
+                    <div class="game-text">
+                        <h3>TEBAK GAMBAR</h3>
                     </div>
+                    <span class="game-badge">COMING SOON</span>
                 </div>
             </div>
-
-            <!-- ===== VIEW 2: SAMBUNG KATA SUB-MODES (Casual / Chaos) ===== -->
-            <div id="modes-view-chain" class="modes-view">
-                <button class="modes-back-btn" onclick="showGameGrid()">← KEMBALI</button>
-                <h2 style="color:white; margin-bottom:4px; text-align:center; font-size: 1.4rem; letter-spacing: 2px; font-weight: 900;">🔤 SAMBUNG KATA</h2>
-                <p style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 12px;">PILIH INTENSITAS DUEL</p>
-                <div class="mode-card" onclick="openChainRegister('casual')">
-                    <div class="mode-badge">30 DETIK</div>
-                    <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
-                    <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
-                </div>
-                <div class="mode-card" onclick="openChainRegister('chaos')">
-                    <div class="mode-badge" style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10 DETIK</div>
-                    <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
-                    <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
-                </div>
-            </div>
-
         </div>
+
+        <!-- ===== VIEW 2: SAMBUNG KATA SUB-MODES (Casual / Chaos) ===== -->
+        <div id="modes-view-chain" class="modes-view">
+            <button class="modes-back-btn" onclick="showGameGrid()">← KEMBALI</button>
+            <h2
+                style="color:white; margin-bottom:4px; text-align:center; font-size: 1.4rem; letter-spacing: 2px; font-weight: 900;">
+                🔤 SAMBUNG KATA</h2>
+            <p
+                style="color:var(--text-secondary); text-align:center; font-size: 0.7rem; letter-spacing: 1.5px; margin-bottom: 12px;">
+                PILIH INTENSITAS DUEL</p>
+            <div class="mode-card" onclick="openChainRegister('casual')">
+                <div class="mode-badge">30 DETIK</div>
+                <h3 style="color:var(--correct); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CASUAL</h3>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Duel santai
+                    bergantian. Sambung huruf terakhir dari kata sebelumnya!</p>
+            </div>
+            <div class="mode-card" onclick="openChainRegister('chaos')">
+                <div class="mode-badge"
+                    style="color:var(--danger); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1);">10
+                    DETIK</div>
+                <h3 style="color:var(--danger); font-size: 1rem; font-weight: 900;">SAMBUNG KATA 1V1 - CHAOS</h3>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Adrenalin
+                    tinggi! Waktu berpikir sangat sempit. Siapa yang lebih cepat?</p>
+            </div>
+        </div>
+
+    </div>
     </div>
 
     <!-- [BLOCK: MODAL SETTINGS] - NEW [2026-05-27]: dipindah dari leaderboard, 1 opsi only -->
     <div id="modal-settings" class="modal-overlay" onclick="this.style.display='none'">
         <div class="mode-selection-container" onclick="event.stopPropagation()">
-            <h2 style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">⚙️ PENGATURAN</h2>
+            <h2
+                style="color:white; margin-bottom:15px; text-align:center; font-size: 1.5rem; letter-spacing: 2px; font-weight: 900;">
+                ⚙️ PENGATURAN</h2>
             <!-- NEW [2026-05-28]: toggle theme dark/light. Persist ke localStorage.guessRushTheme,
                  di-respect oleh index.html, bom.html, perfecttimer.html (semua file punya body.light CSS). -->
             <div class="mode-card" onclick="toggleTheme()">
-                <div id="theme-badge" class="mode-badge" style="color:var(--accent-color); border-color: rgba(0,242,255,0.4); background: rgba(0,242,255,0.1);">🌙 DARK</div>
-                <h3 id="theme-title" style="color: var(--accent-color); font-size: 1rem; font-weight: 900;">TEMA: DARK MODE</h3>
-                <p id="theme-desc" style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Klik untuk ganti ke LIGHT MODE. Akan tersimpan untuk semua game di arena ini.</p>
+                <div id="theme-badge" class="mode-badge"
+                    style="color:var(--accent-color); border-color: rgba(0,242,255,0.4); background: rgba(0,242,255,0.1);">
+                    🌙 DARK</div>
+                <h3 id="theme-title" style="color: var(--accent-color); font-size: 1rem; font-weight: 900;">TEMA: DARK
+                    MODE</h3>
+                <p id="theme-desc"
+                    style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Klik untuk
+                    ganti ke LIGHT MODE. Akan tersimpan untuk semua game di arena ini.</p>
             </div>
             <div class="mode-card" onclick="settingsEndMatch()">
-                <div class="mode-badge" style="color:var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.1);">🏆 PODIUM</div>
+                <div class="mode-badge"
+                    style="color:var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.1);">🏆
+                    PODIUM</div>
                 <h3 style="color: var(--gold); font-size: 1rem; font-weight: 900;">AKHIRI PERTANDINGAN</h3>
-                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Tampilkan ceremony juara 1, 2, & 3 dari leaderboard global.</p>
+                <p style="font-size:0.7rem; color:var(--text-secondary); margin-top:8px; line-height: 1.5;">Tampilkan
+                    ceremony juara 1, 2, & 3 dari leaderboard global.</p>
             </div>
         </div>
     </div>
@@ -1240,7 +3156,7 @@
             try {
                 const t = localStorage.getItem('guessRushTheme');
                 if (t === 'light') document.body.classList.add('light');
-            } catch(e) {}
+            } catch (e) { }
         })();
 
         /* ============================================================
@@ -1259,7 +3175,7 @@
                 g.connect(audioCtx.destination);
                 o.start();
                 o.stop(audioCtx.currentTime + d);
-            } catch(e) {}
+            } catch (e) { }
         }
         const sfx = {
             correct: () => { playSfx(600, 'sine', 0.2); setTimeout(() => playSfx(900, 'sine', 0.3), 100); },
@@ -1433,7 +3349,7 @@
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const target = document.getElementById(id);
-            if(target) target.classList.add('active');
+            if (target) target.classList.add('active');
         }
 
         function enterArena() { sfx.correct(); initRound(); }
@@ -1698,7 +3614,7 @@
             bar.style.width = pct + '%';
             const totalSec = Math.ceil(matchTimer.remaining);
             const m = Math.floor(totalSec / 60), s = totalSec % 60;
-            txt.innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            txt.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             bar.classList.remove('warning', 'danger');
             // CHANGED: threshold disesuaikan dengan timer 60s — danger ≤8s, warning ≤20s
             if (matchTimer.remaining <= 8) bar.classList.add('danger');
@@ -1712,29 +3628,29 @@
             for (let i = 0; i < name.length; i++) {
                 const input = document.createElement('input');
                 input.type = 'text'; input.maxLength = 1; input.className = 'letter-box'; input.dataset.index = i;
-                if(name[i] === " ") { input.style.visibility = "hidden"; input.value = " "; }
+                if (name[i] === " ") { input.style.visibility = "hidden"; input.value = " "; }
                 input.addEventListener('input', (e) => {
-                    if(e.target.value) {
+                    if (e.target.value) {
                         e.target.classList.add('pop-anim');
-                        const next = area.querySelector(`input[data-index="${i+1}"]`);
-                        if(next) next.focus();
+                        const next = area.querySelector(`input[data-index="${i + 1}"]`);
+                        if (next) next.focus();
                     }
                 });
                 input.addEventListener('keydown', (e) => {
-                    if(e.key === 'Backspace' && !e.target.value) { const prev = area.querySelector(`input[data-index="${i-1}"]`); if(prev) prev.focus(); }
-                    if(e.key === 'Enter') checkGuess();
+                    if (e.key === 'Backspace' && !e.target.value) { const prev = area.querySelector(`input[data-index="${i - 1}"]`); if (prev) prev.focus(); }
+                    if (e.key === 'Enter') checkGuess();
                 });
                 area.appendChild(input);
             }
             const first = area.querySelector('input:not([style*="hidden"])');
-            if(first) first.focus();
+            if (first) first.focus();
         }
 
         function addHint() {
             const list = document.getElementById('hint-list');
             const div = document.createElement('div');
             div.style = "background: rgba(255,255,255,0.03); padding: 14px; border-radius: 16px; border-left: 5px solid var(--accent-color); margin-bottom: 10px; animation: screenIn 0.4s forwards;";
-            div.innerHTML = `<span style="font-size:0.75rem; color:var(--accent-color); font-weight:900; display:block; margin-bottom:4px;">HINT ${currentHintIndex+1}</span>${currentItem.hints[currentHintIndex]}`;
+            div.innerHTML = `<span style="font-size:0.75rem; color:var(--accent-color); font-weight:900; display:block; margin-bottom:4px;">HINT ${currentHintIndex + 1}</span>${currentItem.hints[currentHintIndex]}`;
             list.appendChild(div); list.scrollTop = list.scrollHeight; sfx.hint();
         }
 
@@ -1746,7 +3662,7 @@
         function checkGuess() {
             const area = document.getElementById('word-input-area');
             const inputs = area.querySelectorAll('.letter-box');
-            let guess = ""; inputs.forEach(i => { if(i.style.visibility !== "hidden") guess += i.value.toUpperCase(); });
+            let guess = ""; inputs.forEach(i => { if (i.style.visibility !== "hidden") guess += i.value.toUpperCase(); });
             const cleanAnswer = currentItem.name.replace(/\s/g, '').toUpperCase();
 
             if (guess.length < cleanAnswer.length) { showPopup("ISI SEMUA HURUF!", "#e67e22"); return; }
@@ -1815,7 +3731,7 @@
             const box = document.getElementById(`suggestions-p${playerNum}`);
             if (!val) { box.style.display = 'none'; return; }
             let lb = [];
-            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch (e) { lb = []; }
             const matches = lb.filter(e => e.name.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6);
             if (matches.length > 0) {
                 box.innerHTML = matches.map(m => {
@@ -1879,11 +3795,11 @@
             chain.interval = setInterval(() => {
                 chain.curTime -= 0.1;
                 document.getElementById('chain-timer-display').innerText = Math.ceil(chain.curTime) + "s";
-                if(chain.curTime < 3.5) {
+                if (chain.curTime < 3.5) {
                     document.getElementById('game-container').classList.add('pulse-red');
-                    if(Math.round(chain.curTime*10)%10===0) playSfx(200,'sine',0.05);
+                    if (Math.round(chain.curTime * 10) % 10 === 0) playSfx(200, 'sine', 0.05);
                 } else document.getElementById('game-container').classList.remove('pulse-red');
-                if(chain.curTime <= 0) {
+                if (chain.curTime <= 0) {
                     clearInterval(chain.interval);
                     sfx.wrong();
                     const gc = document.getElementById('game-container');
@@ -1922,12 +3838,12 @@
 
         function submitChain() {
             const input = document.getElementById('chain-input'); const val = input.value.trim().toUpperCase();
-            if(val.length < 3) { showPopup("MIN 3 HURUF!", "#e67e22"); return; }
-            if(chain.used.length > 0 && !val.startsWith(chain.suffix)) { showPopup(`HARUS MULAI HURUF ${chain.suffix}!`, "#ff4d4d"); return; }
-            if(chain.used.includes(val)) { showPopup("SUDAH DIPAKAI!", "#e67e22"); return; }
+            if (val.length < 3) { showPopup("MIN 3 HURUF!", "#e67e22"); return; }
+            if (chain.used.length > 0 && !val.startsWith(chain.suffix)) { showPopup(`HARUS MULAI HURUF ${chain.suffix}!`, "#ff4d4d"); return; }
+            if (chain.used.includes(val)) { showPopup("SUDAH DIPAKAI!", "#e67e22"); return; }
 
             sfx.correct();
-            const pName = (chain.players && chain.players[chain.turn]) || `P${chain.turn+1}`;
+            const pName = (chain.players && chain.players[chain.turn]) || `P${chain.turn + 1}`;
             document.getElementById('chain-history').innerHTML += `<div><b>${pName}:</b> ${val}</div>`;
             chain.used.push(val); chain.lastWord = val; chain.suffix = val.charAt(val.length - 1);
             chain.turn = (chain.turn + 1) % 2; chain.curTime = chain.timer;
@@ -1989,7 +3905,7 @@
             playSfx(660 + Math.min(comboCount, 25) * 30, 'sine', 0.18);
         }
 
-        function handleChainKey(e) { if(e.key === 'Enter') submitChain(); }
+        function handleChainKey(e) { if (e.key === 'Enter') submitChain(); }
 
         /* --- [JS BLOCK 7C] CHAIN END-GAME [2026-05-27] — auto add scores to LB, show result --- */
         function endChainGame(loserIdx) {
@@ -1998,7 +3914,7 @@
             const loserName = (chain.players && chain.players[loserIdx]) || `Player ${loserIdx + 1}`;
 
             let lb = [];
-            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch (e) { lb = []; }
 
             // CHANGED [2026-05-27]: track OLD scores SEBELUM add points, supaya bisa count-up animasi
             // dari oldScore → oldScore + reward di chainViewLeaderboard.
@@ -2046,7 +3962,7 @@
             section.classList.add('fixed-layout');
 
             let lb = [];
-            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch (e) { lb = []; }
             // CHANGED [2026-05-27]: ganti dari `startThroneBattle(lb, winner, score, score)` (no animation)
             // ke `startThroneBattleChain` yang animasi count-up untuk BOTH winner (+200) dan loser (+50).
             startThroneBattleChain(lb, winnerName, loserName, oldWS, oldLS);
@@ -2126,14 +4042,14 @@
         function toggleTheme() {
             sfx.flip();
             const isLight = document.body.classList.toggle('light');
-            try { localStorage.setItem('guessRushTheme', isLight ? 'light' : 'dark'); } catch(e) {}
+            try { localStorage.setItem('guessRushTheme', isLight ? 'light' : 'dark'); } catch (e) { }
             refreshThemeCard();
         }
         function refreshThemeCard() {
             const isLight = document.body.classList.contains('light');
             const badge = document.getElementById('theme-badge');
             const title = document.getElementById('theme-title');
-            const desc  = document.getElementById('theme-desc');
+            const desc = document.getElementById('theme-desc');
             if (!badge || !title || !desc) return;
             if (isLight) {
                 badge.innerText = '☀️ LIGHT';
@@ -2162,7 +4078,7 @@
               Phase 5 (10000ms): tombol KEMBALI KE MENU muncul --- */
         function startCeremony() {
             let lb = [];
-            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch (e) { lb = []; }
             const top3 = [...lb].sort((a, b) => b.score - a.score).slice(0, 3);
 
             // Edge case: leaderboard kosong → skip ceremony langsung balik menu
@@ -2265,8 +4181,8 @@
             let cur = 0; const step = Math.ceil(sessionScore / 20) || 1;
             const countInt = setInterval(() => {
                 cur += step;
-                if(cur >= sessionScore) { cur = sessionScore; clearInterval(countInt); }
-                finalScoreEl.innerText = cur; if(cur > 0) sfx.tick();
+                if (cur >= sessionScore) { cur = sessionScore; clearInterval(countInt); }
+                finalScoreEl.innerText = cur; if (cur > 0) sfx.tick();
             }, 50);
             setTimeout(() => document.getElementById('player-name').focus(), 800);
         }
@@ -2275,7 +4191,7 @@
             const name = document.getElementById('player-name').value.trim(); if (!name) { showPopup("ISI NAMAMU!", "#e67e22"); return; }
             // FIX: load LB dari localStorage, accumulate kalau sudah ada
             let lb = [];
-            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch(e) { lb = []; }
+            try { lb = JSON.parse(localStorage.getItem('guessRushLB')) || []; } catch (e) { lb = []; }
             let existingIdx = lb.findIndex(e => e.name.toLowerCase() === name.toLowerCase());
             let startVal = 0;
             if (existingIdx !== -1) { startVal = lb[existingIdx].score; lb[existingIdx].score += sessionScore; }
@@ -2313,7 +4229,7 @@
                 if (isMe) div.classList.add('player-focus');
 
                 div.innerHTML = `
-                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <span class="podium-medal">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : ''}</span>
                     <div class="rank-pos">#${i + 1}</div>
                     <div class="rank-info">${entry.name}</div>
                     <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
@@ -2398,7 +4314,7 @@
 
                 const medal = card.querySelector('.podium-medal');
                 if (medal) {
-                    medal.innerText = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':'';
+                    medal.innerText = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
                     medal.classList.remove('show');
                 }
 
@@ -2487,7 +4403,7 @@
                 if (isWinner) div.classList.add('player-focus');
 
                 div.innerHTML = `
-                    <span class="podium-medal">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''}</span>
+                    <span class="podium-medal">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : ''}</span>
                     <div class="rank-pos">#${i + 1}</div>
                     <div class="rank-info">${entry.name}</div>
                     <div class="rank-pts" id="pts-${entry.name.replace(/\s+/g, '-')}">${entry.score}</div>
@@ -2525,9 +4441,9 @@
               Winner float `+200` (gold), loser float `+50` (default green). --- */
         function phaseCountUpDual(winnerName, wStart, wEnd, loserName, lStart, lEnd, done) {
             const wCard = document.getElementById(`card-${winnerName.replace(/\s+/g, '-')}`);
-            const wPts  = document.getElementById(`pts-${winnerName.replace(/\s+/g, '-')}`);
+            const wPts = document.getElementById(`pts-${winnerName.replace(/\s+/g, '-')}`);
             const lCard = document.getElementById(`card-${loserName.replace(/\s+/g, '-')}`);
-            const lPts  = document.getElementById(`pts-${loserName.replace(/\s+/g, '-')}`);
+            const lPts = document.getElementById(`pts-${loserName.replace(/\s+/g, '-')}`);
             if (!wPts || !lPts) { setTimeout(() => done && done(), 200); return; }
 
             // Floating +200 (gold) di atas winner card
@@ -2623,7 +4539,7 @@
                 for (let i = 0; i < 40; i++) {
                     const p = document.createElement('div');
                     p.className = 'confetti-piece';
-                    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+                    p.style.background = colors[Math.floor(Math.random() * colors.length)];
                     p.style.setProperty('--cx', `${(Math.random() - 0.5) * window.innerWidth * 1.4}px`);
                     p.style.setProperty('--cy', `${(Math.random() * 0.6 - 0.85) * window.innerHeight}px`);
                     document.body.appendChild(p);
@@ -2653,7 +4569,7 @@
                 c.style.pointerEvents = n.includes(val.toLowerCase()) ? "auto" : "none";
             });
         }
-        document.getElementById('player-name').addEventListener('keypress', (e) => { if(e.key === 'Enter') finalizeScore(); });
+        document.getElementById('player-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') finalizeScore(); });
 
         /* ============================================================
            [JS BLOCK 12] WELCOME SUBTITLE GLITCH CYCLER [2026-05-28]
@@ -2749,4 +4665,5 @@
         _startSubtitleCycle();
     </script>
 </body>
+
 </html>
